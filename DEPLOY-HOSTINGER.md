@@ -118,7 +118,20 @@ Laravel me entry point `public/index.php` hai. Hostinger par do common setups:
 4. User ko database par **All Privileges** do.
 5. **phpMyAdmin** se empty database dikhni chahiye.
 
-### 2.5 .env file (Hostinger par)
+### 2.4a Web Installer (1-click setup, recommended)
+Server par code upload ke baad, browser se ye steps follow karo:
+
+1. **Pehli baar:** Site ka URL kholo: `https://yourdomain.com/install.php`  
+   - Ye automatically `.env` create karega (agar nahi hai).
+2. Phir open karo: `https://yourdomain.com/install`  
+   - Form me **Application URL**, **Database Host**, **Database Name**, **Username**, **Password** bharo.
+3. **Install Now** click karo.  
+   - Backend .env update karega, migrations chalayega, storage link banayega.
+4. Install complete hone ke baad aap **Login** page par redirect ho jaoge.
+
+**Note:** Domain ka document root Laravel ke `public` folder par hona chahiye taaki `yourdomain.com/install.php` aur `yourdomain.com/install` dono chal sakein.
+
+### 2.5 .env file (Hostinger par — agar web installer na use karo)
 1. File Manager me Laravel root me (jahan `artisan` hai) `.env.example` copy karke `.env` banao.
 2. `.env` edit karo:
 

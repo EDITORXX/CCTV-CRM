@@ -3,6 +3,12 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
+// Web installer: fill DB & app URL, one-click install (only when not yet installed)
+Route::middleware(['installed'])->group(function () {
+    Route::get('/install', [App\Http\Controllers\InstallController::class, 'index'])->name('install.index');
+    Route::post('/install', [App\Http\Controllers\InstallController::class, 'store'])->name('install.store');
+});
+
 Auth::routes();
 
 // Quick Login (Demo)
