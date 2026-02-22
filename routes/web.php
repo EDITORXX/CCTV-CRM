@@ -14,6 +14,10 @@ Auth::routes();
 // Notification test (mail/notification setup)
 Route::get('/notification-test', App\Http\Controllers\NotificationTestController::class)->name('notification-test');
 
+// Server test (403 fix helper) — works even if public/server-test.php is missing on server
+Route::get('/server-test', App\Http\Controllers\ServerTestController::class)->name('server-test');
+Route::get('/server-test.php', App\Http\Controllers\ServerTestController::class);
+
 // Quick Login (Demo)
 Route::get('/quick-login', [App\Http\Controllers\QuickLoginController::class, 'index'])->name('quick-login');
 Route::post('/quick-login/{user}', [App\Http\Controllers\QuickLoginController::class, 'login'])->name('quick-login.do');
