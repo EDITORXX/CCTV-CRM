@@ -61,9 +61,9 @@
                     <label for="website" class="form-label">Website</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-globe"></i></span>
-                        <input type="url" class="form-control @error('website') is-invalid @enderror"
+                        <input type="text" class="form-control @error('website') is-invalid @enderror"
                                id="website" name="website"
-                               value="{{ old('website', $company->website ?? '') }}" placeholder="https://www.company.com">
+                               value="{{ old('website', $company->website ?? '') }}" placeholder="www.company.com">
                     </div>
                     @error('website')
                         <span class="text-danger small">{{ $message }}</span>
@@ -146,6 +146,38 @@
                     @error('warranty_default_months')
                         <span class="text-danger small">{{ $message }}</span>
                     @enderror
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Payment QR Code --}}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <h6 class="mb-0 fw-semibold"><i class="bi bi-qr-code me-2 text-primary"></i>Payment QR Code</h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-6">
+                    <label for="payment_qr" class="form-label">Upload QR Code Image</label>
+                    <input type="file" class="form-control @error('payment_qr') is-invalid @enderror"
+                           id="payment_qr" name="payment_qr" accept="image/*">
+                    @error('payment_qr')
+                        <span class="text-danger small">{{ $message }}</span>
+                    @enderror
+                    <small class="text-muted d-block mt-1">This QR code will be shown to customers when they click "Pay Now" on invoices.</small>
+                </div>
+                <div class="col-md-6 text-center">
+                    @if($company->payment_qr_path)
+                        <img src="{{ asset('storage/' . $company->payment_qr_path) }}" alt="Payment QR"
+                             class="img-thumbnail" style="max-height: 180px;">
+                        <small class="text-muted d-block mt-1">Current QR code. Upload new to replace.</small>
+                    @else
+                        <div class="border rounded p-4 text-muted">
+                            <i class="bi bi-qr-code fs-1 d-block mb-2"></i>
+                            No QR code uploaded yet
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

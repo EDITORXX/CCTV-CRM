@@ -27,7 +27,7 @@ class DashboardController extends Controller
         }
 
         if ($role === 'customer') {
-            return $this->customerDashboard($user, $companyId);
+            return redirect()->route('portal.dashboard');
         }
 
         return $this->adminDashboard($companyId);

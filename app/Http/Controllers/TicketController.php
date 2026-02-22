@@ -23,7 +23,7 @@ class TicketController extends Controller
             });
         }
 
-        $tickets = $query->orderBy('created_at', 'desc')->paginate(20);
+        $tickets = $query->orderBy('created_at', 'desc')->get();
         return view('tickets.index', compact('tickets'));
     }
 

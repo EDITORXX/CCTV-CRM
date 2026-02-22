@@ -96,19 +96,38 @@
             </div>
         </div>
 
+        @if($ticket->photo)
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white fw-semibold">
+                <i class="bi bi-camera me-1"></i> Complaint Photo
+            </div>
+            <div class="card-body text-center">
+                <a href="{{ asset('storage/' . $ticket->photo) }}" target="_blank">
+                    <img src="{{ asset('storage/' . $ticket->photo) }}" alt="Complaint Photo"
+                         class="img-fluid rounded" style="max-height: 300px;">
+                </a>
+                <div class="mt-2">
+                    <a href="{{ asset('storage/' . $ticket->photo) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-arrows-fullscreen me-1"></i> View Full Size
+                    </a>
+                </div>
+            </div>
+        </div>
+        @endif
+
         {{-- Assign Technician --}}
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white fw-semibold">
                 <i class="bi bi-person-plus me-1"></i> Assign Technician
             </div>
             <div class="card-body">
-                @if($ticket->assignees && $ticket->assignees->count())
+                @if($ticket->assignments && $ticket->assignments->count())
                     <div class="mb-3">
                         <strong class="small text-muted">Currently Assigned:</strong>
                         <div class="mt-1">
-                            @foreach($ticket->assignees as $assignee)
+                            @foreach($ticket->assignments as $assignment)
                                 <span class="badge bg-primary me-1 mb-1">
-                                    <i class="bi bi-person me-1"></i>{{ $assignee->name }}
+                                    <i class="bi bi-person me-1"></i>{{ $assignment->technician->name ?? '-' }}
                                 </span>
                             @endforeach
                         </div>
@@ -119,7 +138,7 @@
 
                 <form action="{{ route('tickets.assign', $ticket) }}" method="POST" class="d-flex gap-2">
                     @csrf
-                    <select class="form-select form-select-sm" name="user_id" required>
+                    <select class="form-select form-select-sm" name="technician_id" id="technician_id" required>
                         <option value="">— Select Technician —</option>
                         @foreach($technicians ?? [] as $tech)
                             <option value="{{ $tech->id }}">{{ $tech->name }}</option>

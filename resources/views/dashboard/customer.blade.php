@@ -129,6 +129,9 @@
                     <a href="{{ route('warranties.index') }}" class="btn btn-outline-secondary">
                         <i class="bi bi-shield-check me-2"></i>Check Warranties
                     </a>
+                    <a href="{{ route('support.index') }}" class="btn btn-outline-info">
+                        <i class="bi bi-life-preserver me-2"></i>Help Center & Videos
+                    </a>
                 </div>
             </div>
         </div>

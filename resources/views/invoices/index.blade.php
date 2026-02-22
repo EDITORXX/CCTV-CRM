@@ -31,7 +31,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($invoices as $invoice)
+                    @foreach($invoices as $invoice)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
                         <td><a href="{{ route('invoices.show', $invoice) }}" class="fw-semibold text-decoration-none">{{ $invoice->invoice_number }}</a></td>
@@ -83,14 +83,7 @@
                             </div>
                         </td>
                     </tr>
-                    @empty
-                    <tr>
-                        <td colspan="9" class="text-center py-4 text-muted">
-                            <i class="bi bi-receipt fs-1 d-block mb-2"></i>
-                            No invoices found. <a href="{{ route('invoices.create') }}">Create your first invoice</a>.
-                        </td>
-                    </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
@@ -107,7 +100,10 @@
             order: [[4, 'desc']],
             columnDefs: [
                 { orderable: false, targets: [8] }
-            ]
+            ],
+            language: {
+                emptyTable: '<div class="text-center py-4 text-muted"><i class="bi bi-receipt fs-1 d-block mb-2"></i>No invoices found. <a href="{{ route('invoices.create') }}">Create your first invoice</a>.</div>'
+            }
         });
     });
 </script>

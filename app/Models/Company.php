@@ -8,7 +8,7 @@ class Company extends Model
 {
     protected $fillable = [
         'name', 'address', 'gstin', 'phone', 'email', 'website',
-        'logo_path', 'gst_enabled', 'invoice_prefix', 'warranty_default_months',
+        'logo_path', 'payment_qr_path', 'gst_enabled', 'invoice_prefix', 'warranty_default_months',
     ];
 
     protected $casts = [

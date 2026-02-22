@@ -56,7 +56,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($serials ?? [] as $serial)
+                    @foreach($serials ?? [] as $serial)
                     <tr>
                         <td><code class="fw-bold">{{ $serial->serial_number }}</code></td>
                         <td>{{ $serial->product->name ?? '—' }}</td>
@@ -116,14 +116,7 @@
                             </a>
                         </td>
                     </tr>
-                    @empty
-                    <tr>
-                        <td colspan="10" class="text-center py-4 text-muted">
-                            <i class="bi bi-upc-scan fs-1 d-block mb-2"></i>
-                            No serial numbers match your search.
-                        </td>
-                    </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
@@ -139,7 +132,10 @@
             paging: false,
             info: false,
             searching: false,
-            order: [[0, 'asc']]
+            order: [[0, 'asc']],
+            language: {
+                emptyTable: '<div class="text-center py-4 text-muted"><i class="bi bi-upc-scan fs-1 d-block mb-2"></i>No serial numbers match your search.</div>'
+            }
         });
     });
 </script>

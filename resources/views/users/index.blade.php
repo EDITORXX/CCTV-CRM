@@ -29,7 +29,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($users as $user)
+                    @foreach($users as $user)
                     <tr>
                         <td>{{ $loop->iteration + ($users->currentPage() - 1) * $users->perPage() }}</td>
                         <td class="fw-semibold">{{ $user->name }}</td>
@@ -74,14 +74,7 @@
                             </div>
                         </td>
                     </tr>
-                    @empty
-                    <tr>
-                        <td colspan="7" class="text-center py-4 text-muted">
-                            <i class="bi bi-person-gear fs-1 d-block mb-2"></i>
-                            No users found. <a href="{{ route('users.create') }}">Add your first user</a>.
-                        </td>
-                    </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
@@ -101,7 +94,10 @@
             order: [[1, 'asc']],
             columnDefs: [
                 { orderable: false, targets: [6] }
-            ]
+            ],
+            language: {
+                emptyTable: '<div class="text-center py-4 text-muted"><i class="bi bi-person-gear fs-1 d-block mb-2"></i>No users found. <a href="{{ route('users.create') }}">Add your first user</a>.</div>'
+            }
         });
     });
 </script>

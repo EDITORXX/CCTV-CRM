@@ -49,11 +49,12 @@ class CompanyController extends Controller
             'gstin' => 'nullable|string|max:20',
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
-            'website' => 'nullable|url|max:255',
+            'website' => 'nullable|string|max:255',
             'gst_enabled' => 'boolean',
             'invoice_prefix' => 'nullable|string|max:20',
             'warranty_default_months' => 'nullable|integer|min:0',
             'logo' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
+            'payment_qr' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
         ]);
 
         $validated['gst_enabled'] = $request->boolean('gst_enabled');
@@ -63,6 +64,12 @@ class CompanyController extends Controller
             $validated['logo_path'] = $path;
         }
         unset($validated['logo']);
+
+        if ($request->hasFile('payment_qr')) {
+            $path = $request->file('payment_qr')->store('qrcodes', 'public');
+            $validated['payment_qr_path'] = $path;
+        }
+        unset($validated['payment_qr']);
 
         $company->update($validated);
 

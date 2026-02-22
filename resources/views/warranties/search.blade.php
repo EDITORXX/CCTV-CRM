@@ -64,7 +64,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($warranties ?? [] as $warranty)
+                    @foreach($warranties ?? [] as $warranty)
                     @php
                         $endDate = \Carbon\Carbon::parse($warranty->end_date);
                         $daysLeft = now()->diffInDays($endDate, false);
@@ -116,14 +116,7 @@
                             </div>
                         </td>
                     </tr>
-                    @empty
-                    <tr>
-                        <td colspan="9" class="text-center py-4 text-muted">
-                            <i class="bi bi-search fs-1 d-block mb-2"></i>
-                            No warranties match your search criteria.
-                        </td>
-                    </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
@@ -141,7 +134,10 @@
             order: [[5, 'asc']],
             columnDefs: [
                 { orderable: false, targets: [8] }
-            ]
+            ],
+            language: {
+                emptyTable: '<div class="text-center py-4 text-muted"><i class="bi bi-search fs-1 d-block mb-2"></i>No warranties match your search criteria.</div>'
+            }
         });
     });
 </script>

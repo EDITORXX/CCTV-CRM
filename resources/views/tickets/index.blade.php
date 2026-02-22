@@ -33,7 +33,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($tickets as $ticket)
+                    @foreach($tickets as $ticket)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
                         <td>
@@ -79,8 +79,8 @@
                             @endswitch
                         </td>
                         <td>
-                            @if($ticket->assignees && $ticket->assignees->count())
-                                {{ $ticket->assignees->pluck('name')->join(', ') }}
+                            @if($ticket->assignedTechnicians && $ticket->assignedTechnicians->count())
+                                {{ $ticket->assignedTechnicians->pluck('name')->join(', ') }}
                             @else
                                 <span class="text-muted">Unassigned</span>
                             @endif
@@ -105,14 +105,7 @@
                             </div>
                         </td>
                     </tr>
-                    @empty
-                    <tr>
-                        <td colspan="11" class="text-center py-4 text-muted">
-                            <i class="bi bi-headset fs-1 d-block mb-2"></i>
-                            No tickets found. <a href="{{ route('tickets.create') }}">Create your first ticket</a>.
-                        </td>
-                    </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
@@ -129,7 +122,10 @@
             order: [[9, 'desc']],
             columnDefs: [
                 { orderable: false, targets: [10] }
-            ]
+            ],
+            language: {
+                emptyTable: '<div class="text-center py-4 text-muted"><i class="bi bi-headset fs-1 d-block mb-2"></i>No tickets found. <a href="{{ route('tickets.create') }}">Create your first ticket</a>.</div>'
+            }
         });
     });
 </script>

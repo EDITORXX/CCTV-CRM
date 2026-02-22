@@ -3,8 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCustomerRequest;
+use App\Mail\CustomerWelcomeMail;
+use App\Models\Company;
 use App\Models\Customer;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class CustomerController extends Controller
 {
@@ -31,10 +36,41 @@ class CustomerController extends Controller
 
     public function store(StoreCustomerRequest $request)
     {
-        Customer::create(array_merge($request->validated(), [
+        $customer = Customer::create(array_merge($request->validated(), [
             'company_id' => session('current_company_id'),
             'created_by' => auth()->id(),
         ]));
+
+        if ($customer->email) {
+            $existingUser = User::where('email', $customer->email)->first();
+
+            if (!$existingUser) {
+                $password = Str::random(10);
+                $user = User::create([
+                    'name' => $customer->name,
+                    'email' => $customer->email,
+                    'password' => $password,
+                    'phone' => $customer->phone,
+                    'is_active' => true,
+                ]);
+
+                $user->companies()->attach(session('current_company_id'), ['role' => 'customer']);
+
+                $companyName = Company::find(session('current_company_id'))->name ?? config('app.name');
+
+                try {
+                    Mail::to($customer->email)->send(
+                        new CustomerWelcomeMail($customer->name, $customer->email, $password, $companyName)
+                    );
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to send customer welcome email: ' . $e->getMessage());
+                }
+            } else {
+                if (!$existingUser->companies()->where('companies.id', session('current_company_id'))->exists()) {
+                    $existingUser->companies()->attach(session('current_company_id'), ['role' => 'customer']);
+                }
+            }
+        }
 
         return redirect()->route('customers.index')->with('success', 'Customer created successfully.');
     }

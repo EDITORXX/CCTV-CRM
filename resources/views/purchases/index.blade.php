@@ -30,7 +30,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($purchases as $purchase)
+                    @foreach($purchases as $purchase)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
                         <td>{{ $purchase->vendor->name ?? '—' }}</td>
@@ -58,14 +58,7 @@
                             </div>
                         </td>
                     </tr>
-                    @empty
-                    <tr>
-                        <td colspan="8" class="text-center py-4 text-muted">
-                            <i class="bi bi-cart-plus fs-1 d-block mb-2"></i>
-                            No purchases found. <a href="{{ route('purchases.create') }}">Record your first purchase</a>.
-                        </td>
-                    </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
@@ -82,7 +75,10 @@
             order: [[3, 'desc']],
             columnDefs: [
                 { orderable: false, targets: [7] }
-            ]
+            ],
+            language: {
+                emptyTable: '<div class="text-center py-4 text-muted"><i class="bi bi-cart-plus fs-1 d-block mb-2"></i>No purchases found. <a href="{{ route('purchases.create') }}">Record your first purchase</a>.</div>'
+            }
         });
     });
 </script>

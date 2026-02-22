@@ -29,7 +29,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($customers as $customer)
+                    @foreach($customers as $customer)
                     <tr>
                         <td>{{ $loop->iteration + ($customers->currentPage() - 1) * $customers->perPage() }}</td>
                         <td>
@@ -60,14 +60,7 @@
                             </div>
                         </td>
                     </tr>
-                    @empty
-                    <tr>
-                        <td colspan="7" class="text-center py-4 text-muted">
-                            <i class="bi bi-people fs-1 d-block mb-2"></i>
-                            No customers found. <a href="{{ route('customers.create') }}">Add your first customer</a>.
-                        </td>
-                    </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
@@ -87,7 +80,10 @@
             order: [[1, 'asc']],
             columnDefs: [
                 { orderable: false, targets: [6] }
-            ]
+            ],
+            language: {
+                emptyTable: '<div class="text-center py-4 text-muted"><i class="bi bi-people fs-1 d-block mb-2"></i>No customers found. <a href="{{ route('customers.create') }}">Add your first customer</a>.</div>'
+            }
         });
     });
 </script>

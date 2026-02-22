@@ -134,9 +134,9 @@ $(document).ready(function() {
     function addItemRow() {
         var html = '<tr data-row="' + rowIndex + '">' +
             '<td><select class="form-select form-select-sm" name="items[' + rowIndex + '][product_id]" required>' + buildProductOptions() + '</select></td>' +
-            '<td><input type="number" class="form-control form-control-sm item-qty" name="items[' + rowIndex + '][quantity]" min="1" value="1" required></td>' +
+            '<td><input type="number" class="form-control form-control-sm item-qty" name="items[' + rowIndex + '][qty]" min="1" value="1" required></td>' +
             '<td><input type="number" class="form-control form-control-sm item-price" name="items[' + rowIndex + '][unit_price]" min="0" step="0.01" value="0" required></td>' +
-            '<td><input type="number" class="form-control form-control-sm item-gst" name="items[' + rowIndex + '][gst_percent]" min="0" max="100" step="0.01" value="18" required></td>' +
+            '<td><input type="number" class="form-control form-control-sm item-gst" name="items[' + rowIndex + '][gst_percent]" min="0" max="100" step="0.01" value="18"></td>' +
             '<td><input type="text" class="form-control form-control-sm" name="items[' + rowIndex + '][serials]" placeholder="SN1, SN2, ..."></td>' +
             '<td class="line-total fw-semibold">₹0.00</td>' +
             '<td><button type="button" class="btn btn-sm btn-outline-danger remove-item"><i class="bi bi-x-lg"></i></button></td>' +

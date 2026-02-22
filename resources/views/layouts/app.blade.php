@@ -238,6 +238,14 @@
             @endif
         </div>
 
+        @php
+            $userRole = null;
+            if(auth()->check() && session('current_company_id')) {
+                $companyPivot = auth()->user()->companies()->where('companies.id', session('current_company_id'))->first();
+                $userRole = $companyPivot ? $companyPivot->pivot->role : null;
+            }
+        @endphp
+
         <ul class="sidebar-nav">
             <li class="nav-label">Main</li>
             <li>
@@ -246,72 +254,159 @@
                 </a>
             </li>
 
-            <li class="nav-label">Operations</li>
-            <li>
-                <a href="{{ route('customers.index') }}" class="{{ request()->routeIs('customers.*') ? 'active' : '' }}">
-                    <i class="bi bi-people"></i> Customers
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('serials.search') }}" class="{{ request()->routeIs('serials.*') ? 'active' : '' }}">
-                    <i class="bi bi-upc-scan"></i> Serial Search
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('vendors.index') }}" class="{{ request()->routeIs('vendors.*') ? 'active' : '' }}">
-                    <i class="bi bi-truck"></i> Vendors
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('products.index') }}" class="{{ request()->routeIs('products.*') ? 'active' : '' }}">
-                    <i class="bi bi-box-seam"></i> Products
-                </a>
-            </li>
+            @if($userRole === 'customer')
+                {{-- Customer-only sidebar --}}
+                <li class="nav-label">My Account</li>
+                <li>
+                    <a href="{{ route('portal.invoices') }}" class="{{ request()->routeIs('portal.invoices*') ? 'active' : '' }}">
+                        <i class="bi bi-receipt"></i> My Invoices
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('portal.warranties') }}" class="{{ request()->routeIs('portal.warranties') ? 'active' : '' }}">
+                        <i class="bi bi-shield-check"></i> My Warranties
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('portal.payments') }}" class="{{ request()->routeIs('portal.payments*') ? 'active' : '' }}">
+                        <i class="bi bi-credit-card"></i> My Payments
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('portal.complaints') }}" class="{{ request()->routeIs('portal.complaints*') ? 'active' : '' }}">
+                        <i class="bi bi-headset"></i> Support Tickets
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('portal.profile') }}" class="{{ request()->routeIs('portal.profile') ? 'active' : '' }}">
+                        <i class="bi bi-person-circle"></i> My Profile
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('support.index') }}" class="{{ request()->routeIs('support.*') ? 'active' : '' }}">
+                        <i class="bi bi-life-preserver"></i> Help Center
+                    </a>
+                </li>
+            @elseif($userRole === 'technician')
+                {{-- Technician sidebar --}}
+                <li class="nav-label">Work</li>
+                <li>
+                    <a href="{{ route('tickets.index') }}" class="{{ request()->routeIs('tickets.*') ? 'active' : '' }}">
+                        <i class="bi bi-headset"></i> Service Tickets
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('site-expenses.create') }}" class="{{ request()->routeIs('site-expenses.*') ? 'active' : '' }}">
+                        <i class="bi bi-cash-stack"></i> Record Expense
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('support.index') }}" class="{{ request()->routeIs('support.*') ? 'active' : '' }}">
+                        <i class="bi bi-life-preserver"></i> Help Center
+                    </a>
+                </li>
+            @else
+                {{-- Admin/Manager/Accountant sidebar --}}
+                @if($userRole && !in_array($userRole, ['technician']))
+                <li class="nav-label">Operations</li>
+                <li>
+                    <a href="{{ route('customers.index') }}" class="{{ request()->routeIs('customers.*') ? 'active' : '' }}">
+                        <i class="bi bi-people"></i> Customers
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('serials.search') }}" class="{{ request()->routeIs('serials.*') ? 'active' : '' }}">
+                        <i class="bi bi-upc-scan"></i> Serial Search
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('vendors.index') }}" class="{{ request()->routeIs('vendors.*') ? 'active' : '' }}">
+                        <i class="bi bi-truck"></i> Vendors
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('products.index') }}" class="{{ request()->routeIs('products.*') ? 'active' : '' }}">
+                        <i class="bi bi-box-seam"></i> Products
+                    </a>
+                </li>
+                @if($userRole && in_array($userRole, ['company_admin', 'manager', 'accountant']))
+                <li>
+                    <a href="{{ route('site-expenses.index') }}" class="{{ request()->routeIs('site-expenses.*') ? 'active' : '' }}">
+                        <i class="bi bi-cash-stack"></i> Site Expenses
+                    </a>
+                </li>
+                @endif
+                @endif
 
-            <li class="nav-label">Billing</li>
-            <li>
-                <a href="{{ route('purchases.index') }}" class="{{ request()->routeIs('purchases.*') ? 'active' : '' }}">
-                    <i class="bi bi-cart-plus"></i> Purchases
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('invoices.index') }}" class="{{ request()->routeIs('invoices.*') ? 'active' : '' }}">
-                    <i class="bi bi-receipt"></i> Invoices
-                </a>
-            </li>
+                <li class="nav-label">Billing</li>
+                <li>
+                    <a href="{{ route('purchases.index') }}" class="{{ request()->routeIs('purchases.*') ? 'active' : '' }}">
+                        <i class="bi bi-cart-plus"></i> Purchases
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('invoices.index') }}" class="{{ request()->routeIs('invoices.*') ? 'active' : '' }}">
+                        <i class="bi bi-receipt"></i> Invoices
+                    </a>
+                </li>
+                @if($userRole && in_array($userRole, ['company_admin', 'manager', 'accountant']))
+                <li>
+                    <a href="{{ route('estimates.index') }}" class="{{ request()->routeIs('estimates.*') ? 'active' : '' }}">
+                        <i class="bi bi-file-earmark-text"></i> Estimates
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('customer-payments.index') }}" class="{{ request()->routeIs('customer-payments.*') ? 'active' : '' }}">
+                        <i class="bi bi-credit-card-2-front"></i> Payment Approvals
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('customer-advances.index') }}" class="{{ request()->routeIs('customer-advances.*') ? 'active' : '' }}">
+                        <i class="bi bi-wallet2"></i> Customer Advances
+                    </a>
+                </li>
+                @endif
 
-            <li class="nav-label">Support</li>
-            <li>
-                <a href="{{ route('warranties.index') }}" class="{{ request()->routeIs('warranties.*') ? 'active' : '' }}">
-                    <i class="bi bi-shield-check"></i> Warranties
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('tickets.index') }}" class="{{ request()->routeIs('tickets.*') ? 'active' : '' }}">
-                    <i class="bi bi-headset"></i> Service Tickets
-                </a>
-            </li>
+                <li class="nav-label">Support</li>
+                <li>
+                    <a href="{{ route('warranties.index') }}" class="{{ request()->routeIs('warranties.*') ? 'active' : '' }}">
+                        <i class="bi bi-shield-check"></i> Warranties
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('tickets.index') }}" class="{{ request()->routeIs('tickets.*') ? 'active' : '' }}">
+                        <i class="bi bi-headset"></i> Service Tickets
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('support-articles.index') }}" class="{{ request()->routeIs('support-articles.*') ? 'active' : '' }}">
+                        <i class="bi bi-journal-text"></i> Knowledge Base
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('support-videos.index') }}" class="{{ request()->routeIs('support-videos.*') ? 'active' : '' }}">
+                        <i class="bi bi-camera-video"></i> Support Videos
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('support.index') }}" class="{{ request()->routeIs('support.*') ? 'active' : '' }}">
+                        <i class="bi bi-life-preserver"></i> Help Center
+                    </a>
+                </li>
 
-            @php
-                $userRole = null;
-                if(auth()->check() && session('current_company_id')) {
-                    $companyPivot = auth()->user()->companies()->where('companies.id', session('current_company_id'))->first();
-                    $userRole = $companyPivot ? $companyPivot->pivot->role : null;
-                }
-            @endphp
-
-            @if($userRole && in_array($userRole, ['company_admin', 'manager']))
-            <li class="nav-label">Administration</li>
-            <li>
-                <a href="{{ route('users.index') }}" class="{{ request()->routeIs('users.*') ? 'active' : '' }}">
-                    <i class="bi bi-person-gear"></i> Users
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('company.settings') }}" class="{{ request()->routeIs('company.settings*') ? 'active' : '' }}">
-                    <i class="bi bi-building-gear"></i> Company Settings
-                </a>
-            </li>
+                @if($userRole && in_array($userRole, ['company_admin', 'manager']))
+                <li class="nav-label">Administration</li>
+                <li>
+                    <a href="{{ route('users.index') }}" class="{{ request()->routeIs('users.*') ? 'active' : '' }}">
+                        <i class="bi bi-person-gear"></i> Users
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('company.settings') }}" class="{{ request()->routeIs('company.settings*') ? 'active' : '' }}">
+                        <i class="bi bi-building-gear"></i> Company Settings
+                    </a>
+                </li>
+                @endif
             @endif
         </ul>
     </aside>

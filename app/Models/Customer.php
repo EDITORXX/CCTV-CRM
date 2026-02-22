@@ -9,7 +9,7 @@ class Customer extends Model
     use \App\Traits\BelongsToCompany;
 
     protected $fillable = [
-        'company_id', 'name', 'phone', 'email', 'address', 'gstin', 'created_by',
+        'company_id', 'name', 'phone', 'whatsapp', 'email', 'address', 'gstin', 'created_by',
     ];
 
     public function sites()
@@ -30,6 +30,23 @@ class Customer extends Model
     public function warranties()
     {
         return $this->hasMany(Warranty::class);
+    }
+
+    public function advances()
+    {
+        return $this->hasMany(CustomerAdvance::class);
+    }
+
+    /**
+     * Total advance received minus total allocated to invoices (company-scoped via global scope).
+     */
+    public function getAdvanceBalance(): float
+    {
+        $totalAdvance = (float) $this->advances()->sum('amount');
+        $totalAllocated = (float) CustomerAdvanceAllocation::whereHas('customerAdvance', function ($q) {
+            $q->where('customer_id', $this->id);
+        })->sum('amount');
+        return $totalAdvance - $totalAllocated;
     }
 
     public function creator()

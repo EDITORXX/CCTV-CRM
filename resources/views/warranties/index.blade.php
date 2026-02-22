@@ -59,7 +59,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($warranties as $warranty)
+                    @foreach($warranties as $warranty)
                     @php
                         $endDate = \Carbon\Carbon::parse($warranty->end_date);
                         $daysLeft = now()->diffInDays($endDate, false);
@@ -116,14 +116,7 @@
                             </form>
                         </td>
                     </tr>
-                    @empty
-                    <tr>
-                        <td colspan="9" class="text-center py-4 text-muted">
-                            <i class="bi bi-shield-check fs-1 d-block mb-2"></i>
-                            No warranties found.
-                        </td>
-                    </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
@@ -139,17 +132,18 @@
 @section('scripts')
 <script>
     $(document).ready(function() {
-        if ($('#warrantiesTable tbody tr').length > 1 || ($('#warrantiesTable tbody tr').length === 1 && !$('#warrantiesTable tbody tr:first td[colspan]').length)) {
-            $('#warrantiesTable').DataTable({
-                paging: false,
-                info: false,
-                searching: false,
-                order: [[5, 'asc']],
-                columnDefs: [
-                    { orderable: false, targets: [8] }
-                ]
-            });
-        }
+        $('#warrantiesTable').DataTable({
+            paging: false,
+            info: false,
+            searching: false,
+            order: [[5, 'asc']],
+            columnDefs: [
+                { orderable: false, targets: [8] }
+            ],
+            language: {
+                emptyTable: '<div class="text-center py-4 text-muted"><i class="bi bi-shield-check fs-1 d-block mb-2"></i>No warranties found.</div>'
+            }
+        });
     });
 </script>
 @endsection

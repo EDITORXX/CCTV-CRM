@@ -124,7 +124,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse(($product->serialNumbers ?? collect()) as $serial)
+                    @foreach(($product->serialNumbers ?? collect()) as $serial)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
                         <td><code class="fs-6">{{ $serial->serial_number }}</code></td>
@@ -144,11 +144,7 @@
                         <td>{{ $serial->purchase ? $serial->purchase->purchase_number : '—' }}</td>
                         <td>{{ $serial->invoice ? $serial->invoice->invoice_number : '—' }}</td>
                     </tr>
-                    @empty
-                    <tr>
-                        <td colspan="5" class="text-center text-muted py-3">No serial numbers recorded.</td>
-                    </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
@@ -167,7 +163,10 @@
             order: [[1, 'asc']],
             columnDefs: [
                 { orderable: false, targets: [0] }
-            ]
+            ],
+            language: {
+                emptyTable: 'No serial numbers recorded.'
+            }
         });
     });
 </script>

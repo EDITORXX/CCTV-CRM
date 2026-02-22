@@ -31,6 +31,11 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::resource('vendors', App\Http\Controllers\VendorController::class);
 
     // Products
+    Route::get('products/import/template', [App\Http\Controllers\ProductController::class, 'downloadImportTemplate'])->name('products.import.template');
+    Route::get('products/import', [App\Http\Controllers\ProductController::class, 'import'])->name('products.import');
+    Route::post('products/import', [App\Http\Controllers\ProductController::class, 'storeImport'])->name('products.import.store');
+    Route::get('products/bulk-create', [App\Http\Controllers\ProductController::class, 'bulkCreate'])->name('products.bulk-create');
+    Route::post('products/bulk-store', [App\Http\Controllers\ProductController::class, 'bulkStore'])->name('products.bulk-store');
     Route::resource('products', App\Http\Controllers\ProductController::class);
 
     // Purchases
@@ -58,6 +63,50 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::post('/tickets/{ticket}/assign', [App\Http\Controllers\TicketController::class, 'assign'])->name('tickets.assign');
     Route::post('/tickets/{ticket}/update-status', [App\Http\Controllers\TicketController::class, 'updateStatus'])->name('tickets.updateStatus');
 
+    // Support Knowledge Base (admin CRUD)
+    Route::resource('support-articles', App\Http\Controllers\SupportArticleController::class)->except(['show']);
+    Route::resource('support-videos', App\Http\Controllers\SupportVideoController::class)->except(['show']);
+
+    // Support Page (accessible to all logged-in users)
+    Route::get('/support', [App\Http\Controllers\SupportPageController::class, 'index'])->name('support.index');
+
+    // Site Expenses - create/store accessible to technician too
+    Route::middleware(['role:company_admin,manager,accountant,technician'])->group(function () {
+        Route::get('/site-expenses/create', [App\Http\Controllers\SiteExpenseController::class, 'create'])->name('site-expenses.create');
+        Route::post('/site-expenses', [App\Http\Controllers\SiteExpenseController::class, 'store'])->name('site-expenses.store');
+    });
+
+    // Site Expenses - index/edit/delete only for admin/manager/accountant
+    Route::middleware(['role:company_admin,manager,accountant'])->group(function () {
+        Route::get('/site-expenses', [App\Http\Controllers\SiteExpenseController::class, 'index'])->name('site-expenses.index');
+        Route::get('/site-expenses/{site_expense}/edit', [App\Http\Controllers\SiteExpenseController::class, 'edit'])->name('site-expenses.edit');
+        Route::put('/site-expenses/{site_expense}', [App\Http\Controllers\SiteExpenseController::class, 'update'])->name('site-expenses.update');
+        Route::delete('/site-expenses/{site_expense}', [App\Http\Controllers\SiteExpenseController::class, 'destroy'])->name('site-expenses.destroy');
+    });
+
+    // Customer Payment Approvals (admin, manager, accountant)
+    Route::middleware(['role:company_admin,manager,accountant'])->group(function () {
+        Route::get('/customer-payments', [App\Http\Controllers\CustomerPaymentController::class, 'index'])->name('customer-payments.index');
+        Route::post('/customer-payments/{customer_payment}/approve', [App\Http\Controllers\CustomerPaymentController::class, 'approve'])->name('customer-payments.approve');
+        Route::post('/customer-payments/{customer_payment}/reject', [App\Http\Controllers\CustomerPaymentController::class, 'reject'])->name('customer-payments.reject');
+    });
+
+    // Customer Advances (admin, manager, accountant)
+    Route::middleware(['role:company_admin,manager,accountant'])->group(function () {
+        Route::get('/customer-advances/{customer_advance}/receipt', [App\Http\Controllers\CustomerAdvanceController::class, 'receipt'])->name('customer-advances.receipt');
+        Route::get('/customer-advances/{customer_advance}/download', [App\Http\Controllers\CustomerAdvanceController::class, 'download'])->name('customer-advances.download');
+        Route::resource('customer-advances', App\Http\Controllers\CustomerAdvanceController::class)->except(['edit', 'update', 'destroy']);
+    });
+
+    // Estimates (admin, manager, accountant)
+    Route::middleware(['role:company_admin,manager,accountant'])->group(function () {
+        Route::resource('estimates', App\Http\Controllers\EstimateController::class);
+        Route::post('/estimates/{estimate}/convert', [App\Http\Controllers\EstimateController::class, 'convertToInvoice'])->name('estimates.convert');
+        Route::post('/estimates/{estimate}/purchase-order', [App\Http\Controllers\EstimateController::class, 'createPurchaseOrder'])->name('estimates.purchase-order');
+        Route::get('/estimates/{estimate}/pdf', [App\Http\Controllers\EstimateController::class, 'pdf'])->name('estimates.pdf');
+        Route::get('/estimates/{estimate}/download', [App\Http\Controllers\EstimateController::class, 'download'])->name('estimates.download');
+    });
+
     // Users Management (admin only)
     Route::middleware(['role:company_admin,manager'])->group(function () {
         Route::resource('users', App\Http\Controllers\UserController::class);
@@ -82,4 +131,12 @@ Route::middleware(['auth', 'company', 'role:customer'])->prefix('portal')->name(
     Route::get('/warranties', [App\Http\Controllers\CustomerPortalController::class, 'warranties'])->name('warranties');
     Route::get('/complaints', [App\Http\Controllers\CustomerPortalController::class, 'complaints'])->name('complaints');
     Route::post('/complaints', [App\Http\Controllers\CustomerPortalController::class, 'storeComplaint'])->name('complaints.store');
+    Route::get('/payments', [App\Http\Controllers\CustomerPortalController::class, 'payments'])->name('payments');
+    Route::post('/payments', [App\Http\Controllers\CustomerPortalController::class, 'storePayment'])->name('payments.store');
+    Route::get('/profile', [App\Http\Controllers\CustomerPortalController::class, 'profile'])->name('profile');
+    Route::put('/profile', [App\Http\Controllers\CustomerPortalController::class, 'updateProfile'])->name('profile.update');
 });
+
+Auth::routes();
+
+Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');

@@ -10,7 +10,7 @@ class Ticket extends Model
 
     protected $fillable = [
         'company_id', 'ticket_number', 'customer_id', 'site_id',
-        'complaint_type', 'description', 'priority', 'status', 'created_by',
+        'complaint_type', 'description', 'photo', 'priority', 'status', 'created_by',
     ];
 
     public function customer()

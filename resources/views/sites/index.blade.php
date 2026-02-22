@@ -35,7 +35,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($sites as $site)
+                    @foreach($sites as $site)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
                         <td class="fw-semibold">{{ $site->name }}</td>
@@ -58,14 +58,7 @@
                             </div>
                         </td>
                     </tr>
-                    @empty
-                    <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">
-                            <i class="bi bi-geo-alt fs-1 d-block mb-2"></i>
-                            No sites found. <a href="{{ route('customers.sites.create', $customer) }}">Add your first site</a>.
-                        </td>
-                    </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
@@ -82,7 +75,10 @@
             order: [[1, 'asc']],
             columnDefs: [
                 { orderable: false, targets: [5] }
-            ]
+            ],
+            language: {
+                emptyTable: '<div class="text-center py-4 text-muted"><i class="bi bi-geo-alt fs-1 d-block mb-2"></i>No sites found. <a href="{{ route('customers.sites.create', $customer) }}">Add your first site</a>.</div>'
+            }
         });
     });
 </script>

@@ -27,7 +27,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($assignedTickets ?? [] as $ticket)
+                    @foreach($assignedTickets ?? [] as $ticket)
                     <tr>
                         <td><strong>#{{ $ticket->ticket_number }}</strong></td>
                         <td>{{ $ticket->customer->name ?? '—' }}</td>
@@ -63,7 +63,7 @@
                         <td class="text-center">
                             <div class="btn-group btn-group-sm">
                                 @if($ticket->status === 'open')
-                                <form method="POST" action="{{ route('tickets.update-status', $ticket->id) }}" class="d-inline">
+                                <form method="POST" action="{{ route('tickets.updateStatus', $ticket->id) }}" class="d-inline">
                                     @csrf @method('PATCH')
                                     <input type="hidden" name="status" value="in_progress">
                                     <button type="submit" class="btn btn-outline-warning" title="Start Job">
@@ -73,7 +73,7 @@
                                 @endif
 
                                 @if($ticket->status === 'in_progress')
-                                <form method="POST" action="{{ route('tickets.update-status', $ticket->id) }}" class="d-inline">
+                                <form method="POST" action="{{ route('tickets.updateStatus', $ticket->id) }}" class="d-inline">
                                     @csrf @method('PATCH')
                                     <input type="hidden" name="status" value="resolved">
                                     <button type="submit" class="btn btn-outline-success" title="Mark Complete">
@@ -88,15 +88,7 @@
                             </div>
                         </td>
                     </tr>
-                    @empty
-                    <tr>
-                        <td colspan="8" class="text-center text-muted py-5">
-                            <i class="bi bi-emoji-smile fs-1 d-block mb-2"></i>
-                            <strong>All clear!</strong><br>
-                            <span class="small">No tickets assigned to you right now.</span>
-                        </td>
-                    </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
@@ -111,7 +103,11 @@
         $('#ticketsTable').DataTable({
             pageLength: 25,
             order: [[5, 'desc']],
-            language: { search: '', searchPlaceholder: 'Search tickets...' }
+            language: {
+                search: '',
+                searchPlaceholder: 'Search tickets...',
+                emptyTable: '<div class="text-center text-muted py-4"><i class="bi bi-emoji-smile fs-1 d-block mb-2"></i><strong>All clear!</strong><br><span class="small">No tickets assigned to you right now.</span></div>'
+            }
         });
     });
 </script>

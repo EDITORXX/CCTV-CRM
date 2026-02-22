@@ -8,9 +8,17 @@
         <h4 class="mb-1">Products</h4>
         <p class="text-muted mb-0">Manage your product inventory</p>
     </div>
-    <a href="{{ route('products.create') }}" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i> Add New Product
-    </a>
+    <div class="d-flex gap-2">
+        <a href="{{ route('products.import') }}" class="btn btn-outline-primary">
+            <i class="bi bi-file-earmark-excel me-1"></i> Import from Excel
+        </a>
+        <a href="{{ route('products.bulk-create') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-grid-3x3-gap me-1"></i> Add Multiple
+        </a>
+        <a href="{{ route('products.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Add New Product
+        </a>
+    </div>
 </div>
 
 {{-- Category Filter --}}
@@ -52,7 +60,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($products as $product)
+                    @foreach($products as $product)
                     <tr>
                         <td>{{ $loop->iteration + ($products->currentPage() - 1) * $products->perPage() }}</td>
                         <td>
@@ -96,14 +104,7 @@
                             </div>
                         </td>
                     </tr>
-                    @empty
-                    <tr>
-                        <td colspan="10" class="text-center py-4 text-muted">
-                            <i class="bi bi-box-seam fs-1 d-block mb-2"></i>
-                            No products found. <a href="{{ route('products.create') }}">Add your first product</a>.
-                        </td>
-                    </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
@@ -123,7 +124,10 @@
             order: [[1, 'asc']],
             columnDefs: [
                 { orderable: false, targets: [7, 9] }
-            ]
+            ],
+            language: {
+                emptyTable: '<div class="text-center py-4 text-muted"><i class="bi bi-box-seam fs-1 d-block mb-2"></i>No products found. <a href="{{ route('products.create') }}">Add your first product</a>.</div>'
+            }
         });
     });
 </script>
