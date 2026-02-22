@@ -3,6 +3,11 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
+// Simple ping — 403/404 debug: if this works, Laravel is running
+Route::get('/ping', function () {
+    return response('OK', 200, ['Content-Type' => 'text/plain']);
+})->name('ping');
+
 // Web installer: fill DB & app URL, one-click install (only when not yet installed)
 Route::middleware(['installed'])->group(function () {
     Route::get('/install', [App\Http\Controllers\InstallController::class, 'index'])->name('install.index');

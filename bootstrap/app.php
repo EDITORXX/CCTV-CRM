@@ -18,5 +18,18 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response, \Throwable $e, \Illuminate\Http\Request $request) {
+            if ($response->getStatusCode() === 404 && $request->is('server-test*')) {
+                $docRoot = $request->server('DOCUMENT_ROOT', '?');
+                $currentDir = base_path('public');
+                return response()->view('server-test.page', [
+                    'docRoot' => $docRoot,
+                    'currentDir' => $currentDir,
+                    'isPublicFolder' => (basename($currentDir) === 'public'),
+                    'hasIndexPhp' => file_exists($currentDir . '/index.php'),
+                    'hasHtaccess' => file_exists($currentDir . '/.htaccess'),
+                ], 200, ['Content-Type' => 'text/html; charset=utf-8']);
+            }
+            return null;
+        });
     })->create();
