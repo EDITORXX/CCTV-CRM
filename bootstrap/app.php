@@ -19,7 +19,13 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response, \Throwable $e, \Illuminate\Http\Request $request) {
-            if ($response->getStatusCode() === 404 && $request->is('server-test*')) {
+            if ($response->getStatusCode() !== 404) {
+                return null;
+            }
+            if ($request->is('full-check*')) {
+                return app(\App\Http\Controllers\FullCheckController::class)($request);
+            }
+            if ($request->is('server-test*')) {
                 $docRoot = $request->server('DOCUMENT_ROOT', '?');
                 $currentDir = base_path('public');
                 return response()->view('server-test.page', [

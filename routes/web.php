@@ -23,6 +23,9 @@ Route::get('/notification-test', App\Http\Controllers\NotificationTestController
 Route::get('/server-test', App\Http\Controllers\ServerTestController::class)->name('server-test');
 Route::get('/server-test.php', App\Http\Controllers\ServerTestController::class);
 
+// Full check — har cheez verify, SS bhejo to 403/missing fix karenge
+Route::get('/full-check', App\Http\Controllers\FullCheckController::class)->name('full-check');
+
 // Quick Login (Demo)
 Route::get('/quick-login', [App\Http\Controllers\QuickLoginController::class, 'index'])->name('quick-login');
 Route::post('/quick-login/{user}', [App\Http\Controllers\QuickLoginController::class, 'login'])->name('quick-login.do');
