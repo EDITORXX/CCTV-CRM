@@ -59,6 +59,11 @@ Hostinger shared hosting par **SSH** limited hota hai; zyada tar **FTP/File Mana
 - **MySQL:** Database create kar sakte ho (cPanel/hPanel → MySQL Databases).
 - **Document root:** Domain/subdomain ka root **Laravel ke `public` folder** par point ho (ye Hostinger par subdomain ya “public” as root se set hota hai).
 
+### 2.1a 403 Forbidden aa raha ho to (test pages)
+- **Pehle:** Domain jis folder par point hai (e.g. `public_html/erp`), usme **`check-403.php`** daalo (project root me hai). Browser me kholo: `https://erp.mapmysecurity.com/check-403.php`. Page par batayega document root kahan set karna hai (`.../public`).
+- **Document root change karo:** hPanel → Domains → domain → Document root = `public_html/erp/public`. Save karo.
+- **Phir:** `https://erp.mapmysecurity.com/server-test.php` kholo. Agar "PHP is working" dikhe to sab sahi. Fix ke baad dono test files delete kar sakte ho.
+
 ### 2.2 Option A: Git se code lana (agar SSH / Git available ho)
 Agar Hostinger plan me **SSH** aur **Git** available ho:
 

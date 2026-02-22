@@ -11,6 +11,9 @@ Route::middleware(['installed'])->group(function () {
 
 Auth::routes();
 
+// Notification test (mail/notification setup)
+Route::get('/notification-test', App\Http\Controllers\NotificationTestController::class)->name('notification-test');
+
 // Quick Login (Demo)
 Route::get('/quick-login', [App\Http\Controllers\QuickLoginController::class, 'index'])->name('quick-login');
 Route::post('/quick-login/{user}', [App\Http\Controllers\QuickLoginController::class, 'login'])->name('quick-login.do');
