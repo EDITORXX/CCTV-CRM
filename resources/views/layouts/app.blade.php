@@ -429,6 +429,13 @@
                         {{ Auth::user()->name }}
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
+                        @if(auth()->user()->hasRole(['company_admin', 'super_admin']))
+                        <li>
+                            <a class="dropdown-item" href="{{ route('company.create') }}">
+                                <i class="bi bi-building-add me-2"></i>Create Company
+                            </a>
+                        </li>
+                        @endif
                         <li>
                             <a class="dropdown-item" href="{{ route('company.select') }}">
                                 <i class="bi bi-building me-2"></i>Switch Company

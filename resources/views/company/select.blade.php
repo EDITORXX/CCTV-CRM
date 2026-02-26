@@ -133,7 +133,10 @@
                 @if($companies->isEmpty())
                     <div class="text-center py-4">
                         <i class="bi bi-building-slash fs-1 text-muted"></i>
-                        <p class="text-muted mt-2 mb-0">No companies assigned to your account.</p>
+                        <p class="text-muted mt-2 mb-3">No companies assigned to your account.</p>
+                        <a href="{{ route('company.create') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-lg me-1"></i> Create your first company
+                        </a>
                     </div>
                 @else
                     <p class="text-muted small mb-3">
@@ -167,6 +170,14 @@
                             </button>
                         </form>
                     @endforeach
+                @endif
+
+                @if($companies->isNotEmpty() && auth()->user()->hasRole(['company_admin', 'super_admin']))
+                    <div class="text-center mb-3">
+                        <a href="{{ route('company.create') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-building-add me-1"></i> Create new company
+                        </a>
+                    </div>
                 @endif
 
                 <hr class="my-3">

@@ -35,6 +35,8 @@ Route::post('/quick-login/{user}', [App\Http\Controllers\QuickLoginController::c
 Route::middleware(['auth'])->group(function () {
     Route::get('/company/select', [App\Http\Controllers\CompanyController::class, 'select'])->name('company.select');
     Route::post('/company/{company}/set', [App\Http\Controllers\CompanyController::class, 'set'])->name('company.set');
+    Route::get('/company/create', [App\Http\Controllers\CompanyController::class, 'create'])->name('company.create');
+    Route::post('/company/store', [App\Http\Controllers\CompanyController::class, 'store'])->name('company.store');
 });
 
 // All company-scoped routes

@@ -32,6 +32,54 @@ class CompanyController extends Controller
         return redirect()->route('dashboard');
     }
 
+    public function create()
+    {
+        $user = auth()->user();
+        $hasCompanies = $user->companies()->exists();
+        $canCreate = !$hasCompanies || $user->hasRole(['company_admin', 'super_admin']);
+        if (!$canCreate) {
+            abort(403, 'You do not have permission to create a company.');
+        }
+        return view('company.create');
+    }
+
+    public function store(Request $request)
+    {
+        $user = auth()->user();
+        $hasCompanies = $user->companies()->exists();
+        $canCreate = !$hasCompanies || $user->hasRole(['company_admin', 'super_admin']);
+        if (!$canCreate) {
+            abort(403, 'You do not have permission to create a company.');
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'address' => 'nullable|string',
+            'gstin' => 'nullable|string|max:20',
+            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'website' => 'nullable|string|max:255',
+            'gst_enabled' => 'boolean',
+            'invoice_prefix' => 'nullable|string|max:20',
+            'warranty_default_months' => 'nullable|integer|min:0',
+        ]);
+
+        $validated['gst_enabled'] = $request->boolean('gst_enabled');
+        $validated['invoice_prefix'] = $validated['invoice_prefix'] ?? 'INV';
+        $validated['warranty_default_months'] = $validated['warranty_default_months'] ?? 12;
+
+        $company = Company::create($validated);
+
+        if (!$user->hasRole('company_admin') && !$user->hasRole('super_admin')) {
+            $user->assignRole('company_admin');
+        }
+        $company->users()->syncWithoutDetaching([$user->id => ['role' => 'company_admin']]);
+
+        session(['current_company_id' => $company->id]);
+
+        return redirect()->route('dashboard')->with('success', 'Company created successfully.');
+    }
+
     public function settings()
     {
         $company = Company::findOrFail(session('current_company_id'));
