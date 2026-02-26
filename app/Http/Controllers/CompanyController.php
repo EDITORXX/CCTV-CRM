@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Company;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class CompanyController extends Controller
 {
@@ -70,6 +72,25 @@ class CompanyController extends Controller
 
         $company = Company::create($validated);
 
+        // Company email se admin user: agar nahi hai to banao (password 123456), company_admin attach karo
+        $adminEmail = $validated['email'] ?? null;
+        if ($adminEmail) {
+            $adminUser = User::firstOrCreate(
+                ['email' => $adminEmail],
+                [
+                    'name' => $validated['name'] ?? 'Admin',
+                    'password' => Hash::make('123456'),
+                    'phone' => $validated['phone'] ?? null,
+                    'is_active' => true,
+                ]
+            );
+            if (!$adminUser->hasRole('company_admin') && !$adminUser->hasRole('super_admin')) {
+                $adminUser->assignRole('company_admin');
+            }
+            $company->users()->syncWithoutDetaching([$adminUser->id => ['role' => 'company_admin']]);
+        }
+
+        // Jo user abhi login hai usko bhi is company ka admin banao
         if (!$user->hasRole('company_admin') && !$user->hasRole('super_admin')) {
             $user->assignRole('company_admin');
         }
