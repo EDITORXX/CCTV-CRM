@@ -25,6 +25,7 @@ Route::get('/server-test.php', App\Http\Controllers\ServerTestController::class)
 
 // Full check — har cheez verify, SS bhejo to 403/missing fix karenge
 Route::get('/full-check', App\Http\Controllers\FullCheckController::class)->name('full-check');
+Route::get('/prerequisites', App\Http\Controllers\FullCheckController::class)->name('prerequisites');
 
 // Quick Login (Demo)
 Route::get('/quick-login', [App\Http\Controllers\QuickLoginController::class, 'index'])->name('quick-login');
@@ -40,7 +41,7 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'company'])->group(function () {
 
     Route::get('/', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('home');
+    Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard.page');
 
     // Customers
     Route::resource('customers', App\Http\Controllers\CustomerController::class);

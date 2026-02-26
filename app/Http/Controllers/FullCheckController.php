@@ -160,6 +160,37 @@ class FullCheckController extends Controller
             'note' => $dbOk ? '' : $dbError,
         ];
 
+        // 16. exec() available (storage:link ke liye zaroori on shared hosting)
+        $execAvailable = function_exists('exec');
+        $checks[] = [
+            'name' => 'PHP exec() available',
+            'value' => $execAvailable ? 'Yes' : 'No',
+            'ok' => $execAvailable,
+            'note' => $execAvailable ? 'storage:link chalega.' : 'Disabled — storage link manually banao (File Manager se public/storage → ../storage/app/public).',
+        ];
+
+        // 17. public/storage link (uploads/receipts ke liye)
+        $storageLinkPath = $publicPath . '/storage';
+        $storageLinkExists = File::exists($storageLinkPath);
+        $storageLinkOk = $storageLinkExists && (is_link($storageLinkPath) || File::isDirectory($storageLinkPath));
+        $checks[] = [
+            'name' => 'public/storage link exists',
+            'value' => $storageLinkOk ? 'Yes' : 'No',
+            'ok' => $storageLinkOk,
+            'note' => $storageLinkOk ? 'Uploads/receipts chalenge.' : 'php artisan storage:link chalao ya manually symlink/copy banao.',
+        ];
+
+        // 18. Required PHP extensions
+        $requiredExt = ['mbstring', 'openssl', 'pdo', 'pdo_mysql', 'tokenizer', 'xml', 'ctype', 'json', 'fileinfo'];
+        $missingExt = array_filter($requiredExt, fn($e) => !extension_loaded($e));
+        $extOk = empty($missingExt);
+        $checks[] = [
+            'name' => 'PHP extensions (Laravel)',
+            'value' => $extOk ? 'All OK' : 'Missing: ' . implode(', ', $missingExt),
+            'ok' => $extOk,
+            'note' => $extOk ? '' : 'Hostinger PHP options se enable karo.',
+        ];
+
         $passCount = count(array_filter($checks, fn($c) => $c['ok']));
         $totalCount = count($checks);
 
