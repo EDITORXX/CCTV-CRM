@@ -15,7 +15,7 @@ return new class extends Migration
             $table->decimal('amount', 12, 2);
             $table->timestamps();
 
-            $table->index(['customer_advance_id', 'invoice_id']);
+            $table->index(['customer_advance_id', 'invoice_id'], 'adv_alloc_adv_inv_idx');
         });
     }
 
