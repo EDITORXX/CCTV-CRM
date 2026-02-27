@@ -3,7 +3,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#1a1c2e">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
     <title>Login — {{ config('app.name', 'CCTV Management') }}</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -193,11 +195,44 @@
             </a>
         </div>
 
+        <div class="text-center mt-2">
+            <button type="button" id="pwa-install-btn" class="btn btn-outline-light btn-sm d-none" aria-label="Install app">
+                <i class="bi bi-download me-1"></i> Install app
+            </button>
+            <p id="pwa-install-status" class="small mt-1 d-none" style="color: rgba(255,255,255,.5);"></p>
+        </div>
+
         <p class="text-center mt-3 small" style="color: rgba(255,255,255,.4);">
             &copy; {{ date('Y') }} CCTV Management System
         </p>
     </div>
 
+    <script>
+    (function() {
+        var installBtn = document.getElementById('pwa-install-btn');
+        var statusEl = document.getElementById('pwa-install-status');
+        var deferredPrompt;
+        if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) { if (installBtn) installBtn.classList.add('d-none'); return; }
+        if (window.navigator.standalone === true) { if (installBtn) installBtn.classList.add('d-none'); return; }
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (installBtn) { installBtn.classList.remove('d-none'); }
+        });
+        if (installBtn) {
+            installBtn.addEventListener('click', function() {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(function(choice) {
+                    if (choice.outcome === 'accepted' && statusEl) { statusEl.textContent = 'App installed.'; statusEl.classList.remove('d-none'); installBtn.classList.add('d-none'); }
+                    else if (statusEl) { statusEl.textContent = 'Install cancelled.'; statusEl.classList.remove('d-none'); }
+                    deferredPrompt = null;
+                });
+            });
+        }
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('{{ asset("sw.js") }}').catch(function() {}); }
+    })();
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

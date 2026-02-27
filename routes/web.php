@@ -31,6 +31,14 @@ Route::get('/prerequisites', App\Http\Controllers\FullCheckController::class)->n
 Route::get('/quick-login', [App\Http\Controllers\QuickLoginController::class, 'index'])->name('quick-login');
 Route::post('/quick-login/{user}', [App\Http\Controllers\QuickLoginController::class, 'login'])->name('quick-login.do');
 
+// Home / Landing: guests see landing with Login + Install PWA; auth users redirect to dashboard
+Route::get('/', function () {
+    if (Auth::check()) {
+        return redirect()->route('dashboard');
+    }
+    return view('welcome');
+})->name('landing');
+
 // Company Selection
 Route::middleware(['auth'])->group(function () {
     Route::get('/company/select', [App\Http\Controllers\CompanyController::class, 'select'])->name('company.select');
@@ -42,8 +50,7 @@ Route::middleware(['auth'])->group(function () {
 // All company-scoped routes
 Route::middleware(['auth', 'company'])->group(function () {
 
-    Route::get('/', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard.page');
+    Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
 
     // Customers
     Route::resource('customers', App\Http\Controllers\CustomerController::class);
