@@ -24,6 +24,10 @@ class CompanyMiddleware
 
         $response = $next($request);
         if ($response === null) {
+            \Log::error('CompanyMiddleware: pipeline returned null', [
+                'path' => $request->path(),
+                'url' => $request->fullUrl(),
+            ]);
             return response('<h1>Server Error</h1><p>Invalid response. Please try again.</p>', 500);
         }
         return $response;

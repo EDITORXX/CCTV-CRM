@@ -47,7 +47,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response, \Throwable $e, \Illuminate\Http\Request $request) {
             if ($response->getStatusCode() !== 404) {
-                return null;
+                return $response;
             }
             if ($request->is('full-check*')) {
                 return app(\App\Http\Controllers\FullCheckController::class)($request);
@@ -63,6 +63,6 @@ return Application::configure(basePath: dirname(__DIR__))
                     'hasHtaccess' => file_exists($currentDir . '/.htaccess'),
                 ], 200, ['Content-Type' => 'text/html; charset=utf-8']);
             }
-            return null;
+            return $response;
         });
     })->create();

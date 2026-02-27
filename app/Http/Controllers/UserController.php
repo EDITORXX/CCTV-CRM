@@ -13,8 +13,13 @@ class UserController extends Controller
     public function index()
     {
         try {
-            $company = Company::findOrFail(session('current_company_id'));
-            $users = $company->users()->orderBy('company_user.created_at', 'desc')->paginate(20);
+            $companyId = session('current_company_id');
+            if (!$companyId) {
+                return redirect()->route('company.select');
+            }
+            $company = Company::findOrFail($companyId);
+            // Use users.created_at so it works even if company_user has no timestamps (e.g. old production DB)
+            $users = $company->users()->orderBy('users.created_at', 'desc')->paginate(20);
             return response()->view('users.index', compact('users'));
         } catch (\Throwable $e) {
             report($e);
@@ -25,7 +30,7 @@ class UserController extends Controller
 
     public function create()
     {
-        return view('users.create');
+        return response()->view('users.create');
     }
 
     public function store(Request $request)
