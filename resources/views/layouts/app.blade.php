@@ -402,6 +402,11 @@
                     </a>
                 </li>
                 <li>
+                    <a href="{{ route('users.create') }}" class="{{ request()->routeIs('users.create') ? 'active' : '' }}">
+                        <i class="bi bi-person-plus"></i> Add User
+                    </a>
+                </li>
+                <li>
                     <a href="{{ route('company.settings') }}" class="{{ request()->routeIs('company.settings*') ? 'active' : '' }}">
                         <i class="bi bi-building-gear"></i> Company Settings
                     </a>
