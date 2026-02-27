@@ -44,9 +44,10 @@
                                     'technician' => 'primary',
                                     'customer' => 'secondary',
                                 ];
+                                $role = $user->pivot->role ?? 'customer';
                             @endphp
-                            <span class="badge bg-{{ $roleColors[$user->role] ?? 'secondary' }}">
-                                {{ ucfirst(str_replace('_', ' ', $user->role)) }}
+                            <span class="badge bg-{{ $roleColors[$role] ?? 'secondary' }}">
+                                {{ ucfirst(str_replace('_', ' ', $role)) }}
                             </span>
                         </td>
                         <td>
