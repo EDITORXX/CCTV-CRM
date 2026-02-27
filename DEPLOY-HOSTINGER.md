@@ -64,7 +64,34 @@ Hostinger shared hosting par **SSH** limited hota hai; zyada tar **FTP/File Mana
 - **Document root change karo:** hPanel → Domains → domain → Document root = `public_html/erp/public`. Save karo.
 - **Phir:** `https://erp.mapmysecurity.com/server-test.php` kholo. Agar "PHP is working" dikhe to sab sahi. Fix ke baad dono test files delete kar sakte ho.
 
-### 2.2 Option A: Git se code lana (agar SSH / Git available ho)
+### 2.2 Deploy ZIP (recommended — server par composer/vendor install nahi)
+Sirf ZIP upload karo, phir browser me /install se DB details bhar kar setup complete.
+
+**Step 1: ZIP banayo (apni machine par, ek baar)**
+```bash
+php artisan deploy:zip
+```
+Ya: `php create-deploy-zip.php` (agar Artisan na chale).
+- Output: `erp-deploy-YYYYMMDD.zip` (project folder me). Is ZIP me **vendor**, **storage** structure sab hai — server par composer/npm kuch install nahi karna.
+
+**Step 2: Hostinger par upload**
+1. hPanel → **File Manager** → `public_html` (ya jahan site chalani hai).
+2. **Upload** → `erp-deploy-YYYYMMDD.zip` select karo.
+3. **Extract** karo (e.g. folder name `erp` rakho). Andar `app`, `public`, `vendor`, etc. aayenge.
+
+**Step 3: Document root set karo**
+- hPanel → **Domains** → apna domain (e.g. erp.mapmysecurity.com) → **Document root**.
+- Set karo: **`public_html/erp/public`** (Laravel ka **public** folder). Save.
+
+**Step 4: Browser se install**
+1. Pehli baar: **https://erp.mapmysecurity.com/install.php** kholo (ye .env bana dega).
+2. Phir: **https://erp.mapmysecurity.com/install** kholo.
+3. Form me **Application URL**, **Database host**, **Database name**, **Username**, **Password** bhar kar **Install Now** dabao.
+4. Migrations, storage link, app key sab automatic. Done — login page open ho jayega.
+
+Server par **composer**, **npm**, **vendor** kuch install nahi karna — sab ZIP me hai.
+
+### 2.3 Option A: Git se code lana (agar SSH / Git available ho)
 Agar Hostinger plan me **SSH** aur **Git** available ho:
 
 1. SSH se connect karo.
@@ -78,7 +105,7 @@ Agar Hostinger plan me **SSH** aur **Git** available ho:
 6. `php artisan migrate --force`
 7. Document root ko Laravel ke **public** folder par point karo.
 
-### 2.3 Option B: FTP / File Manager se upload (common on shared hosting)
+### 2.4 Option B: FTP / File Manager se upload (common on shared hosting)
 Jab Git/SSH na ho, tab ZIP upload karke extract karte ho.
 
 **Step 1: Local machine par**
