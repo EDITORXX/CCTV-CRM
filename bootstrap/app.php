@@ -19,18 +19,26 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        // Ensure we never send a blank page: catch any exception and return a safe HTML response
+        // Never return null — Laravel calls ->send() on the result; null = white screen / "send() on null".
+        // Use try-catch and static fallback so we ALWAYS return a Response.
         $exceptions->renderable(function (\Throwable $e, $request) {
-            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException && $e->getStatusCode() === 404) {
-                return null;
-            }
             try {
-                $message = $e->getMessage();
-                $trace = config('app.debug') ? $e->getTraceAsString() : '';
-                return response()->view('errors.minimal', ['message' => $message, 'trace' => $trace], 500);
+                $code = $e instanceof \Symfony\Component\HttpKernel\Exception\HttpException ? $e->getStatusCode() : 500;
+                $message = htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+                $trace = '';
+                if ($code === 500 && function_exists('config') && config('app.debug')) {
+                    $trace = '<pre>' . htmlspecialchars($e->getTraceAsString(), ENT_QUOTES, 'UTF-8') . '</pre>';
+                }
+                $title = $code === 404 ? 'Page not found' : 'Something went wrong';
+                $home = $code === 404 && function_exists('route') ? '<p><a href="/">Go to home</a></p>' : '';
+                return response(
+                    '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' . $title . '</title><style>body{font-family:system-ui;padding:2rem;max-width:600px;margin:0 auto;} h1{color:#c00;} pre{overflow:auto;font-size:12px;} a{color:#0d6efd;}</style></head><body><h1>' . $title . '</h1><p>' . $message . '</p>' . $trace . $home . '</body></html>',
+                    $code,
+                    ['Content-Type' => 'text/html; charset=utf-8']
+                );
             } catch (\Throwable $e2) {
                 return response(
-                    '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Error</title></head><body><h1>Error</h1><p>' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</p></body></html>',
+                    '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Error</title></head><body><h1>Something went wrong</h1><p>An error occurred. Please try again or contact support.</p><p><a href="/">Go to home</a></p></body></html>',
                     500,
                     ['Content-Type' => 'text/html; charset=utf-8']
                 );

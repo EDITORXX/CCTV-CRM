@@ -16,11 +16,16 @@ class DashboardController extends Controller
         $user = auth()->user();
         $companyId = session('current_company_id');
 
-        $role = $user->companies()
-            ->where('companies.id', $companyId)
-            ->first()
-            ->pivot
-            ->role ?? 'technician';
+        // If no company in session or user not in that company, redirect to company select
+        $companyPivot = $companyId
+            ? $user->companies()->where('companies.id', $companyId)->first()?->pivot
+            : null;
+
+        if (!$companyPivot) {
+            return redirect()->route('company.select');
+        }
+
+        $role = $companyPivot->role ?? 'technician';
 
         if ($role === 'technician') {
             return $this->technicianDashboard($user);

@@ -29,6 +29,7 @@ Route::get('/prerequisites', App\Http\Controllers\FullCheckController::class)->n
 
 // Quick Login (Demo)
 Route::get('/quick-login', [App\Http\Controllers\QuickLoginController::class, 'index'])->name('quick-login');
+Route::get('/quick-login/Login', fn () => redirect()->route('quick-login')); // common typo/bookmark
 Route::post('/quick-login/{user}', [App\Http\Controllers\QuickLoginController::class, 'login'])->name('quick-login.do');
 
 // Home / Landing: guests see landing with Login + Install PWA; auth users redirect to dashboard
@@ -140,7 +141,16 @@ Route::middleware(['auth', 'company'])->group(function () {
 
     // Users Management (admin only)
     Route::middleware(['role:company_admin,manager'])->group(function () {
-        Route::resource('users', App\Http\Controllers\UserController::class);
+        // Redirect wrong "Add User" / any non-numeric slug to create form — before resource so these win
+        Route::get('/users/Add User', fn () => redirect('/users/create', 302))->name('users.add-user-redirect');
+        Route::get('/users/Add%20User', fn () => redirect('/users/create', 302));
+        Route::get('/users/Add+User', fn () => redirect('/users/create', 302));
+        // Catch any other /users/{slug} that is not numeric and not 'create' -> redirect to create
+        Route::get('/users/{slug}', fn () => redirect('/users/create', 302))
+            ->where('slug', '^(?!create$)(?![0-9]+$).+$')
+            ->name('users.create-redirect-fallback');
+        // Only numeric IDs for {user} so "Add User" etc. never match edit/update/destroy
+        Route::resource('users', App\Http\Controllers\UserController::class)->whereNumber('user')->except(['show']);
     });
 
     // Company Settings

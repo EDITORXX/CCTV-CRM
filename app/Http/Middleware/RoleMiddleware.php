@@ -27,6 +27,10 @@ class RoleMiddleware
             abort(403, 'You do not have the required role to access this page.');
         }
 
-        return $next($request);
+        $response = $next($request);
+        if ($response === null) {
+            return response('<h1>Server Error</h1><p>Invalid response. Please try again.</p>', 500);
+        }
+        return $response;
     }
 }

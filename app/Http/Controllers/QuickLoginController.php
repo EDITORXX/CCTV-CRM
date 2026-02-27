@@ -10,12 +10,17 @@ class QuickLoginController extends Controller
 {
     public function index()
     {
-        $users = User::select('users.*', 'company_user.role', 'companies.name as company_name')
-            ->join('company_user', 'users.id', '=', 'company_user.user_id')
-            ->join('companies', 'companies.id', '=', 'company_user.company_id')
-            ->where('users.is_active', true)
-            ->orderByRaw("FIELD(company_user.role, 'company_admin', 'manager', 'accountant', 'technician', 'customer')")
-            ->get();
+        $users = collect();
+
+        try {
+            // Show all active users (with or without company) so list is never empty if users exist
+            $users = User::where('users.is_active', true)
+                ->with('companies')
+                ->orderBy('name')
+                ->get();
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return view('auth.quick-login', compact('users'));
     }

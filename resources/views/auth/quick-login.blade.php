@@ -60,6 +60,7 @@
         .role-accountant { background: #6f42c1; color: #fff; }
         .role-technician { background: #fd7e14; color: #fff; }
         .role-customer { background: #20c997; color: #fff; }
+        .role-user { background: #6c757d; color: #fff; }
         .user-icon {
             width: 50px;
             height: 50px;
@@ -76,6 +77,7 @@
         .icon-accountant { background: #6f42c1; }
         .icon-technician { background: #fd7e14; }
         .icon-customer { background: #20c997; }
+        .icon-user { background: #6c757d; }
         .user-info h6 {
             margin: 0;
             font-weight: 600;
@@ -108,23 +110,30 @@
         </div>
 
         <div class="row g-3">
-            @foreach($users as $user)
+            @forelse($users as $user)
+            @php
+                $firstCompany = $user->companies->first();
+                $role = $firstCompany ? $firstCompany->pivot->role : 'user';
+                $companyName = $firstCompany ? $firstCompany->name : 'No company';
+            @endphp
             <div class="col-md-6">
                 <form method="POST" action="{{ route('quick-login.do', $user->id) }}">
                     @csrf
                     <button type="submit" class="btn p-0 w-100 text-start">
                         <div class="card user-card">
                             <div class="card-body d-flex align-items-center gap-3">
-                                <div class="user-icon icon-{{ $user->role }}">
-                                    @if($user->role === 'company_admin')
+                                <div class="user-icon icon-{{ $role }}">
+                                    @if($role === 'company_admin')
                                         <i class="bi bi-shield-lock"></i>
-                                    @elseif($user->role === 'manager')
+                                    @elseif($role === 'manager')
                                         <i class="bi bi-person-badge"></i>
-                                    @elseif($user->role === 'accountant')
+                                    @elseif($role === 'accountant')
                                         <i class="bi bi-calculator"></i>
-                                    @elseif($user->role === 'technician')
+                                    @elseif($role === 'technician')
                                         <i class="bi bi-tools"></i>
-                                    @elseif($user->role === 'customer')
+                                    @elseif($role === 'customer')
+                                        <i class="bi bi-person"></i>
+                                    @else
                                         <i class="bi bi-person"></i>
                                     @endif
                                 </div>
@@ -133,19 +142,27 @@
                                     <small>{{ $user->email }}</small>
                                 </div>
                                 <div>
-                                    <span class="role-badge role-{{ $user->role }}">
-                                        {{ str_replace('_', ' ', $user->role) }}
+                                    <span class="role-badge role-{{ $role }}">
+                                        {{ str_replace('_', ' ', $role) }}
                                     </span>
                                 </div>
                             </div>
                             <div class="card-footer bg-light text-muted text-center py-1" style="font-size: 0.75rem;">
-                                <i class="bi bi-building"></i> {{ $user->company_name }}
+                                <i class="bi bi-building"></i> {{ $companyName }}
                             </div>
                         </div>
                     </button>
                 </form>
             </div>
-            @endforeach
+            @empty
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <p class="text-muted mb-0">No demo users available. Use email & password login below.</p>
+                    </div>
+                </div>
+            </div>
+            @endforelse
         </div>
 
         <div class="login-link">

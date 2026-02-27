@@ -6,15 +6,21 @@ use App\Models\Company;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
     public function index()
     {
-        $company = Company::findOrFail(session('current_company_id'));
-        $users = $company->users()->paginate(20);
-
-        return view('users.index', compact('users'));
+        try {
+            $company = Company::findOrFail(session('current_company_id'));
+            $users = $company->users()->orderBy('company_user.created_at', 'desc')->paginate(20);
+            return response()->view('users.index', compact('users'));
+        } catch (\Throwable $e) {
+            report($e);
+            $msg = htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+            return response("<html><head><meta charset='utf-8'><title>Error</title></head><body><h1>Error</h1><p>{$msg}</p><p><a href='/users'>Back to Users</a></p></body></html>", 500);
+        }
     }
 
     public function create()
@@ -32,18 +38,33 @@ class UserController extends Controller
             'role' => 'required|string|in:company_admin,manager,accountant,technician,customer',
         ]);
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'phone' => $validated['phone'] ?? null,
-            'password' => Hash::make($validated['password']),
-            'is_active' => true,
-        ]);
+        try {
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'] ?? null,
+                'password' => Hash::make($validated['password']),
+                'is_active' => true,
+            ]);
 
-        $company = Company::findOrFail(session('current_company_id'));
-        $company->users()->attach($user->id, ['role' => $validated['role']]);
+            // Ensure role exists (e.g. if RoleSeeder was not run) then assign
+            Role::firstOrCreate(['name' => $validated['role'], 'guard_name' => 'web']);
+            $user->assignRole($validated['role']);
 
-        return redirect()->route('users.index')->with('success', 'User created and added to company.');
+            $company = Company::findOrFail(session('current_company_id'));
+            $company->users()->syncWithoutDetaching([$user->id => ['role' => $validated['role']]]);
+
+            return redirect()->route('users.index')
+                ->with('success', 'User created successfully.')
+                ->with('created_user_name', $user->name)
+                ->with('created_user_email', $user->email)
+                ->with('created_user_password', $validated['password']);
+        } catch (\Throwable $e) {
+            report($e);
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Could not create user. ' . ($request->has('debug') ? $e->getMessage() : 'Please try again.'));
+        }
     }
 
     public function edit(User $user)
@@ -78,6 +99,8 @@ class UserController extends Controller
         }
 
         $user->update($userData);
+
+        $user->syncRoles([$validated['role']]);
 
         $company = Company::findOrFail(session('current_company_id'));
         $company->users()->updateExistingPivot($user->id, ['role' => $validated['role']]);
