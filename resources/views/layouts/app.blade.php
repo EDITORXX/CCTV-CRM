@@ -443,6 +443,11 @@
                         <i class="bi bi-building-gear"></i> Company Settings
                     </a>
                 </li>
+                <li>
+                    <a href="{{ route('fcm-test.index') }}" class="{{ request()->routeIs('fcm-test.*') ? 'active' : '' }}">
+                        <i class="bi bi-broadcast"></i> FCM Test
+                    </a>
+                </li>
                 @endif
             @endif
         </ul>

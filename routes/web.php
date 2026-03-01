@@ -195,6 +195,12 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::get('/api/products/{product}/stock', [App\Http\Controllers\ProductController::class, 'getStock'])->name('api.product.stock');
     Route::get('/api/customers/{customer}/sites', [App\Http\Controllers\SiteController::class, 'getForCustomer'])->name('api.customer.sites');
     Route::post('/api/fcm-token', [App\Http\Controllers\Api\FcmTokenController::class, 'store'])->name('api.fcm-token.store');
+
+    // FCM test page (admin/manager only)
+    Route::middleware(['role:company_admin,manager'])->group(function () {
+        Route::get('/fcm-test', [App\Http\Controllers\FcmTestController::class, 'index'])->name('fcm-test.index');
+        Route::post('/fcm-test', [App\Http\Controllers\FcmTestController::class, 'send'])->name('fcm-test.send');
+    });
 });
 
 // Customer Portal (separate layout/limited access)
