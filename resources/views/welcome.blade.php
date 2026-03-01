@@ -54,6 +54,11 @@
             text-decoration: none;
             letter-spacing: -0.02em;
         }
+        .logo img {
+            height: 40px;
+            width: auto;
+            display: block;
+        }
         .nav {
             display: flex;
             align-items: center;
@@ -203,7 +208,7 @@
 <body>
     <div class="wrap">
         <header class="header">
-            <a href="{{ url('/') }}" class="logo">{{ config('app.name', 'CCTV Management') }}</a>
+            <a href="{{ url('/') }}" class="logo"><img src="{{ asset('images/gold-security-logo.png') }}" alt="Gold Security"></a>
             @if (Route::has('login'))
                 <nav class="nav">
                     @auth
@@ -240,12 +245,12 @@
                 <div class="hero-visual-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M0 3a2 2 0 0 1 2-2h7.5a2 2 0 0 1 1.983 1.738l3.11-1.382A1 1 0 0 1 16 2.269v11.462a1 1 0 0 1-1.406.913l-3.111-1.382A2 2 0 0 1 9.5 13H2a2 2 0 0 1-2-2V3z"/></svg>
                 </div>
-                <span>{{ config('app.name', 'CCTV Management') }}</span>
+                <span>{{ config('app.name', 'Gold Security') }}</span>
             </div>
         </main>
 
         <footer class="footer">
-            &copy; {{ date('Y') }} {{ config('app.name', 'CCTV Management System') }}
+            &copy; {{ date('Y') }} {{ config('app.name', 'Gold Security') }}
         </footer>
     </div>
 

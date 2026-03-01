@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Select Company — {{ config('app.name', 'CCTV Management') }}</title>
+    <title>Select Company — {{ config('app.name', 'Gold Security') }}</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
@@ -40,6 +40,12 @@
         .brand-header p {
             opacity: .7;
             margin: 0;
+        }
+
+        .brand-header .brand-logo {
+            max-width: 200px;
+            height: auto;
+            margin-bottom: .5rem;
         }
 
         .select-card {
@@ -114,7 +120,8 @@
 
     <div class="select-container">
         <div class="brand-header">
-            <h2><i class="bi bi-camera-video-fill me-2"></i>CCTV Management</h2>
+            <img src="{{ asset('images/gold-security-logo.png') }}" alt="Gold Security" class="brand-logo">
+            <h2>Gold Security</h2>
             <p>Select a company to continue</p>
         </div>
 

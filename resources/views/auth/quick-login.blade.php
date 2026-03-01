@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quick Login - CCTV Management</title>
+    <title>Quick Login - {{ config('app.name', 'Gold Security') }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -32,6 +32,11 @@
         .brand-header p {
             color: rgba(255,255,255,0.7);
             font-size: 1rem;
+        }
+        .brand-header .brand-logo {
+            max-width: 180px;
+            height: auto;
+            margin-bottom: .5rem;
         }
         .user-card {
             border: none;
@@ -105,7 +110,8 @@
 <body>
     <div class="login-container">
         <div class="brand-header">
-            <h1><i class="bi bi-camera-video"></i> CCTV Management</h1>
+            <img src="{{ asset('images/gold-security-logo.png') }}" alt="Gold Security" class="brand-logo">
+            <h1>Gold Security</h1>
             <p>Click on any user to login instantly</p>
         </div>
 

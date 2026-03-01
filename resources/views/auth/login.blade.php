@@ -34,17 +34,10 @@
             color: #fff;
         }
 
-        .brand-area .icon-circle {
-            width: 64px;
-            height: 64px;
-            background: rgba(255,255,255,.15);
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.75rem;
+        .brand-area .brand-logo {
+            max-width: 200px;
+            height: auto;
             margin-bottom: .75rem;
-            backdrop-filter: blur(4px);
         }
 
         .brand-area h3 {
@@ -122,10 +115,8 @@
 
     <div class="login-wrapper">
         <div class="brand-area">
-            <div class="icon-circle">
-                <i class="bi bi-camera-video-fill"></i>
-            </div>
-            <h3>CCTV Management</h3>
+            <img src="{{ asset('images/gold-security-logo.png') }}" alt="Gold Security" class="brand-logo">
+            <h3>Gold Security</h3>
             <p>Sign in to your account</p>
         </div>
 
@@ -203,7 +194,7 @@
         </div>
 
         <p class="text-center mt-3 small" style="color: rgba(255,255,255,.4);">
-            &copy; {{ date('Y') }} CCTV Management System
+            &copy; {{ date('Y') }} {{ config('app.name', 'Gold Security') }}
         </p>
     </div>
 

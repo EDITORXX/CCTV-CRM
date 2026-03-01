@@ -4,8 +4,14 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="theme-color" content="#1a1c2e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Gold Security">
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <link rel="apple-touch-icon" href="{{ asset('icons/apple-touch-icon.png') }}">
 
-    <title>@yield('title', 'Dashboard') — {{ config('app.name', 'CCTV Management') }}</title>
+    <title>@yield('title', 'Dashboard') — {{ config('app.name', 'Gold Security') }}</title>
 
     <!-- Bootstrap 5.3 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -57,11 +63,10 @@
             border-bottom: 1px solid rgba(255,255,255,.08);
         }
 
-        .sidebar-brand h5 {
-            margin: 0;
-            font-weight: 700;
-            font-size: 1.1rem;
-            letter-spacing: .3px;
+        .sidebar-brand .sidebar-logo {
+            max-height: 40px;
+            width: auto;
+            display: block;
         }
 
         .sidebar-brand small {
@@ -232,7 +237,9 @@
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
-            <h5><i class="bi bi-camera-video-fill me-2"></i>CCTV Mgmt</h5>
+            <a href="{{ route('dashboard') }}" class="d-block text-decoration-none">
+                <img src="{{ asset('images/gold-security-logo.png') }}" alt="Gold Security" class="sidebar-logo">
+            </a>
             @if(isset($currentCompany))
                 <small>{{ $currentCompany->name }}</small>
             @endif
@@ -581,5 +588,7 @@
     </script>
 
     @yield('scripts')
+
+    <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('{{ asset("sw.js") }}').catch(function() {}); }</script>
 </body>
 </html>

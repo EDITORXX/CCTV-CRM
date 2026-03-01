@@ -19,12 +19,14 @@
         .brand { text-align: center; color: #fff; margin-bottom: 1.5rem; }
         .brand h1 { font-size: 1.5rem; font-weight: 700; }
         .brand p { opacity: .9; font-size: .9rem; }
+        .brand .brand-logo { max-width: 160px; height: auto; margin-bottom: .5rem; }
     </style>
 </head>
 <body>
     <div class="install-card">
         <div class="brand">
-            <h1><i class="bi bi-gear-fill me-2"></i>{{ config('app.name', 'MMS') }}</h1>
+            <img src="{{ asset('images/gold-security-logo.png') }}" alt="Gold Security" class="brand-logo">
+            <h1>{{ config('app.name', 'Gold Security') }}</h1>
             <p>One-click server installation</p>
         </div>
         <div class="card">
