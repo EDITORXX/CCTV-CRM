@@ -48,6 +48,21 @@
 </div>
 @endif
 
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm border-primary border-2">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-bell me-2"></i>Allow notifications on this device</h5>
+                <p class="text-muted small mb-3">Register this browser so it can receive test notifications. Click the button below — the browser will ask for permission.</p>
+                <button type="button" class="btn btn-success" id="fcm-allow-btn-test">
+                    <i class="bi bi-bell-fill me-1"></i> Allow notifications
+                </button>
+                <span id="fcm-allow-status" class="ms-2 small text-muted"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-lg-6">
         <div class="card border-0 shadow-sm">
@@ -74,7 +89,7 @@
                     </button>
                 </form>
                 @if($tokenCount === 0 && !$configError)
-                <p class="small text-muted mt-2 mb-0">No devices registered yet. Ask users to click “Enable Notifications” in the app menu.</p>
+                <p class="small text-muted mt-2 mb-0">No devices registered yet. Use <strong>“Allow notifications”</strong> above to register this device, or ask users to enable notifications in the app menu.</p>
                 @endif
             </div>
         </div>
@@ -109,6 +124,60 @@
                 @endif
             </div>
         </div>
+        </div>
     </div>
 </div>
 @endsection
+
+@push('scripts')
+@if(config('services.firebase.vapid_key'))
+<script>
+(function() {
+    var vapidKey = @json(config('services.firebase.vapid_key'));
+    var firebaseConfig = {
+        apiKey: "AIzaSyCk_AOW1gaki_wlC-Ubh10j92v6mE-XoX4",
+        authDomain: "gold-security-695e8.firebaseapp.com",
+        projectId: "gold-security-695e8",
+        storageBucket: "gold-security-695e8.firebasestorage.app",
+        messagingSenderId: "420165823572",
+        appId: "1:420165823572:web:4fadb244cb3d69e04751c1"
+    };
+    var btn = document.getElementById('fcm-allow-btn-test');
+    var statusEl = document.getElementById('fcm-allow-status');
+    if (!btn) return;
+    btn.addEventListener('click', function() {
+        btn.disabled = true;
+        if (statusEl) statusEl.textContent = 'Requesting permission…';
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        var messaging = firebase.messaging();
+        Notification.requestPermission().then(function(permission) {
+            if (permission !== 'granted') return Promise.reject(new Error('Permission denied'));
+            if (statusEl) statusEl.textContent = 'Registering…';
+            return navigator.serviceWorker.register('{{ url("/firebase-messaging-sw.js") }}');
+        }).then(function(reg) {
+            return messaging.getToken({ vapidKey: vapidKey, serviceWorkerRegistration: reg });
+        }).then(function(token) {
+            if (statusEl) statusEl.textContent = 'Saving token…';
+            var csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            return fetch('{{ route("api.fcm-token.store") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                body: JSON.stringify({ token: token })
+            });
+        }).then(function(r) {
+            if (r.ok) {
+                if (statusEl) { statusEl.textContent = ''; statusEl.classList.remove('text-muted'); statusEl.classList.add('text-success'); statusEl.textContent = 'Registered. Reload to see count.'; }
+                btn.innerHTML = '<i class="bi bi-bell-fill me-1"></i> Notifications enabled';
+                btn.classList.remove('btn-success'); btn.classList.add('btn-outline-success');
+                window.location.reload();
+            } else return Promise.reject(new Error('Save failed'));
+        }).catch(function(err) {
+            console.warn('FCM enable error:', err);
+            btn.disabled = false;
+            if (statusEl) { statusEl.textContent = 'Error: ' + (err.message || 'Permission denied'); statusEl.classList.remove('text-muted'); statusEl.classList.add('text-danger'); }
+        });
+    });
+})();
+</script>
+@endif
+@endpush

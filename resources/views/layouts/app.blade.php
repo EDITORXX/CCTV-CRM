@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#1a1c2e">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Gold Security">
     <link rel="manifest" href="{{ asset('manifest.json') }}">
@@ -609,7 +610,8 @@
         if (btn) btn.addEventListener('click', function() {
             if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
             var messaging = firebase.messaging();
-            messaging.requestPermission().then(function() {
+            Notification.requestPermission().then(function(permission) {
+                if (permission !== 'granted') return Promise.reject(new Error('Permission denied'));
                 return navigator.serviceWorker.register('{{ url("/firebase-messaging-sw.js") }}');
             }).then(function(reg) {
                 return messaging.getToken({ vapidKey: vapidKey, serviceWorkerRegistration: reg });
@@ -633,6 +635,7 @@
     </script>
     @endif
 
+    @stack('scripts')
     <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('{{ asset("sw.js") }}').catch(function() {}); }</script>
 </body>
 </html>
