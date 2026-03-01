@@ -6,11 +6,16 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="mb-1">Estimates</h4>
-        <p class="text-muted mb-0">Manage quotations and estimates for customers</p>
+        <p class="text-muted mb-0">Manage estimates for customers</p>
     </div>
-    <a href="{{ route('estimates.create') }}" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i> New Estimate
-    </a>
+    <div class="d-flex gap-2">
+        <a href="{{ route('quotation-templates.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-file-earmark-ruled me-1"></i> Templates
+        </a>
+        <a href="{{ route('estimates.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> New Estimate
+        </a>
+    </div>
 </div>
 
 <div class="card border-0 shadow-sm">

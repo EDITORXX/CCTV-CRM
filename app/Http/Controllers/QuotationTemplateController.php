@@ -81,7 +81,7 @@ class QuotationTemplateController extends Controller
             $quotation_template->items()->whereNotIn('id', $idsToKeep)->delete();
         });
 
-        return redirect()->route('quotation-templates.show', $quotation_template)->with('success', 'Quotation template updated.');
+        return redirect()->route('quotation-templates.show', $quotation_template)->with('success', 'Estimate template updated.');
     }
 
     public function pdf(QuotationTemplate $quotation_template)
@@ -90,7 +90,7 @@ class QuotationTemplateController extends Controller
         $company = Company::find(session('current_company_id'));
         $pdf = Pdf::loadView('quotation-templates.pdf', compact('quotation_template', 'company'));
 
-        return $pdf->stream('quotation-' . $quotation_template->slug . '.pdf');
+        return $pdf->stream('estimate-' . $quotation_template->slug . '.pdf');
     }
 
     public function download(QuotationTemplate $quotation_template)
@@ -99,7 +99,7 @@ class QuotationTemplateController extends Controller
         $company = Company::find(session('current_company_id'));
         $pdf = Pdf::loadView('quotation-templates.pdf', compact('quotation_template', 'company'));
 
-        return $pdf->download('quotation-' . $quotation_template->slug . '.pdf');
+        return $pdf->download('estimate-' . $quotation_template->slug . '.pdf');
     }
 
     public function toEstimate(Request $request, QuotationTemplate $quotation_template)

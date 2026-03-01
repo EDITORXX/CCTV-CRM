@@ -1,13 +1,16 @@
 @extends('layouts.app')
 
-@section('title', 'Quotation Templates')
+@section('title', 'Estimate Templates')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="mb-1">Quotation Templates</h4>
-        <p class="text-muted mb-0">Reusable quote templates (e.g. 4 Cam / 8 Cam setup)</p>
+        <h4 class="mb-1">Estimate Templates</h4>
+        <p class="text-muted mb-0">Reusable estimate templates (e.g. 4 Cam / 8 Cam setup)</p>
     </div>
+    <a href="{{ route('estimates.index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Back to Estimates
+    </a>
 </div>
 
 @if(session('success'))
@@ -30,7 +33,7 @@
                     <a href="{{ route('quotation-templates.pdf', $template) }}" class="btn btn-sm btn-outline-info" target="_blank">PDF</a>
                     <form action="{{ route('quotation-templates.to-estimate', $template) }}" method="POST" class="d-inline">
                         @csrf
-                        <button type="submit" class="btn btn-sm btn-success">Create Estimate</button>
+                        <button type="submit" class="btn btn-sm btn-success">New estimate from template</button>
                     </form>
                 </div>
             </div>
@@ -41,7 +44,7 @@
         <div class="card border-0 shadow-sm">
             <div class="card-body text-center text-muted py-5">
                 <i class="bi bi-file-earmark-text display-4 d-block mb-2"></i>
-                No quotation templates yet. Run the seeder to add 4 Cam / 8 Cam templates.
+                No estimate templates yet. Run the seeder to add 4 Cam / 8 Cam templates.
             </div>
         </div>
     </div>

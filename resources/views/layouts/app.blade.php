@@ -323,11 +323,6 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('quotation-templates.index') }}" class="{{ request()->routeIs('quotation-templates.*') ? 'active' : '' }}">
-                        <i class="bi bi-file-earmark-ruled"></i> Quotations
-                    </a>
-                </li>
-                <li>
                     <a href="{{ route('support.index') }}" class="{{ request()->routeIs('support.*') ? 'active' : '' }}">
                         <i class="bi bi-life-preserver"></i> Help Center
                     </a>
@@ -386,17 +381,12 @@
                         <i class="bi bi-receipt"></i> Invoices
                     </a>
                 </li>
-                @if($userRole && in_array($userRole, ['company_admin', 'manager', 'accountant']))
                 <li>
-                    <a href="{{ route('estimates.index') }}" class="{{ request()->routeIs('estimates.*') ? 'active' : '' }}">
+                    <a href="{{ route('estimates.index') }}" class="{{ request()->routeIs('estimates.*') || request()->routeIs('quotation-templates.*') ? 'active' : '' }}">
                         <i class="bi bi-file-earmark-text"></i> Estimates
                     </a>
                 </li>
-                <li>
-                    <a href="{{ route('quotation-templates.index') }}" class="{{ request()->routeIs('quotation-templates.*') ? 'active' : '' }}">
-                        <i class="bi bi-file-earmark-ruled"></i> Quotations
-                    </a>
-                </li>
+                @if($userRole && in_array($userRole, ['company_admin', 'manager', 'accountant']))
                 <li>
                     <a href="{{ route('customer-payments.index') }}" class="{{ request()->routeIs('customer-payments.*') ? 'active' : '' }}">
                         <i class="bi bi-credit-card-2-front"></i> Payment Approvals
@@ -487,6 +477,12 @@
                             <a class="dropdown-item" href="{{ route('company.select') }}">
                                 <i class="bi bi-building me-2"></i>Switch Company
                             </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <button type="button" class="dropdown-item" id="fcm-enable-btn" aria-label="Enable notifications">
+                                <i class="bi bi-bell me-2"></i>Enable Notifications
+                            </button>
                         </li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
@@ -588,6 +584,49 @@
     </script>
 
     @yield('scripts')
+
+    <!-- Firebase (FCM) - load only when VAPID key is set -->
+    @if(config('services.firebase.vapid_key'))
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js"></script>
+    <script>
+    (function() {
+        var vapidKey = @json(config('services.firebase.vapid_key'));
+        var firebaseConfig = {
+            apiKey: "AIzaSyCk_AOW1gaki_wlC-Ubh10j92v6mE-XoX4",
+            authDomain: "gold-security-695e8.firebaseapp.com",
+            projectId: "gold-security-695e8",
+            storageBucket: "gold-security-695e8.firebasestorage.app",
+            messagingSenderId: "420165823572",
+            appId: "1:420165823572:web:4fadb244cb3d69e04751c1"
+        };
+        var btn = document.getElementById('fcm-enable-btn');
+        if (btn) btn.addEventListener('click', function() {
+            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+            var messaging = firebase.messaging();
+            messaging.requestPermission().then(function() {
+                return navigator.serviceWorker.register('{{ url("/firebase-messaging-sw.js") }}');
+            }).then(function(reg) {
+                return messaging.getToken({ vapidKey: vapidKey, serviceWorkerRegistration: reg });
+            }).then(function(token) {
+                var csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                return fetch('{{ route("api.fcm-token.store") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                    body: JSON.stringify({ token: token })
+                });
+            }).then(function(r) {
+                if (r.ok) {
+                    var btn = document.getElementById('fcm-enable-btn');
+                    if (btn) { btn.innerHTML = '<i class="bi bi-bell-fill me-2"></i>Notifications enabled'; btn.disabled = true; }
+                } else return Promise.reject(new Error('Save failed'));
+            }).catch(function(err) {
+                console.warn('FCM enable error:', err);
+            });
+        });
+    })();
+    </script>
+    @endif
 
     <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('{{ asset("sw.js") }}').catch(function() {}); }</script>
 </body>

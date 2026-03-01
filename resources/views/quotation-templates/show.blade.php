@@ -9,6 +9,7 @@
         <p class="text-muted mb-0">Total: ₹{{ number_format($quotation_template->total, 2) }}</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
+        <a href="{{ route('estimates.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back to Estimates</a>
         <a href="{{ route('quotation-templates.edit', $quotation_template) }}" class="btn btn-outline-secondary"><i class="bi bi-pencil me-1"></i>Edit</a>
         <a href="{{ route('quotation-templates.pdf', $quotation_template) }}" class="btn btn-outline-info" target="_blank"><i class="bi bi-file-pdf me-1"></i>View PDF</a>
         <a href="{{ route('quotation-templates.download', $quotation_template) }}" class="btn btn-outline-primary"><i class="bi bi-download me-1"></i>Download PDF</a>
@@ -103,7 +104,7 @@ document.getElementById('openWhatsApp').addEventListener('click', function() {
         alert('Please select a customer with a phone number.');
         return;
     }
-    var text = encodeURIComponent('Hi, Please find your quotation attached. Total: ₹{{ number_format($quotation_template->total, 2) }}. Thank you.');
+    var text = encodeURIComponent('Hi, Please find your estimate attached. Total: ₹{{ number_format($quotation_template->total, 2) }}. Thank you.');
     var url = 'https://wa.me/' + number + '?text=' + text;
     window.open(url, '_blank');
 });

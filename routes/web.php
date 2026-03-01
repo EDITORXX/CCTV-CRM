@@ -105,9 +105,10 @@ Route::middleware(['auth', 'company'])->group(function () {
     // Combined Expenses page (admin, manager, accountant, technician)
     Route::get('/expenses', [App\Http\Controllers\ExpensesController::class, 'index'])->name('expenses.index')->middleware('role:company_admin,manager,accountant,technician');
 
-    // Quotation templates (technician, admin, manager, accountant)
+// Estimate templates (was Quotations – merged into Estimates)
     Route::middleware(['role:company_admin,manager,accountant,technician'])->group(function () {
-        Route::get('/quotations', [App\Http\Controllers\QuotationTemplateController::class, 'index'])->name('quotation-templates.index');
+        Route::get('/quotations', fn () => redirect()->route('estimates.index', [], 301));
+        Route::get('/estimates/templates', [App\Http\Controllers\QuotationTemplateController::class, 'index'])->name('quotation-templates.index');
         Route::get('/quotations/{quotation_template}', [App\Http\Controllers\QuotationTemplateController::class, 'show'])->name('quotation-templates.show');
         Route::get('/quotations/{quotation_template}/edit', [App\Http\Controllers\QuotationTemplateController::class, 'edit'])->name('quotation-templates.edit');
         Route::put('/quotations/{quotation_template}', [App\Http\Controllers\QuotationTemplateController::class, 'update'])->name('quotation-templates.update');
@@ -193,6 +194,7 @@ Route::middleware(['auth', 'company'])->group(function () {
     // API-like routes for AJAX
     Route::get('/api/products/{product}/stock', [App\Http\Controllers\ProductController::class, 'getStock'])->name('api.product.stock');
     Route::get('/api/customers/{customer}/sites', [App\Http\Controllers\SiteController::class, 'getForCustomer'])->name('api.customer.sites');
+    Route::post('/api/fcm-token', [App\Http\Controllers\Api\FcmTokenController::class, 'store'])->name('api.fcm-token.store');
 });
 
 // Customer Portal (separate layout/limited access)

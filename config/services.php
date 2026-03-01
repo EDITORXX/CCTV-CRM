@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'firebase' => [
+        'vapid_key' => env('FIREBASE_VAPID_KEY'),
+        'credentials' => env('FIREBASE_CREDENTIALS', 'storage/app/firebase-credentials.json'),
+    ],
+
 ];

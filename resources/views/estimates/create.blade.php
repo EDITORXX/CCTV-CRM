@@ -10,7 +10,7 @@
             @if(isset($template))
                 Prefilled from template: <strong>{{ $template->name }}</strong> — select customer/site and submit.
             @else
-                Create a quotation for a customer (no stock check)
+                Create an estimate for a customer (no stock check)
             @endif
         </p>
     </div>

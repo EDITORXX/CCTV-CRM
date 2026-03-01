@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Quotation {{ $quotation_template->name }}</title>
+    <title>Estimate {{ $quotation_template->name }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'DejaVu Sans', Arial, sans-serif; font-size: 12px; color: #333; line-height: 1.5; }
@@ -41,7 +41,7 @@
         </div>
 
         <div class="title">
-            <h2>QUOTATION – {{ strtoupper($quotation_template->name) }}</h2>
+            <h2>ESTIMATE – {{ strtoupper($quotation_template->name) }}</h2>
         </div>
 
         <table class="items-table">
@@ -74,7 +74,7 @@
         </table>
 
         <div class="footer">
-            This is a quotation template. For a formal estimate, create an estimate from this template and send to the customer.
+            This is an estimate template. Create a formal estimate from this template and send to the customer.
         </div>
     </div>
 </body>
