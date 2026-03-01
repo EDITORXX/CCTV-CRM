@@ -146,36 +146,47 @@
     var statusEl = document.getElementById('fcm-allow-status');
     if (!btn) return;
     btn.addEventListener('click', function() {
-        btn.disabled = true;
-        if (statusEl) statusEl.textContent = 'Requesting permission…';
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        var messaging = firebase.messaging();
-        Notification.requestPermission().then(function(permission) {
-            if (permission !== 'granted') return Promise.reject(new Error('Permission denied'));
-            if (statusEl) statusEl.textContent = 'Registering…';
-            return navigator.serviceWorker.register('{{ url("/firebase-messaging-sw.js") }}');
-        }).then(function(reg) {
-            return messaging.getToken({ vapidKey: vapidKey, serviceWorkerRegistration: reg });
-        }).then(function(token) {
-            if (statusEl) statusEl.textContent = 'Saving token…';
-            var csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            return fetch('{{ route("api.fcm-token.store") }}', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
-                body: JSON.stringify({ token: token })
-            });
-        }).then(function(r) {
-            if (r.ok) {
-                if (statusEl) { statusEl.textContent = ''; statusEl.classList.remove('text-muted'); statusEl.classList.add('text-success'); statusEl.textContent = 'Registered. Reload to see count.'; }
+        var run = async function() {
+            btn.disabled = true;
+            if (statusEl) { statusEl.textContent = 'Requesting permission…'; statusEl.classList.remove('text-danger'); statusEl.classList.add('text-muted'); }
+            try {
+                if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+                var messaging = firebase.messaging();
+                var permission = await Notification.requestPermission();
+                if (permission !== 'granted') throw new Error('Permission denied');
+                if (statusEl) statusEl.textContent = 'Registering service worker…';
+                var swUrl = new URL('/firebase-messaging-sw.js', window.location.origin).href;
+                var registration = await navigator.serviceWorker.register(swUrl);
+                await registration.ready;
+                if (statusEl) statusEl.textContent = 'Getting FCM token…';
+                var token = await messaging.getToken({
+                    vapidKey: vapidKey,
+                    serviceWorkerRegistration: registration
+                });
+                if (!token) throw new Error('No token from FCM');
+                if (statusEl) statusEl.textContent = 'Saving token…';
+                var csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                var res = await fetch('{{ route("api.fcm-token.store") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                    body: JSON.stringify({ token: token, device_name: navigator.userAgent })
+                });
+                if (!res.ok) throw new Error('Save failed');
+                if (statusEl) { statusEl.textContent = ''; statusEl.classList.remove('text-muted'); statusEl.classList.add('text-success'); statusEl.textContent = 'Registered. Reloading…'; }
                 btn.innerHTML = '<i class="bi bi-bell-fill me-1"></i> Notifications enabled';
                 btn.classList.remove('btn-success'); btn.classList.add('btn-outline-success');
                 window.location.reload();
-            } else return Promise.reject(new Error('Save failed'));
-        }).catch(function(err) {
-            console.warn('FCM enable error:', err);
-            btn.disabled = false;
-            if (statusEl) { statusEl.textContent = 'Error: ' + (err.message || 'Permission denied'); statusEl.classList.remove('text-muted'); statusEl.classList.add('text-danger'); }
-        });
+            } catch (err) {
+                console.warn('FCM enable error:', err);
+                btn.disabled = false;
+                var msg = (err.message || String(err));
+                if (statusEl) {
+                    statusEl.classList.remove('text-muted'); statusEl.classList.add('text-danger');
+                    statusEl.textContent = 'Error: ' + msg;
+                }
+            }
+        };
+        run();
     });
 })();
 </script>

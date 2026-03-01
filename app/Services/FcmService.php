@@ -14,7 +14,7 @@ class FcmService
 
     public function __construct()
     {
-        $path = base_path(config('services.firebase.credentials', 'storage/app/firebase-credentials.json'));
+        $path = $this->resolveCredentialsPath();
         if (!file_exists($path)) {
             return;
         }
@@ -32,7 +32,7 @@ class FcmService
 
     public function getConfigError(): ?string
     {
-        $path = base_path(config('services.firebase.credentials', 'storage/app/firebase-credentials.json'));
+        $path = $this->resolveCredentialsPath();
         if (!file_exists($path)) {
             return 'Firebase credentials file not found at: ' . $path;
         }
@@ -104,6 +104,57 @@ class FcmService
     }
 
     /**
+     * Resolve credentials file path: use as-is if absolute, otherwise relative to base path.
+     */
+    protected function resolveCredentialsPath(): string
+    {
+        $path = config('services.firebase.credentials', 'storage/app/firebase-credentials.json');
+        if ($path === null || $path === '') {
+            $path = 'storage/app/firebase-credentials.json';
+        }
+        return str_starts_with($path, '/') ? $path : base_path($path);
+    }
+
+    /**
+     * Return a human-readable reason why getAccessToken() failed.
+     */
+    protected function getTokenFailureReason(): string
+    {
+        $path = $this->resolveCredentialsPath();
+        if (!file_exists($path)) {
+            return 'Credentials file not found at: ' . $path . '. Upload firebase-credentials.json and set FIREBASE_CREDENTIALS in .env.';
+        }
+        $json = file_get_contents($path);
+        $creds = json_decode($json, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return 'Credentials file is invalid JSON.';
+        }
+        if (empty($creds['project_id']) || empty($creds['private_key']) || empty($creds['client_email'])) {
+            return 'Credentials file must contain project_id, private_key, and client_email (service account JSON from Firebase Console).';
+        }
+        $key = @openssl_pkey_get_private($creds['private_key']);
+        if (!$key) {
+            return 'Invalid private_key in credentials (openssl failed). Ensure the key is correct and use actual newlines if pasted.';
+        }
+        openssl_free_key($key);
+        $this->credentials = $creds;
+        $this->projectId = $creds['project_id'] ?? null;
+        $jwt = $this->createJwt();
+        if (!$jwt) {
+            return 'Failed to create JWT from credentials.';
+        }
+        $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
+            'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+            'assertion' => $jwt,
+        ]);
+        if (!$response->successful()) {
+            $body = $response->body();
+            return 'Google OAuth2 rejected the request: ' . $response->status() . ' ' . (strlen($body) > 200 ? substr($body, 0, 200) . '...' : $body);
+        }
+        return 'Check credentials file and FCM_SETUP.md.';
+    }
+
+    /**
      * Send a notification to all registered FCM tokens.
      * Returns ['success' => int, 'failure' => int, 'errors' => array of strings].
      */
@@ -116,10 +167,11 @@ class FcmService
 
         $token = $this->getAccessToken();
         if (!$token) {
+            $reason = $this->getTokenFailureReason();
             return [
                 'success' => 0,
                 'failure' => count($tokens),
-                'errors' => ['Could not get Firebase OAuth2 access token. Check credentials file and FCM_SETUP.md.'],
+                'errors' => ['Could not get Firebase OAuth2 access token. ' . $reason],
             ];
         }
 

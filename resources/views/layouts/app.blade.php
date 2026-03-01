@@ -607,29 +607,36 @@
             appId: "1:420165823572:web:4fadb244cb3d69e04751c1"
         };
         var btn = document.getElementById('fcm-enable-btn');
-        if (btn) btn.addEventListener('click', function() {
-            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-            var messaging = firebase.messaging();
-            Notification.requestPermission().then(function(permission) {
-                if (permission !== 'granted') return Promise.reject(new Error('Permission denied'));
-                return navigator.serviceWorker.register('{{ url("/firebase-messaging-sw.js") }}');
-            }).then(function(reg) {
-                return messaging.getToken({ vapidKey: vapidKey, serviceWorkerRegistration: reg });
-            }).then(function(token) {
-                var csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                return fetch('{{ route("api.fcm-token.store") }}', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
-                    body: JSON.stringify({ token: token })
-                });
-            }).then(function(r) {
-                if (r.ok) {
-                    var btn = document.getElementById('fcm-enable-btn');
-                    if (btn) { btn.innerHTML = '<i class="bi bi-bell-fill me-2"></i>Notifications enabled'; btn.disabled = true; }
-                } else return Promise.reject(new Error('Save failed'));
-            }).catch(function(err) {
-                console.warn('FCM enable error:', err);
-            });
+        if (!btn) return;
+        btn.addEventListener('click', function() {
+            var run = async function() {
+                try {
+                    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+                    var messaging = firebase.messaging();
+                    var permission = await Notification.requestPermission();
+                    if (permission !== 'granted') throw new Error('Permission denied');
+                    var swUrl = new URL('/firebase-messaging-sw.js', window.location.origin).href;
+                    var registration = await navigator.serviceWorker.register(swUrl);
+                    await registration.ready;
+                    var token = await messaging.getToken({
+                        vapidKey: vapidKey,
+                        serviceWorkerRegistration: registration
+                    });
+                    if (!token) throw new Error('No token from FCM');
+                    var csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    var res = await fetch('{{ route("api.fcm-token.store") }}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                        body: JSON.stringify({ token: token, device_name: navigator.userAgent })
+                    });
+                    if (!res.ok) throw new Error('Save failed');
+                    btn.innerHTML = '<i class="bi bi-bell-fill me-2"></i>Notifications enabled';
+                    btn.disabled = true;
+                } catch (err) {
+                    console.warn('FCM enable error:', err);
+                }
+            };
+            run();
         });
     })();
     </script>

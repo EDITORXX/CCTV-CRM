@@ -57,3 +57,21 @@ php artisan config:clear
 php artisan cache:clear
 php artisan view:clear
 ```
+
+## Troubleshooting: token-subscribe-failed / OAuth credential error
+
+If the browser shows **messaging/token-subscribe-failed** with "Request is missing required authentication credential":
+
+1. **Enable FCM Registration API (main fix)**  
+   Firebase SDK 6.7+ needs this API for web `getToken()` to work.  
+   - Open: [Google Cloud Console → APIs & Services → Library](https://console.cloud.google.com/apis/library)  
+   - Select the **same project** as your Firebase app (e.g. "gold-security-695e8").  
+   - Search for **"FCM Registration"** or open: [FCM Registration API](https://console.cloud.google.com/apis/library/fcmregistrations.googleapis.com)  
+   - Click **Enable**.  
+   - Wait a minute, then try "Allow notifications" again.
+
+2. **VAPID key**  
+   Firebase Console → Project Settings → Cloud Messaging → Web Push certificates. Set `FIREBASE_VAPID_KEY` in `.env` to exactly that key (no extra characters or suffix like `@tw210`). Run `php artisan config:clear`.
+
+3. **Service worker URL**  
+   Open `https://your-domain.com/firebase-messaging-sw.js` in the browser. It must return 200 and the JS content. If it redirects or 404s, ensure the web server serves `public/firebase-messaging-sw.js` for that path.
