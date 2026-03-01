@@ -296,8 +296,28 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('site-expenses.create') }}" class="{{ request()->routeIs('site-expenses.*') ? 'active' : '' }}">
-                        <i class="bi bi-cash-stack"></i> Record Expense
+                    <a href="{{ route('invoices.index') }}" class="{{ request()->routeIs('invoices.*') ? 'active' : '' }}">
+                        <i class="bi bi-receipt"></i> Invoices
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('estimates.index') }}" class="{{ request()->routeIs('estimates.*') ? 'active' : '' }}">
+                        <i class="bi bi-file-earmark-text"></i> Estimates
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('expenses.index') }}" class="{{ request()->routeIs('expenses.index') ? 'active' : '' }}">
+                        <i class="bi bi-cash-stack"></i> Expenses
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('expenses.record') }}" class="{{ request()->routeIs('expenses.record') ? 'active' : '' }}">
+                        <i class="bi bi-plus-circle"></i> Record Expense
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('quotation-templates.index') }}" class="{{ request()->routeIs('quotation-templates.*') ? 'active' : '' }}">
+                        <i class="bi bi-file-earmark-ruled"></i> Quotations
                     </a>
                 </li>
                 <li>
@@ -331,8 +351,18 @@
                 </li>
                 @if($userRole && in_array($userRole, ['company_admin', 'manager', 'accountant']))
                 <li>
-                    <a href="{{ route('site-expenses.index') }}" class="{{ request()->routeIs('site-expenses.*') ? 'active' : '' }}">
-                        <i class="bi bi-cash-stack"></i> Site Expenses
+                    <a href="{{ route('expenses.record') }}" class="{{ request()->routeIs('expenses.record') ? 'active' : '' }}">
+                        <i class="bi bi-plus-circle"></i> Record Expense
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('expenses.index') }}" class="{{ request()->routeIs('expenses.index') ? 'active' : '' }}">
+                        <i class="bi bi-cash-stack"></i> Expenses
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('expense-categories.index') }}" class="{{ request()->routeIs('expense-categories.*') ? 'active' : '' }}">
+                        <i class="bi bi-tags"></i> Expense Categories
                     </a>
                 </li>
                 @endif
@@ -353,6 +383,11 @@
                 <li>
                     <a href="{{ route('estimates.index') }}" class="{{ request()->routeIs('estimates.*') ? 'active' : '' }}">
                         <i class="bi bi-file-earmark-text"></i> Estimates
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('quotation-templates.index') }}" class="{{ request()->routeIs('quotation-templates.*') ? 'active' : '' }}">
+                        <i class="bi bi-file-earmark-ruled"></i> Quotations
                     </a>
                 </li>
                 <li>

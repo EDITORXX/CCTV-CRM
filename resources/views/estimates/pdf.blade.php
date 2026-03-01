@@ -114,11 +114,11 @@
                 <tr>
                     <td>{{ $index + 1 }}</td>
                     <td>
-                        {{ $item->product->name }}
-                        @if($item->product->brand) <span style="color: #666;">- {{ $item->product->brand }}</span>@endif
-                        @if($item->product->model_number) <span style="color: #666;">({{ $item->product->model_number }})</span>@endif
+                        {{ $item->display_name }}
+                        @if($item->product && $item->product->brand) <span style="color: #666;">- {{ $item->product->brand }}</span>@endif
+                        @if($item->product && $item->product->model_number) <span style="color: #666;">({{ $item->product->model_number }})</span>@endif
                     </td>
-                    <td>{{ $item->product->hsn_sac ?? '-' }}</td>
+                    <td>{{ $item->product ? ($item->product->hsn_sac ?? '-') : '-' }}</td>
                     <td class="center">{{ $item->qty }}</td>
                     <td class="right">{{ number_format($item->unit_price, 2) }}</td>
                     @if($estimate->is_gst)

@@ -32,8 +32,8 @@
                     <label for="category" class="form-label">Category <span class="text-danger">*</span></label>
                     <select class="form-select @error('category') is-invalid @enderror" id="category" name="category" required>
                         <option value="">Select Category</option>
-                        @foreach(['Camera', 'DVR/NVR', 'HDD', 'Cable', 'SMPS', 'Accessories', 'Other'] as $cat)
-                            <option value="{{ $cat }}" {{ old('category') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
+                        @foreach(['Camera', 'DVR_NVR', 'HDD', 'Cable', 'SMPS', 'Accessories', 'IP', 'Analog', 'Other'] as $cat)
+                            <option value="{{ $cat }}" {{ old('category') == $cat ? 'selected' : '' }}>{{ str_replace('_', '/', $cat) }}</option>
                         @endforeach
                     </select>
                     @error('category')

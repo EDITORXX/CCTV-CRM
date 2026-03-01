@@ -159,7 +159,6 @@
             <div class="card-body">
                 <form action="{{ route('tickets.updateStatus', $ticket) }}" method="POST">
                     @csrf
-                    @method('PATCH')
 
                     <div class="row g-3">
                         <div class="col-12">

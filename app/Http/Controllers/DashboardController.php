@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\Purchase;
+use App\Models\RegularExpense;
+use App\Models\SiteExpense;
 use App\Models\Ticket;
 use App\Models\Warranty;
 use Carbon\Carbon;
@@ -136,7 +138,31 @@ class DashboardController extends Controller
             ->where('status', '!=', 'cancelled')
             ->sum('subtotal');
 
-        $monthlyProfit = $monthlySalesWithoutGst - $monthlyCOGS;
+        $monthlyRegularExpenses = RegularExpense::where('company_id', $companyId)
+            ->whereBetween('expense_date', [$monthStart, $today])
+            ->sum('amount');
+
+        $monthlySiteExpenses = SiteExpense::where('company_id', $companyId)
+            ->whereBetween('expense_date', [$monthStart, $today])
+            ->sum('amount');
+
+        // Invoices this month by creator (user name, count, total)
+        $invoicesByUser = Invoice::where('company_id', $companyId)
+            ->whereBetween('invoice_date', [$monthStart, $today])
+            ->where('status', '!=', 'cancelled')
+            ->with('creator')
+            ->get()
+            ->groupBy('created_by')
+            ->map(function ($invoices, $userId) {
+                $creator = $invoices->first()->creator;
+                return [
+                    'user_name' => $creator ? $creator->name : 'Unknown',
+                    'count' => $invoices->count(),
+                    'total' => $invoices->sum('total'),
+                ];
+            })->values();
+
+        $monthlyProfit = $monthlySalesWithoutGst - $monthlyCOGS - $monthlyRegularExpenses - $monthlySiteExpenses;
 
         $lowStockCount = collect($stockDetails)->filter(fn($s) => $s['qty'] <= 5)->count();
         $lowStockProducts = collect($stockDetails)->filter(fn($s) => $s['qty'] <= 5)->take(10);
@@ -163,6 +189,9 @@ class DashboardController extends Controller
             'monthlyCOGS',
             'monthlyProfit',
             'monthlySalesWithoutGst',
+            'monthlyRegularExpenses',
+            'monthlySiteExpenses',
+            'invoicesByUser',
             'lowStockProducts',
             'recentTickets',
             'expiringWarranties'

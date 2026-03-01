@@ -99,8 +99,8 @@
                             <tr>
                                 <td>{{ $i + 1 }}</td>
                                 <td>
-                                    {{ $item->product->name }}
-                                    @if($item->product->brand) <small class="text-muted">- {{ $item->product->brand }}</small>@endif
+                                    {{ $item->display_name }}
+                                    @if($item->product && $item->product->brand) <small class="text-muted">- {{ $item->product->brand }}</small>@endif
                                 </td>
                                 <td class="text-center">{{ $item->qty }}</td>
                                 <td class="text-end">₹{{ number_format($item->unit_price, 2) }}</td>

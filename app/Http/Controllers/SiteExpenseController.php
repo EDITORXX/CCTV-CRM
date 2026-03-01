@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\CompanyHelper;
 use App\Models\Customer;
 use App\Models\SiteExpense;
 use Illuminate\Http\Request;
@@ -11,6 +12,11 @@ class SiteExpenseController extends Controller
     public function index(Request $request)
     {
         $query = SiteExpense::with(['customer', 'site', 'creator']);
+
+        $creatorIds = CompanyHelper::expenseVisibleCreatorIds();
+        if ($creatorIds !== null) {
+            $query->whereIn('created_by', $creatorIds);
+        }
 
         if ($request->filled('customer_id')) {
             $query->where('customer_id', $request->customer_id);
@@ -53,6 +59,8 @@ class SiteExpenseController extends Controller
 
     public function edit(SiteExpense $site_expense)
     {
+        $this->authorizeExpenseAccess($site_expense->created_by);
+
         $customers = Customer::orderBy('name')->get();
         $site_expense->load('site');
 
@@ -61,6 +69,8 @@ class SiteExpenseController extends Controller
 
     public function update(Request $request, SiteExpense $site_expense)
     {
+        $this->authorizeExpenseAccess($site_expense->created_by);
+
         $validated = $request->validate([
             'description' => 'required|string|max:500',
             'amount' => 'required|numeric|min:0',
@@ -75,8 +85,21 @@ class SiteExpenseController extends Controller
 
     public function destroy(SiteExpense $site_expense)
     {
+        $this->authorizeExpenseAccess($site_expense->created_by);
+
         $site_expense->delete();
 
         return redirect()->route('site-expenses.index')->with('success', 'Site expense deleted.');
+    }
+
+    private function authorizeExpenseAccess(?int $createdBy): void
+    {
+        $creatorIds = CompanyHelper::expenseVisibleCreatorIds();
+        if ($creatorIds === null) {
+            return;
+        }
+        if ($createdBy === null || !in_array($createdBy, $creatorIds)) {
+            abort(403, 'You do not have permission to access this expense.');
+        }
     }
 }

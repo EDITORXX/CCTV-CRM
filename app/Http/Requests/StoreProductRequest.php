@@ -15,7 +15,7 @@ class StoreProductRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'category' => 'required|string|in:Camera,DVR_NVR,HDD,Cable,SMPS,Accessories,Other',
+            'category' => 'required|string|in:Camera,DVR_NVR,HDD,Cable,SMPS,Accessories,IP,Analog,Other',
             'brand' => 'nullable|string|max:255',
             'model_number' => 'nullable|string|max:255',
             'hsn_sac' => 'nullable|string|max:20',

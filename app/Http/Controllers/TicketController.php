@@ -40,28 +40,39 @@ class TicketController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'site_id' => 'nullable|exists:sites,id',
-            'ticket_number' => 'required|string',
+            'ticket_number' => 'nullable|string',
             'complaint_type' => 'nullable|string',
             'description' => 'nullable|string',
             'priority' => 'required|in:low,medium,high',
         ]);
 
+        $ticketNumber = $request->filled('ticket_number')
+            ? $request->ticket_number
+            : $this->generateNextTicketNumber();
+
         $ticket = Ticket::create([
             'company_id' => session('current_company_id'),
-            'ticket_number' => $request->ticket_number,
-            'customer_id' => $request->customer_id,
-            'site_id' => $request->site_id,
-            'complaint_type' => $request->complaint_type,
-            'description' => $request->description,
-            'priority' => $request->priority,
+            'ticket_number' => $ticketNumber,
+            'customer_id' => $validated['customer_id'],
+            'site_id' => $validated['site_id'] ?? null,
+            'complaint_type' => $validated['complaint_type'] ?? null,
+            'description' => $validated['description'] ?? null,
+            'priority' => $validated['priority'],
             'status' => 'open',
             'created_by' => auth()->id(),
         ]);
 
         return redirect()->route('tickets.show', $ticket)->with('success', 'Ticket created.');
+    }
+
+    private function generateNextTicketNumber(): string
+    {
+        $lastTicket = Ticket::where('company_id', session('current_company_id'))->orderBy('id', 'desc')->first();
+        $nextNum = $lastTicket ? (intval(preg_replace('/\D/', '', $lastTicket->ticket_number)) + 1) : 1;
+        return 'TKT-' . str_pad($nextNum, 5, '0', STR_PAD_LEFT);
     }
 
     public function show(Ticket $ticket)

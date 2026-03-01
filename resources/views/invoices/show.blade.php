@@ -238,10 +238,20 @@
                         </thead>
                         <tbody>
                             @foreach($invoice->payments as $payment)
+                            @php
+                                $methodLabels = [
+                                    'cash' => 'Cash',
+                                    'upi' => 'UPI',
+                                    'bank_transfer' => 'Bank Transfer',
+                                    'cheque' => 'Cheque',
+                                    'card' => 'Card',
+                                ];
+                                $methodLabel = $methodLabels[$payment->payment_method ?? ''] ?? ucfirst(str_replace('_', ' ', $payment->payment_method ?? ''));
+                            @endphp
                             <tr>
                                 <td>{{ \Carbon\Carbon::parse($payment->payment_date)->format('d M Y') }}</td>
                                 <td class="fw-semibold">₹{{ number_format($payment->amount, 2) }}</td>
-                                <td>{{ ucfirst(str_replace('_', ' ', $payment->payment_method ?? '')) }}</td>
+                                <td>{{ $methodLabel }}</td>
                                 <td>{{ $payment->reference_number ?? '—' }}</td>
                             </tr>
                             @endforeach
@@ -289,11 +299,11 @@
                                    value="{{ old('payment_date', date('Y-m-d')) }}" required>
                         </div>
                         <div class="col-md-6">
-                            <label for="pay_method" class="form-label">Method</label>
+                            <label for="pay_method" class="form-label">Payment method</label>
                             <select class="form-select" id="pay_method" name="payment_method" required>
                                 <option value="cash">Cash</option>
-                                <option value="bank_transfer">Bank Transfer</option>
                                 <option value="upi">UPI</option>
+                                <option value="bank_transfer">Bank Transfer</option>
                                 <option value="cheque">Cheque</option>
                                 <option value="card">Card</option>
                             </select>

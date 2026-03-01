@@ -64,7 +64,7 @@
                             <div class="btn-group btn-group-sm">
                                 @if($ticket->status === 'open')
                                 <form method="POST" action="{{ route('tickets.updateStatus', $ticket->id) }}" class="d-inline">
-                                    @csrf @method('PATCH')
+                                    @csrf
                                     <input type="hidden" name="status" value="in_progress">
                                     <button type="submit" class="btn btn-outline-warning" title="Start Job">
                                         <i class="bi bi-play-fill"></i> Start
@@ -74,7 +74,7 @@
 
                                 @if($ticket->status === 'in_progress')
                                 <form method="POST" action="{{ route('tickets.updateStatus', $ticket->id) }}" class="d-inline">
-                                    @csrf @method('PATCH')
+                                    @csrf
                                     <input type="hidden" name="status" value="resolved">
                                     <button type="submit" class="btn btn-outline-success" title="Mark Complete">
                                         <i class="bi bi-check-circle"></i> Complete

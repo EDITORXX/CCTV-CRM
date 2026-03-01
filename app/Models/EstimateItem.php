@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class EstimateItem extends Model
 {
     protected $fillable = [
-        'estimate_id', 'product_id', 'qty', 'unit_price',
+        'estimate_id', 'product_id', 'description', 'qty', 'unit_price',
         'gst_percent', 'discount', 'total', 'warranty_months',
     ];
 
@@ -26,5 +26,13 @@ class EstimateItem extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function getDisplayNameAttribute()
+    {
+        if (!empty($this->description)) {
+            return $this->description;
+        }
+        return $this->product ? $this->product->name : '—';
     }
 }

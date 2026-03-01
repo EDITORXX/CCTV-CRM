@@ -66,7 +66,7 @@
                             @foreach($estimate->items as $i => $item)
                             <tr>
                                 <td>{{ $i + 1 }}</td>
-                                <td>{{ $item->product->name }}</td>
+                                <td>{{ $item->display_name }}</td>
                                 <td class="text-center">{{ $item->qty }}</td>
                                 <td class="text-end">₹{{ number_format($item->unit_price, 2) }}</td>
                                 <td class="text-end fw-semibold">₹{{ number_format($item->total, 2) }}</td>

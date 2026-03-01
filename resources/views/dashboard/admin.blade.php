@@ -45,7 +45,7 @@
                     <h4 class="mb-0 fw-bold {{ ($monthlyProfit ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
                         ₹{{ number_format($monthlyProfit ?? 0) }}
                     </h4>
-                    <small class="text-muted">Sale ₹{{ number_format($monthlySalesWithoutGst ?? 0) }} - Cost ₹{{ number_format($monthlyCOGS ?? 0) }}</small>
+                    <small class="text-muted">Sale ₹{{ number_format($monthlySalesWithoutGst ?? 0) }} − Cost ₹{{ number_format($monthlyCOGS ?? 0) }} − Reg Exp ₹{{ number_format($monthlyRegularExpenses ?? 0) }} − Site Exp ₹{{ number_format($monthlySiteExpenses ?? 0) }}</small>
                 </div>
             </div>
         </div>
@@ -127,6 +127,57 @@
         </div>
     </div>
 </div>
+
+{{-- This month: Invoices by user, Regular Exp, Site Exp --}}
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-2">
+                <h6 class="mb-0 fw-semibold"><i class="bi bi-receipt me-2 text-primary"></i>This month</h6>
+            </div>
+            <div class="card-body py-2">
+                <div class="row g-3 align-items-start">
+                    <div class="col-md-4">
+                        <div class="text-muted small">Regular expenses</div>
+                        <div class="fw-bold text-primary">₹{{ number_format($monthlyRegularExpenses ?? 0) }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small">Site expenses</div>
+                        <div class="fw-bold text-info">₹{{ number_format($monthlySiteExpenses ?? 0) }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small">Product sold (sales)</div>
+                        <div class="fw-bold text-success">₹{{ number_format($monthlySales ?? 0) }}</div>
+                    </div>
+                </div>
+                @if(count($invoicesByUser ?? []) > 0)
+                <div class="mt-3 pt-3 border-top">
+                    <div class="text-muted small fw-medium mb-2">Invoices by user</div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>User</th>
+                                    <th class="text-center">Count</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($invoicesByUser as $row)
+                                <tr>
+                                    <td>{{ $row['user_name'] }}</td>
+                                    <td class="text-center">{{ $row['count'] }}</td>
+                                    <td class="text-end">₹{{ number_format($row['total'], 2) }}</td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                @endif
+            </div>
+        </div>
+    </div>
 
 <div class="row g-4">
     {{-- Current Stock Summary --}}

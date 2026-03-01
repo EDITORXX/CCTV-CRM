@@ -48,7 +48,7 @@
                     <label for="ticket_number" class="form-label">Ticket Number</label>
                     <input type="text" class="form-control @error('ticket_number') is-invalid @enderror"
                            id="ticket_number" name="ticket_number"
-                           value="{{ old('ticket_number', $nextTicketNumber ?? '') }}" readonly>
+                           value="{{ old('ticket_number', $nextNumber ?? '') }}" readonly>
                     @error('ticket_number')
                         <span class="text-danger small">{{ $message }}</span>
                     @enderror

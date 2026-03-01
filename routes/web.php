@@ -93,7 +93,7 @@ Route::middleware(['auth', 'company'])->group(function () {
     // Tickets
     Route::resource('tickets', App\Http\Controllers\TicketController::class);
     Route::post('/tickets/{ticket}/assign', [App\Http\Controllers\TicketController::class, 'assign'])->name('tickets.assign');
-    Route::post('/tickets/{ticket}/update-status', [App\Http\Controllers\TicketController::class, 'updateStatus'])->name('tickets.updateStatus');
+    Route::match(['post', 'patch'], '/tickets/{ticket}/update-status', [App\Http\Controllers\TicketController::class, 'updateStatus'])->name('tickets.updateStatus');
 
     // Support Knowledge Base (admin CRUD)
     Route::resource('support-articles', App\Http\Controllers\SupportArticleController::class)->except(['show']);
@@ -102,10 +102,27 @@ Route::middleware(['auth', 'company'])->group(function () {
     // Support Page (accessible to all logged-in users)
     Route::get('/support', [App\Http\Controllers\SupportPageController::class, 'index'])->name('support.index');
 
+    // Combined Expenses page (admin, manager, accountant, technician)
+    Route::get('/expenses', [App\Http\Controllers\ExpensesController::class, 'index'])->name('expenses.index')->middleware('role:company_admin,manager,accountant,technician');
+
+    // Quotation templates (technician, admin, manager, accountant)
+    Route::middleware(['role:company_admin,manager,accountant,technician'])->group(function () {
+        Route::get('/quotations', [App\Http\Controllers\QuotationTemplateController::class, 'index'])->name('quotation-templates.index');
+        Route::get('/quotations/{quotation_template}', [App\Http\Controllers\QuotationTemplateController::class, 'show'])->name('quotation-templates.show');
+        Route::get('/quotations/{quotation_template}/edit', [App\Http\Controllers\QuotationTemplateController::class, 'edit'])->name('quotation-templates.edit');
+        Route::put('/quotations/{quotation_template}', [App\Http\Controllers\QuotationTemplateController::class, 'update'])->name('quotation-templates.update');
+        Route::get('/quotations/{quotation_template}/pdf', [App\Http\Controllers\QuotationTemplateController::class, 'pdf'])->name('quotation-templates.pdf');
+        Route::get('/quotations/{quotation_template}/download', [App\Http\Controllers\QuotationTemplateController::class, 'download'])->name('quotation-templates.download');
+        Route::post('/quotations/{quotation_template}/to-estimate', [App\Http\Controllers\QuotationTemplateController::class, 'toEstimate'])->name('quotation-templates.to-estimate');
+    });
+
     // Site Expenses - create/store accessible to technician too
     Route::middleware(['role:company_admin,manager,accountant,technician'])->group(function () {
+        Route::get('/expenses/record', [App\Http\Controllers\ExpenseRecordController::class, 'choose'])->name('expenses.record');
         Route::get('/site-expenses/create', [App\Http\Controllers\SiteExpenseController::class, 'create'])->name('site-expenses.create');
         Route::post('/site-expenses', [App\Http\Controllers\SiteExpenseController::class, 'store'])->name('site-expenses.store');
+        Route::get('/regular-expenses/create', [App\Http\Controllers\RegularExpenseController::class, 'create'])->name('regular-expenses.create');
+        Route::post('/regular-expenses', [App\Http\Controllers\RegularExpenseController::class, 'store'])->name('regular-expenses.store');
     });
 
     // Site Expenses - index/edit/delete only for admin/manager/accountant
@@ -114,6 +131,20 @@ Route::middleware(['auth', 'company'])->group(function () {
         Route::get('/site-expenses/{site_expense}/edit', [App\Http\Controllers\SiteExpenseController::class, 'edit'])->name('site-expenses.edit');
         Route::put('/site-expenses/{site_expense}', [App\Http\Controllers\SiteExpenseController::class, 'update'])->name('site-expenses.update');
         Route::delete('/site-expenses/{site_expense}', [App\Http\Controllers\SiteExpenseController::class, 'destroy'])->name('site-expenses.destroy');
+    });
+
+    // Regular Expenses - index/edit/delete for admin/manager/accountant/technician
+    Route::middleware(['role:company_admin,manager,accountant,technician'])->group(function () {
+        Route::get('/regular-expenses', [App\Http\Controllers\RegularExpenseController::class, 'index'])->name('regular-expenses.index');
+        Route::get('/regular-expenses/{regular_expense}/edit', [App\Http\Controllers\RegularExpenseController::class, 'edit'])->name('regular-expenses.edit');
+        Route::put('/regular-expenses/{regular_expense}', [App\Http\Controllers\RegularExpenseController::class, 'update'])->name('regular-expenses.update');
+        Route::delete('/regular-expenses/{regular_expense}', [App\Http\Controllers\RegularExpenseController::class, 'destroy'])->name('regular-expenses.destroy');
+    });
+
+    // Expense Categories (admin/manager/accountant)
+    Route::middleware(['role:company_admin,manager,accountant'])->group(function () {
+        Route::get('/expense-categories', [App\Http\Controllers\ExpenseCategoryController::class, 'index'])->name('expense-categories.index');
+        Route::post('/expense-categories', [App\Http\Controllers\ExpenseCategoryController::class, 'store'])->name('expense-categories.store');
     });
 
     // Customer Payment Approvals (admin, manager, accountant)
@@ -130,8 +161,8 @@ Route::middleware(['auth', 'company'])->group(function () {
         Route::resource('customer-advances', App\Http\Controllers\CustomerAdvanceController::class)->except(['edit', 'update', 'destroy']);
     });
 
-    // Estimates (admin, manager, accountant)
-    Route::middleware(['role:company_admin,manager,accountant'])->group(function () {
+    // Estimates (admin, manager, accountant, technician)
+    Route::middleware(['role:company_admin,manager,accountant,technician'])->group(function () {
         Route::resource('estimates', App\Http\Controllers\EstimateController::class);
         Route::post('/estimates/{estimate}/convert', [App\Http\Controllers\EstimateController::class, 'convertToInvoice'])->name('estimates.convert');
         Route::post('/estimates/{estimate}/purchase-order', [App\Http\Controllers\EstimateController::class, 'createPurchaseOrder'])->name('estimates.purchase-order');

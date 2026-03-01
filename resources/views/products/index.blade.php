@@ -28,8 +28,8 @@
             <label class="form-label mb-0 fw-semibold text-nowrap">Filter by Category:</label>
             <select name="category" class="form-select form-select-sm" style="max-width: 220px;" onchange="this.form.submit()">
                 <option value="">All Categories</option>
-                @foreach(['Camera', 'DVR/NVR', 'HDD', 'Cable', 'SMPS', 'Accessories', 'Other'] as $cat)
-                    <option value="{{ $cat }}" {{ request('category') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
+                @foreach(['Camera', 'DVR_NVR', 'HDD', 'Cable', 'SMPS', 'Accessories', 'IP', 'Analog', 'Other'] as $cat)
+                    <option value="{{ $cat }}" {{ request('category') == $cat ? 'selected' : '' }}>{{ str_replace('_', '/', $cat) }}</option>
                 @endforeach
             </select>
             @if(request('category'))

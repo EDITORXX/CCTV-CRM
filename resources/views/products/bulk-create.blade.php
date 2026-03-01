@@ -63,6 +63,8 @@
                                     <option value="Cable" {{ ($item['category'] ?? '') == 'Cable' ? 'selected' : '' }}>Cable</option>
                                     <option value="SMPS" {{ ($item['category'] ?? '') == 'SMPS' ? 'selected' : '' }}>SMPS</option>
                                     <option value="Accessories" {{ ($item['category'] ?? '') == 'Accessories' ? 'selected' : '' }}>Accessories</option>
+                                    <option value="IP" {{ ($item['category'] ?? '') == 'IP' ? 'selected' : '' }}>IP</option>
+                                    <option value="Analog" {{ ($item['category'] ?? '') == 'Analog' ? 'selected' : '' }}>Analog</option>
                                     <option value="Other" {{ ($item['category'] ?? '') == 'Other' ? 'selected' : '' }}>Other</option>
                                 </select>
                             </td>
@@ -108,7 +110,7 @@ $(document).ready(function() {
         var html = '<tr data-row="' + rowIndex + '">' +
             '<td class="text-center">' + (rowIndex + 1) + '</td>' +
             '<td><input type="text" class="form-control form-control-sm" name="items[' + rowIndex + '][name]" placeholder="Product name"></td>' +
-            '<td><select class="form-select form-select-sm" name="items[' + rowIndex + '][category]"><option value="">Select</option><option value="Camera">Camera</option><option value="DVR_NVR">DVR/NVR</option><option value="HDD">HDD</option><option value="Cable">Cable</option><option value="SMPS">SMPS</option><option value="Accessories">Accessories</option><option value="Other">Other</option></select></td>' +
+            '<td><select class="form-select form-select-sm" name="items[' + rowIndex + '][category]"><option value="">Select</option><option value="Camera">Camera</option><option value="DVR_NVR">DVR/NVR</option><option value="HDD">HDD</option><option value="Cable">Cable</option><option value="SMPS">SMPS</option><option value="Accessories">Accessories</option><option value="IP">IP</option><option value="Analog">Analog</option><option value="Other">Other</option></select></td>' +
             '<td><input type="text" class="form-control form-control-sm" name="items[' + rowIndex + '][brand]"></td>' +
             '<td><input type="text" class="form-control form-control-sm" name="items[' + rowIndex + '][model_number]"></td>' +
             '<td><input type="text" class="form-control form-control-sm" name="items[' + rowIndex + '][hsn_sac]"></td>' +

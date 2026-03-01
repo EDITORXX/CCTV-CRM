@@ -6,7 +6,13 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="mb-1">New Estimate</h4>
-        <p class="text-muted mb-0">Create a quotation for a customer (no stock check)</p>
+        <p class="text-muted mb-0">
+            @if(isset($template))
+                Prefilled from template: <strong>{{ $template->name }}</strong> — select customer/site and submit.
+            @else
+                Create a quotation for a customer (no stock check)
+            @endif
+        </p>
     </div>
     <a href="{{ route('estimates.index') }}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i> Back
@@ -77,7 +83,8 @@
                 <table class="table table-bordered align-middle mb-0" id="itemsTable">
                     <thead class="table-light">
                         <tr>
-                            <th width="220">Product</th>
+                            <th width="200">Product</th>
+                            <th width="180">Description (if no product)</th>
                             <th width="70">Qty</th>
                             <th width="110">Unit Price</th>
                             <th width="80" class="gst-col">GST%</th>
@@ -152,12 +159,20 @@ $(document).ready(function() {
         return opts;
     }
 
-    function addItemRow() {
+    function addItemRow(data) {
+        data = data || {};
         var gstDisplay = $('#is_gst').is(':checked') ? '' : 'style="display:none"';
+        var productId = data.product_id || '';
+        var desc = (data.description || '').replace(/"/g, '&quot;');
+        var qty = data.qty || 1;
+        var price = data.unit_price || 0;
+        var opts = buildProductOptions();
+        var selected = productId ? ' value="' + productId + '"' : '';
         var html = '<tr data-row="' + rowIndex + '">' +
-            '<td><select class="form-select form-select-sm item-product" name="items[' + rowIndex + '][product_id]" required>' + buildProductOptions() + '</select></td>' +
-            '<td><input type="number" class="form-control form-control-sm item-qty" name="items[' + rowIndex + '][qty]" min="1" value="1" required></td>' +
-            '<td><input type="number" class="form-control form-control-sm item-price" name="items[' + rowIndex + '][unit_price]" min="0" step="0.01" value="0" required></td>' +
+            '<td><select class="form-select form-select-sm item-product" name="items[' + rowIndex + '][product_id]">' + opts + '</select></td>' +
+            '<td><input type="text" class="form-control form-control-sm item-desc" name="items[' + rowIndex + '][description]" value="' + desc + '" placeholder="Free text"></td>' +
+            '<td><input type="number" class="form-control form-control-sm item-qty" name="items[' + rowIndex + '][qty]" min="1" value="' + qty + '" required></td>' +
+            '<td><input type="number" class="form-control form-control-sm item-price" name="items[' + rowIndex + '][unit_price]" min="0" step="0.01" value="' + price + '" required></td>' +
             '<td class="gst-col" ' + gstDisplay + '><input type="number" class="form-control form-control-sm item-gst" name="items[' + rowIndex + '][gst_percent]" min="0" max="100" step="0.01" value="18"></td>' +
             '<td><input type="number" class="form-control form-control-sm item-discount" name="items[' + rowIndex + '][discount]" min="0" step="0.01" value="0"></td>' +
             '<td><input type="number" class="form-control form-control-sm" name="items[' + rowIndex + '][warranty_months]" min="0" value="0"></td>' +
@@ -165,6 +180,15 @@ $(document).ready(function() {
             '<td><button type="button" class="btn btn-sm btn-outline-danger remove-item"><i class="bi bi-x-lg"></i></button></td>' +
             '</tr>';
         $('#itemsBody').append(html);
+        if (productId) {
+            var $row = $('#itemsBody tr[data-row="' + rowIndex + '"]');
+            $row.find('.item-product').val(productId);
+            var p = products.find(function(x) { return x.id == productId; });
+            if (p) {
+                $row.find('.item-price').val(p.sale_price || 0);
+                $row.find('[name*="warranty_months"]').val(p.warranty_months || 0);
+            }
+        }
         rowIndex++;
     }
 
@@ -225,7 +249,18 @@ $(document).ready(function() {
     $(document).on('input', '.item-qty, .item-price, .item-gst, .item-discount, #discount', function() { calculateTotals(); });
 
     $('#is_gst').trigger('change');
+    @if(isset($template) && $template->items->isNotEmpty())
+        @foreach($template->items as $ti)
+        addItemRow({
+            product_id: {{ $ti->product_id ? $ti->product_id : 'null' }},
+            description: {!! json_encode($ti->description ?? $ti->display_name) !!},
+            qty: {{ $ti->qty }},
+            unit_price: {{ $ti->unit_price }}
+        });
+        @endforeach
+    @else
     addItemRow();
+    @endif
 });
 </script>
 @endsection

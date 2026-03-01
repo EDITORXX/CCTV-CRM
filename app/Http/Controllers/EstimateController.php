@@ -16,6 +16,7 @@ use App\Models\Vendor;
 use App\Models\Warranty;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class EstimateController extends Controller
@@ -43,7 +44,14 @@ class EstimateController extends Controller
             5, '0', STR_PAD_LEFT
         );
 
-        return view('estimates.create', compact('customers', 'products', 'company', 'nextNumber'));
+        $template = null;
+        if (request('template_id')) {
+            $template = \App\Models\QuotationTemplate::with('items.product')
+                ->where('company_id', session('current_company_id'))
+                ->find(request('template_id'));
+        }
+
+        return view('estimates.create', compact('customers', 'products', 'company', 'nextNumber', 'template'));
     }
 
     public function store(Request $request)
@@ -58,13 +66,22 @@ class EstimateController extends Controller
             'discount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_id' => 'nullable|exists:products,id',
+            'items.*.description' => 'nullable|string|max:500',
             'items.*.qty' => 'required|integer|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.gst_percent' => 'nullable|numeric|min:0|max:100',
             'items.*.discount' => 'nullable|numeric|min:0',
             'items.*.warranty_months' => 'nullable|integer|min:0',
         ]);
+
+        foreach ($request->items as $i => $item) {
+            if (empty($item['product_id']) && empty(trim($item['description'] ?? ''))) {
+                throw ValidationException::withMessages([
+                    "items.{$i}.product_id" => ['Each line must have either a product or a description.'],
+                ]);
+            }
+        }
 
         DB::transaction(function () use ($request) {
             $companyId = session('current_company_id');
@@ -97,17 +114,18 @@ class EstimateController extends Controller
                 $subtotal += $lineSubtotal;
                 $gstAmount += $lineGst;
 
-                $product = Product::find($item['product_id']);
+                $product = isset($item['product_id']) && $item['product_id'] ? Product::find($item['product_id']) : null;
 
                 EstimateItem::create([
                     'estimate_id' => $estimate->id,
-                    'product_id' => $item['product_id'],
+                    'product_id' => $item['product_id'] ?? null,
+                    'description' => $item['description'] ?? null,
                     'qty' => $item['qty'],
                     'unit_price' => $item['unit_price'],
                     'gst_percent' => $gstPercent,
                     'discount' => $itemDiscount,
                     'total' => $lineTotal,
-                    'warranty_months' => $item['warranty_months'] ?? $product->warranty_months,
+                    'warranty_months' => $item['warranty_months'] ?? ($product ? $product->warranty_months : null),
                 ]);
             }
 
@@ -129,6 +147,10 @@ class EstimateController extends Controller
         $stockInfo = [];
         foreach ($estimate->items as $item) {
             $product = $item->product;
+            if (!$product) {
+                $stockInfo[$item->id] = ['available' => 0, 'required' => $item->qty, 'short' => $item->qty];
+                continue;
+            }
             if ($product->track_serial) {
                 $available = SerialNumber::where('product_id', $product->id)
                     ->where('company_id', session('current_company_id'))
@@ -201,6 +223,12 @@ class EstimateController extends Controller
 
         $estimate->load('items.product');
         $companyId = session('current_company_id');
+
+        $itemsWithoutProduct = $estimate->items->filter(fn ($i) => !$i->product_id);
+        if ($itemsWithoutProduct->isNotEmpty()) {
+            return redirect()->route('estimates.show', $estimate)
+                ->with('error', 'All line items must have a product to convert to invoice. Edit the estimate and assign products to description-only lines.');
+        }
 
         $shortItems = [];
         foreach ($estimate->items as $item) {
@@ -310,6 +338,9 @@ class EstimateController extends Controller
         $shortItems = [];
         foreach ($estimate->items as $item) {
             $product = $item->product;
+            if (!$product) {
+                continue;
+            }
             if ($product->track_serial) {
                 $available = SerialNumber::where('product_id', $product->id)
                     ->where('company_id', $companyId)
