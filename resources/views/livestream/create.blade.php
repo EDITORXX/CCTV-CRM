@@ -39,6 +39,10 @@
         .device-selects select { width: 100% !important; min-width: 0 !important; }
         .preview-container { aspect-ratio: 4/3; }
     }
+    .preview-container:-webkit-full-screen,
+    .preview-container:fullscreen {
+        width: 100vw; height: 100vh; aspect-ratio: auto; background: #000;
+    }
 </style>
 @endsection
 
@@ -74,13 +78,16 @@
                 <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>Allow camera access when prompted for second camera</small>
             </div>
             <div class="card-body p-0">
-                <div class="preview-container position-relative">
+                <div class="preview-container position-relative" id="preview-wrap">
                     <video id="preview-video" autoplay muted playsinline></video>
                     <video id="preview-video-2" autoplay muted playsinline class="d-none" style="position:absolute;top:0.5rem;right:0.5rem;width:25%;max-width:200px;border:2px solid #fff;border-radius:8px;object-fit:cover;"></video>
                     <div id="preview-placeholder" class="preview-placeholder">
                         <i class="bi bi-camera-video-off"></i>
                         <p class="mt-2 mb-0">Select a video device to preview</p>
                     </div>
+                    <button type="button" id="preview-fullscreen-btn" class="btn btn-dark btn-sm d-none" style="position:absolute;bottom:.5rem;right:.5rem;opacity:.7;z-index:5;" title="Fullscreen">
+                        <i class="bi bi-arrows-fullscreen"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -157,10 +164,31 @@
         document.getElementById('password').value = pass;
     });
 
+    var fullscreenBtn = document.getElementById('preview-fullscreen-btn');
+    fullscreenBtn.addEventListener('click', function() {
+        var el = document.getElementById('preview-wrap');
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        } else if (el.requestFullscreen) {
+            el.requestFullscreen();
+        } else if (el.webkitRequestFullscreen) {
+            el.webkitRequestFullscreen();
+        }
+    });
+
     async function loadDevices() {
+        var permStream = null;
         try {
-            await navigator.mediaDevices.getUserMedia({ video: true });
-        } catch (e) {}
+            permStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        } catch (e) {
+            try { permStream = await navigator.mediaDevices.getUserMedia({ video: true }); } catch(e2) {}
+        }
+        if (permStream) {
+            permStream.getTracks().forEach(function(t) { t.stop(); });
+            permStream = null;
+        }
+
+        await new Promise(function(r) { setTimeout(r, 300); });
 
         var devices = await navigator.mediaDevices.enumerateDevices();
         var videoDevices = devices.filter(function(d) { return d.kind === 'videoinput'; });
@@ -200,37 +228,65 @@
     async function startPreview(deviceId) {
         if (currentStream) {
             currentStream.getTracks().forEach(function(t) { t.stop(); });
+            currentStream = null;
         }
+        previewVideo.srcObject = null;
+        await new Promise(function(r) { setTimeout(r, 200); });
 
         try {
             currentStream = await navigator.mediaDevices.getUserMedia({
-                video: { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                video: { deviceId: { ideal: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } },
                 audio: true
             });
             previewVideo.srcObject = currentStream;
             placeholder.style.display = 'none';
             previewVideo.style.display = 'block';
+            fullscreenBtn.classList.remove('d-none');
             goLiveBtn.disabled = false;
         } catch (err) {
-            placeholder.innerHTML = '<i class="bi bi-exclamation-triangle"></i><p class="mt-2 mb-0">Could not access this device: ' + err.message + '</p>';
-            placeholder.style.display = '';
-            previewVideo.style.display = 'none';
-            goLiveBtn.disabled = true;
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia({
+                    video: { deviceId: deviceId },
+                    audio: true
+                });
+                previewVideo.srcObject = currentStream;
+                placeholder.style.display = 'none';
+                previewVideo.style.display = 'block';
+                fullscreenBtn.classList.remove('d-none');
+                goLiveBtn.disabled = false;
+            } catch (err2) {
+                placeholder.innerHTML = '<i class="bi bi-exclamation-triangle"></i><p class="mt-2 mb-0">Could not access camera: ' + err2.message + '</p>';
+                placeholder.style.display = '';
+                previewVideo.style.display = 'none';
+                fullscreenBtn.classList.add('d-none');
+                goLiveBtn.disabled = true;
+            }
         }
     }
 
     async function startPreview2(deviceId) {
         if (currentStream2) { currentStream2.getTracks().forEach(function(t) { t.stop(); }); currentStream2 = null; }
+        previewVideo2.srcObject = null;
         if (!deviceId) { previewVideo2.classList.add('d-none'); return; }
+        await new Promise(function(r) { setTimeout(r, 200); });
         try {
             currentStream2 = await navigator.mediaDevices.getUserMedia({
-                video: { deviceId: { exact: deviceId }, width: { ideal: 640 }, height: { ideal: 360 } },
+                video: { deviceId: { ideal: deviceId }, width: { ideal: 640 }, height: { ideal: 360 } },
                 audio: false
             });
             previewVideo2.srcObject = currentStream2;
             previewVideo2.classList.remove('d-none');
         } catch (e) {
-            previewVideo2.classList.add('d-none');
+            try {
+                currentStream2 = await navigator.mediaDevices.getUserMedia({
+                    video: { deviceId: deviceId },
+                    audio: false
+                });
+                previewVideo2.srcObject = currentStream2;
+                previewVideo2.classList.remove('d-none');
+            } catch(e2) {
+                previewVideo2.classList.add('d-none');
+            }
         }
     }
 

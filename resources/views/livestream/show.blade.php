@@ -341,7 +341,12 @@
     // ── Device listing & preview ──
 
     async function loadDevices() {
-        try { await navigator.mediaDevices.getUserMedia({ video: true }); } catch(e) {}
+        var perm = null;
+        try { perm = await navigator.mediaDevices.getUserMedia({ video: true, audio: true }); } catch(e) {
+            try { perm = await navigator.mediaDevices.getUserMedia({ video: true }); } catch(e2) {}
+        }
+        if (perm) { perm.getTracks().forEach(function(t) { t.stop(); }); }
+        await new Promise(function(r) { setTimeout(r, 300); });
         var devices = await navigator.mediaDevices.enumerateDevices();
         var videoDevices = devices.filter(function(d) { return d.kind === 'videoinput'; });
         deviceSelect.innerHTML = '';
@@ -369,25 +374,44 @@
     async function startCapture(deviceId1, deviceId2) {
         if (localStream) { localStream.getTracks().forEach(function(t) { t.stop(); }); localStream = null; }
         if (localStream2) { localStream2.getTracks().forEach(function(t) { t.stop(); }); localStream2 = null; }
+        localVideo.srcObject = null;
         localVideo2.classList.add('d-none');
         localVideo2.srcObject = null;
+        await new Promise(function(r) { setTimeout(r, 200); });
 
-        localStream = await navigator.mediaDevices.getUserMedia({
-            video: { deviceId: { exact: deviceId1 }, width: { ideal: 1280 }, height: { ideal: 720 } },
-            audio: true
-        });
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({
+                video: { deviceId: { ideal: deviceId1 }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                audio: true
+            });
+        } catch(e) {
+            localStream = await navigator.mediaDevices.getUserMedia({
+                video: { deviceId: deviceId1 },
+                audio: true
+            });
+        }
         localVideo.srcObject = localStream;
 
         if (deviceId2 && deviceId2 !== deviceId1) {
             try {
                 localStream2 = await navigator.mediaDevices.getUserMedia({
-                    video: { deviceId: { exact: deviceId2 }, width: { ideal: 640 }, height: { ideal: 360 } },
+                    video: { deviceId: { ideal: deviceId2 }, width: { ideal: 640 }, height: { ideal: 360 } },
                     audio: false
                 });
                 localVideo2.srcObject = localStream2;
                 localVideo2.classList.remove('d-none');
                 document.getElementById('rotate-pip-btn').classList.remove('d-none');
-            } catch (e) {}
+            } catch (e) {
+                try {
+                    localStream2 = await navigator.mediaDevices.getUserMedia({
+                        video: { deviceId: deviceId2 },
+                        audio: false
+                    });
+                    localVideo2.srcObject = localStream2;
+                    localVideo2.classList.remove('d-none');
+                    document.getElementById('rotate-pip-btn').classList.remove('d-none');
+                } catch(e2) {}
+            }
         } else {
             document.getElementById('rotate-pip-btn').classList.add('d-none');
         }
