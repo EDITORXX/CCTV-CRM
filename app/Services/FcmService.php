@@ -151,7 +151,19 @@ class FcmService
             $body = $response->body();
             return 'Google OAuth2 rejected the request: ' . $response->status() . ' ' . (strlen($body) > 200 ? substr($body, 0, 200) . '...' : $body);
         }
-        return 'Check credentials file and FCM_SETUP.md.';
+        return 'Credentials and Google OAuth are OK but token was not used. Try "Send to all" again.';
+    }
+
+    /**
+     * For debugging: path and whether file exists (no secrets).
+     */
+    public function getCredentialsPathDebug(): array
+    {
+        $path = $this->resolveCredentialsPath();
+        return [
+            'path' => $path,
+            'exists' => file_exists($path),
+        ];
     }
 
     /**

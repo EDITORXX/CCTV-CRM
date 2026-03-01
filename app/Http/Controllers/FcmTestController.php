@@ -17,11 +17,13 @@ class FcmTestController extends Controller
         $configError = $this->fcm->getConfigError();
         $tokenCount = FcmToken::count();
         $tokens = FcmToken::with('user:id,name,email')->get();
+        $credentialsDebug = $this->fcm->getCredentialsPathDebug();
 
         return view('fcm-test.index', [
             'configError' => $configError,
             'tokenCount' => $tokenCount,
             'tokens' => $tokens,
+            'credentialsDebug' => $credentialsDebug,
         ]);
     }
 

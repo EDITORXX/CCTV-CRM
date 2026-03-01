@@ -21,6 +21,14 @@
 </div>
 @endif
 
+@if(isset($credentialsDebug))
+<div class="alert alert-secondary mb-4 small">
+    <strong>Debug – credentials path</strong><br>
+    Path: <code>{{ $credentialsDebug['path'] }}</code><br>
+    File exists: <strong>{{ $credentialsDebug['exists'] ? 'Yes' : 'No' }}</strong>
+</div>
+@endif
+
 @if(session('fcm_result'))
 @php $r = session('fcm_result'); @endphp
 <div class="alert {{ ($r['failure'] ?? 0) > 0 ? 'alert-warning' : (($r['success'] ?? 0) > 0 ? 'alert-success' : 'alert-danger') }} mb-4">
