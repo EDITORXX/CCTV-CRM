@@ -32,12 +32,12 @@ Route::get('/quick-login', [App\Http\Controllers\QuickLoginController::class, 'i
 Route::get('/quick-login/Login', fn () => redirect()->route('quick-login')); // common typo/bookmark
 Route::post('/quick-login/{user}', [App\Http\Controllers\QuickLoginController::class, 'login'])->name('quick-login.do');
 
-// Home / Landing: guests see landing with Login + Install PWA; auth users redirect to dashboard
+// Home / Landing: always redirect to login (auth users will be sent to dashboard by LoginController)
 Route::get('/', function () {
     if (Auth::check()) {
         return redirect()->route('dashboard');
     }
-    return view('welcome');
+    return redirect()->route('login');
 })->name('landing');
 
 // Company Selection

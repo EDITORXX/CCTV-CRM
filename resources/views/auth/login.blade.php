@@ -64,14 +64,16 @@
             color: #555;
         }
 
-        .login-card .form-control {
+        .login-card .form-control,
+        .login-card .form-select {
             padding: .7rem 1rem;
             border-radius: .5rem;
             border: 1.5px solid #dee2e6;
             font-size: .9rem;
         }
 
-        .login-card .form-control:focus {
+        .login-card .form-control:focus,
+        .login-card .form-select:focus {
             border-color: #4e73df;
             box-shadow: 0 0 0 .2rem rgba(78,115,223,.15);
         }
@@ -97,7 +99,8 @@
             position: relative;
         }
 
-        .input-icon-group .form-control {
+        .input-icon-group .form-control,
+        .input-icon-group .form-select {
             padding-left: 2.75rem;
         }
 
@@ -108,6 +111,51 @@
             transform: translateY(-50%);
             color: #adb5bd;
             font-size: 1rem;
+            z-index: 2;
+        }
+
+        .action-btn {
+            border-radius: .5rem;
+            font-weight: 500;
+            font-size: .85rem;
+            padding: .5rem .75rem;
+            transition: all .2s;
+            width: 100%;
+        }
+
+        .btn-install {
+            background: rgba(255,255,255,.12);
+            border: 1.5px solid rgba(255,255,255,.25);
+            color: #fff;
+        }
+        .btn-install:hover {
+            background: rgba(255,255,255,.2);
+            border-color: rgba(255,255,255,.4);
+            color: #fff;
+        }
+
+        .btn-permission {
+            background: rgba(78,115,223,.15);
+            border: 1.5px solid rgba(78,115,223,.3);
+            color: #c5d4ff;
+        }
+        .btn-permission:hover {
+            background: rgba(78,115,223,.25);
+            border-color: rgba(78,115,223,.5);
+            color: #fff;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: .5rem;
+            margin-top: .75rem;
+        }
+
+        .permission-status,
+        .install-status {
+            font-size: .75rem;
+            margin-top: .35rem;
+            text-align: center;
         }
     </style>
 </head>
@@ -180,17 +228,22 @@
             </form>
         </div>
 
+        {{-- Install App & Allow Permission Buttons --}}
+        <div class="action-buttons">
+            <button type="button" id="pwa-install-btn" class="btn action-btn btn-install d-none" aria-label="Install app">
+                <i class="bi bi-download me-1"></i> Install App
+            </button>
+            <button type="button" id="notification-btn" class="btn action-btn btn-permission" aria-label="Allow notifications">
+                <i class="bi bi-bell me-1"></i> Allow Permission
+            </button>
+        </div>
+        <p id="pwa-install-status" class="install-status d-none" style="color: rgba(255,255,255,.5);"></p>
+        <p id="notification-status" class="permission-status d-none" style="color: rgba(255,255,255,.5);"></p>
+
         <div class="text-center mt-3">
             <a href="{{ route('quick-login') }}" class="btn btn-outline-light btn-sm">
                 <i class="bi bi-lightning-charge-fill me-1"></i> Quick Demo Login
             </a>
-        </div>
-
-        <div class="text-center mt-2">
-            <button type="button" id="pwa-install-btn" class="btn btn-outline-light btn-sm d-none" aria-label="Install app">
-                <i class="bi bi-download me-1"></i> Install app
-            </button>
-            <p id="pwa-install-status" class="small mt-1 d-none" style="color: rgba(255,255,255,.5);"></p>
         </div>
 
         <p class="text-center mt-3 small" style="color: rgba(255,255,255,.4);">
@@ -200,28 +253,79 @@
 
     <script>
     (function() {
+        // --- PWA Install ---
         var installBtn = document.getElementById('pwa-install-btn');
-        var statusEl = document.getElementById('pwa-install-status');
+        var installStatus = document.getElementById('pwa-install-status');
         var deferredPrompt;
-        if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) { if (installBtn) installBtn.classList.add('d-none'); return; }
-        if (window.navigator.standalone === true) { if (installBtn) installBtn.classList.add('d-none'); return; }
-        window.addEventListener('beforeinstallprompt', function(e) {
-            e.preventDefault();
-            deferredPrompt = e;
-            if (installBtn) { installBtn.classList.remove('d-none'); }
-        });
+
+        if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+            if (installBtn) installBtn.classList.add('d-none');
+        } else if (window.navigator.standalone === true) {
+            if (installBtn) installBtn.classList.add('d-none');
+        } else {
+            window.addEventListener('beforeinstallprompt', function(e) {
+                e.preventDefault();
+                deferredPrompt = e;
+                if (installBtn) installBtn.classList.remove('d-none');
+            });
+        }
+
         if (installBtn) {
             installBtn.addEventListener('click', function() {
                 if (!deferredPrompt) return;
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then(function(choice) {
-                    if (choice.outcome === 'accepted' && statusEl) { statusEl.textContent = 'App installed.'; statusEl.classList.remove('d-none'); installBtn.classList.add('d-none'); }
-                    else if (statusEl) { statusEl.textContent = 'Install cancelled.'; statusEl.classList.remove('d-none'); }
+                    if (choice.outcome === 'accepted' && installStatus) {
+                        installStatus.textContent = 'App installed successfully!';
+                        installStatus.style.color = '#6dffb0';
+                        installStatus.classList.remove('d-none');
+                        installBtn.classList.add('d-none');
+                    } else if (installStatus) {
+                        installStatus.textContent = 'Install cancelled.';
+                        installStatus.classList.remove('d-none');
+                    }
                     deferredPrompt = null;
                 });
             });
         }
-        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('{{ asset("sw.js") }}').catch(function() {}); }
+
+        // --- Notification Permission ---
+        var notifBtn = document.getElementById('notification-btn');
+        var notifStatus = document.getElementById('notification-status');
+
+        function updateNotifUI() {
+            if (!('Notification' in window)) {
+                if (notifBtn) { notifBtn.textContent = 'Notifications not supported'; notifBtn.disabled = true; notifBtn.classList.add('opacity-50'); }
+                return;
+            }
+            if (Notification.permission === 'granted') {
+                if (notifBtn) notifBtn.classList.add('d-none');
+                if (notifStatus) { notifStatus.textContent = 'Notifications allowed'; notifStatus.style.color = '#6dffb0'; notifStatus.classList.remove('d-none'); }
+            } else if (Notification.permission === 'denied') {
+                if (notifBtn) notifBtn.classList.add('d-none');
+                if (notifStatus) { notifStatus.textContent = 'Notifications blocked — enable in browser settings'; notifStatus.style.color = '#ff6d6d'; notifStatus.classList.remove('d-none'); }
+            }
+        }
+        updateNotifUI();
+
+        if (notifBtn) {
+            notifBtn.addEventListener('click', function() {
+                if (!('Notification' in window)) return;
+                Notification.requestPermission().then(function(permission) {
+                    updateNotifUI();
+                    if (permission === 'granted' && notifStatus) {
+                        notifStatus.textContent = 'Notifications enabled!';
+                        notifStatus.style.color = '#6dffb0';
+                        notifStatus.classList.remove('d-none');
+                    }
+                });
+            });
+        }
+
+        // --- Service Worker ---
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('{{ asset("sw.js") }}').catch(function() {});
+        }
     })();
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
