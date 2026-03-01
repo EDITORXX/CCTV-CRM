@@ -32,12 +32,12 @@ Route::get('/quick-login', [App\Http\Controllers\QuickLoginController::class, 'i
 Route::get('/quick-login/Login', fn () => redirect()->route('quick-login')); // common typo/bookmark
 Route::post('/quick-login/{user}', [App\Http\Controllers\QuickLoginController::class, 'login'])->name('quick-login.do');
 
-// Home / Landing: always redirect to login (auth users will be sent to dashboard by LoginController)
+// Home / Landing: show login form directly (no redirect to /login)
 Route::get('/', function () {
     if (Auth::check()) {
         return redirect()->route('dashboard');
     }
-    return redirect()->route('login');
+    return view('auth.login');
 })->name('landing');
 
 // Company Selection
@@ -201,7 +201,23 @@ Route::middleware(['auth', 'company'])->group(function () {
         Route::get('/fcm-test', [App\Http\Controllers\FcmTestController::class, 'index'])->name('fcm-test.index');
         Route::post('/fcm-test', [App\Http\Controllers\FcmTestController::class, 'send'])->name('fcm-test.send');
     });
+
+    // Live Stream (technician, admin, manager)
+    Route::middleware(['role:company_admin,manager,technician'])->group(function () {
+        Route::resource('livestream', App\Http\Controllers\LiveStreamController::class)->only(['index', 'create', 'store', 'show']);
+        Route::post('/livestream/{livestream}/stop', [App\Http\Controllers\LiveStreamController::class, 'stop'])->name('livestream.stop');
+        Route::post('/livestream/{livestream}/signal', [App\Http\Controllers\LiveStreamController::class, 'storeSignal'])->name('livestream.signal');
+        Route::get('/livestream/{livestream}/signals', [App\Http\Controllers\LiveStreamController::class, 'getSignals'])->name('livestream.signals');
+    });
 });
+
+// Live Stream public viewer (no auth required)
+Route::get('/live/{token}', [App\Http\Controllers\LiveStreamController::class, 'viewer'])->name('livestream.viewer');
+Route::post('/live/{token}/verify', [App\Http\Controllers\LiveStreamController::class, 'verifyPassword'])->name('livestream.verify');
+Route::get('/live/{token}/watch', [App\Http\Controllers\LiveStreamController::class, 'watch'])->name('livestream.watch');
+Route::post('/live/{token}/signal', [App\Http\Controllers\LiveStreamController::class, 'viewerSignal'])->name('livestream.viewer.signal');
+Route::get('/live/{token}/signals', [App\Http\Controllers\LiveStreamController::class, 'viewerGetSignals'])->name('livestream.viewer.signals');
+Route::get('/live/{token}/status', [App\Http\Controllers\LiveStreamController::class, 'status'])->name('livestream.status');
 
 // Customer Portal (separate layout/limited access)
 Route::middleware(['auth', 'company', 'role:customer'])->prefix('portal')->name('portal.')->group(function () {

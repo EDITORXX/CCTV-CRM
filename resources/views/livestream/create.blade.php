@@ -1,0 +1,188 @@
+@extends('layouts.app')
+
+@section('title', 'Start Live Stream')
+
+@section('styles')
+<style>
+    .preview-container {
+        background: #000;
+        border-radius: .75rem;
+        overflow: hidden;
+        position: relative;
+        aspect-ratio: 16/9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .preview-container video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    .preview-placeholder {
+        color: rgba(255,255,255,.4);
+        text-align: center;
+    }
+    .preview-placeholder i {
+        font-size: 3rem;
+    }
+    .device-status {
+        font-size: .85rem;
+        padding: .5rem .75rem;
+        border-radius: .5rem;
+        margin-bottom: 1rem;
+    }
+</style>
+@endsection
+
+@section('content')
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="mb-0">Start Live Stream</h4>
+            <a href="{{ route('livestream.index') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Back
+            </a>
+        </div>
+
+        <div id="device-status" class="device-status bg-light text-muted d-none">
+            <i class="bi bi-usb-plug me-1"></i> Checking for video devices...
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-camera-video me-1"></i> Camera Preview</span>
+                <select id="device-select" class="form-select form-select-sm" style="width:auto;min-width:200px;" disabled>
+                    <option>Loading devices...</option>
+                </select>
+            </div>
+            <div class="card-body p-0">
+                <div class="preview-container">
+                    <video id="preview-video" autoplay muted playsinline></video>
+                    <div id="preview-placeholder" class="preview-placeholder">
+                        <i class="bi bi-camera-video-off"></i>
+                        <p class="mt-2 mb-0">Select a video device to preview</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" action="{{ route('livestream.store') }}" id="stream-form">
+                    @csrf
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Stream Title <span class="text-muted">(optional)</span></label>
+                        <input type="text" class="form-control" id="title" name="title" placeholder="e.g. Customer site - Sector 21" value="{{ old('title') }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Stream Password <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="text" class="form-control @error('password') is-invalid @enderror" id="password" name="password" placeholder="Set a password for viewers" value="{{ old('password') }}" required minlength="4">
+                            <button type="button" class="btn btn-outline-secondary" id="gen-pass-btn" title="Generate random password">
+                                <i class="bi bi-shuffle"></i>
+                            </button>
+                        </div>
+                        @error('password')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
+                        <div class="form-text">Viewers will need this password to watch your stream.</div>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-lg w-100" id="go-live-btn" disabled>
+                        <i class="bi bi-broadcast-pin me-1"></i> Go Live
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+
+@section('scripts')
+<script>
+(function() {
+    var deviceSelect = document.getElementById('device-select');
+    var previewVideo = document.getElementById('preview-video');
+    var placeholder  = document.getElementById('preview-placeholder');
+    var goLiveBtn    = document.getElementById('go-live-btn');
+    var statusEl     = document.getElementById('device-status');
+    var genPassBtn   = document.getElementById('gen-pass-btn');
+    var currentStream = null;
+
+    genPassBtn.addEventListener('click', function() {
+        var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        var pass = '';
+        for (var i = 0; i < 6; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
+        document.getElementById('password').value = pass;
+    });
+
+    async function loadDevices() {
+        try {
+            await navigator.mediaDevices.getUserMedia({ video: true });
+        } catch (e) {}
+
+        var devices = await navigator.mediaDevices.enumerateDevices();
+        var videoDevices = devices.filter(function(d) { return d.kind === 'videoinput'; });
+
+        deviceSelect.innerHTML = '';
+
+        if (videoDevices.length === 0) {
+            deviceSelect.innerHTML = '<option>No video device found</option>';
+            statusEl.className = 'device-status bg-danger bg-opacity-10 text-danger';
+            statusEl.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i> No video device detected. Connect a USB capture card and refresh.';
+            statusEl.classList.remove('d-none');
+            return;
+        }
+
+        videoDevices.forEach(function(d, i) {
+            var opt = document.createElement('option');
+            opt.value = d.deviceId;
+            opt.textContent = d.label || ('Camera ' + (i + 1));
+            deviceSelect.appendChild(opt);
+        });
+
+        deviceSelect.disabled = false;
+
+        statusEl.className = 'device-status bg-success bg-opacity-10 text-success';
+        statusEl.innerHTML = '<i class="bi bi-check-circle me-1"></i> ' + videoDevices.length + ' video device(s) found. Select and preview.';
+        statusEl.classList.remove('d-none');
+
+        startPreview(videoDevices[0].deviceId);
+    }
+
+    async function startPreview(deviceId) {
+        if (currentStream) {
+            currentStream.getTracks().forEach(function(t) { t.stop(); });
+        }
+
+        try {
+            currentStream = await navigator.mediaDevices.getUserMedia({
+                video: { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                audio: true
+            });
+            previewVideo.srcObject = currentStream;
+            placeholder.style.display = 'none';
+            previewVideo.style.display = 'block';
+            goLiveBtn.disabled = false;
+        } catch (err) {
+            placeholder.innerHTML = '<i class="bi bi-exclamation-triangle"></i><p class="mt-2 mb-0">Could not access this device: ' + err.message + '</p>';
+            placeholder.style.display = '';
+            previewVideo.style.display = 'none';
+            goLiveBtn.disabled = true;
+        }
+    }
+
+    deviceSelect.addEventListener('change', function() {
+        if (this.value) startPreview(this.value);
+    });
+
+    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+        loadDevices();
+    } else {
+        statusEl.className = 'device-status bg-danger bg-opacity-10 text-danger';
+        statusEl.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i> Your browser does not support media devices. Use Chrome or Edge.';
+        statusEl.classList.remove('d-none');
+    }
+})();
+</script>
+@endsection

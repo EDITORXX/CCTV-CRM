@@ -324,6 +324,11 @@
                     </a>
                 </li>
                 <li>
+                    <a href="{{ route('livestream.index') }}" class="{{ request()->routeIs('livestream.*') ? 'active' : '' }}">
+                        <i class="bi bi-broadcast-pin"></i> Live Stream
+                    </a>
+                </li>
+                <li>
                     <a href="{{ route('support.index') }}" class="{{ request()->routeIs('support.*') ? 'active' : '' }}">
                         <i class="bi bi-life-preserver"></i> Help Center
                     </a>
@@ -419,6 +424,11 @@
                 <li>
                     <a href="{{ route('support-videos.index') }}" class="{{ request()->routeIs('support-videos.*') ? 'active' : '' }}">
                         <i class="bi bi-camera-video"></i> Support Videos
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('livestream.index') }}" class="{{ request()->routeIs('livestream.*') ? 'active' : '' }}">
+                        <i class="bi bi-broadcast-pin"></i> Live Stream
                     </a>
                 </li>
                 <li>
