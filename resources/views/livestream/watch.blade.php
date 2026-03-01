@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Live Stream — Watching</title>
+    <title>CCTV View — Watching</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -84,10 +84,14 @@
             text-overflow: ellipsis;
         }
         .controls-bar .btn { font-size: .85rem; }
+        .stream-controls { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+        .stream-controls .btn { font-size: .85rem; }
+        .recording-dot { width: 8px; height: 8px; background: #dc3545; border-radius: 50%; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: .4; } }
     </style>
 </head>
 <body>
-    <div class="video-wrap">
+    <div class="video-wrap" id="video-rotate-wrap" data-rotation="0">
         <div class="live-indicator" id="live-badge">
             <i class="bi bi-circle-fill" style="font-size:.5rem;"></i> LIVE
         </div>
@@ -114,17 +118,21 @@
         </div>
 
         <video id="remote-video" autoplay playsinline></video>
+        <video id="remote-video-pip" autoplay playsinline class="d-none" style="position:absolute;top:1rem;right:1rem;width:25%;max-width:220px;border:2px solid rgba(255,255,255,.5);border-radius:8px;object-fit:cover;z-index:5;"></video>
     </div>
 
     <div class="controls-bar">
         <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-broadcast-pin text-danger"></i>
-            <span class="stream-title">{{ $stream->title ?: 'Live CCTV Stream' }}</span>
+            <i class="bi bi-camera-video text-danger"></i>
+            <span class="stream-title">{{ $stream->title ?: 'CCTV View' }}</span>
         </div>
-        <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-outline-light btn-sm" id="fullscreen-btn" title="Fullscreen">
-                <i class="bi bi-fullscreen"></i>
-            </button>
+        <div class="d-flex align-items-center gap-2 stream-controls">
+            <button type="button" class="btn btn-outline-light btn-sm" id="rotate-btn" title="Rotate"><i class="bi bi-arrow-clockwise me-1"></i> Rotate</button>
+            <button type="button" class="btn btn-outline-light btn-sm" id="record-btn" title="Record" disabled><i class="bi bi-record-circle me-1"></i> Record</button>
+            <button type="button" class="btn btn-outline-light btn-sm" id="snap-btn" title="Snapshot" disabled><i class="bi bi-camera me-1"></i> Snap</button>
+            <button type="button" class="btn btn-outline-light btn-sm" id="mute-btn" title="Mute"><i class="bi bi-volume-mute me-1"></i> Mute</button>
+            <button type="button" class="btn btn-outline-light btn-sm" id="fullscreen-btn" title="Fullscreen"><i class="bi bi-fullscreen"></i></button>
+            <span id="record-indicator" class="d-none align-items-center gap-1" style="display:none;"><span class="recording-dot"></span><small>Recording</small></span>
         </div>
     </div>
 
@@ -138,6 +146,8 @@
         var CSRF         = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
         var remoteVideo  = document.getElementById('remote-video');
+        var remoteVideoPip = document.getElementById('remote-video-pip');
+        var videoTrackCount = 0;
         var connecting   = document.getElementById('status-connecting');
         var ended        = document.getElementById('status-ended');
         var errorEl      = document.getElementById('status-error');
@@ -157,9 +167,76 @@
 
         // ── Fullscreen ──
         document.getElementById('fullscreen-btn').addEventListener('click', function() {
-            var el = document.querySelector('.video-wrap');
+            var el = document.getElementById('video-rotate-wrap');
             if (el.requestFullscreen) el.requestFullscreen();
             else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+        });
+
+        // ── Rotation ──
+        var videoWrap = document.getElementById('video-rotate-wrap');
+        var rotations = [0, 90, 180, 270];
+        document.getElementById('rotate-btn').addEventListener('click', function() {
+            var current = parseInt(videoWrap.getAttribute('data-rotation') || '0', 10);
+            var idx = (rotations.indexOf(current) + 1) % 4;
+            var deg = rotations[idx];
+            videoWrap.setAttribute('data-rotation', deg);
+            videoWrap.style.transform = 'rotate(' + deg + 'deg)';
+        });
+
+        // ── Record (viewer) ──
+        var viewerRecorder = null;
+        var viewerRecordChunks = [];
+        document.getElementById('record-btn').addEventListener('click', function() {
+            var btn = this;
+            var ind = document.getElementById('record-indicator');
+            var str = remoteVideo.srcObject;
+            if (!str || !str.getTracks().length) return;
+            if (viewerRecorder && viewerRecorder.state === 'recording') {
+                viewerRecorder.stop();
+                ind.style.display = 'none';
+                btn.innerHTML = '<i class="bi bi-record-circle me-1"></i> Record';
+                return;
+            }
+            viewerRecordChunks = [];
+            var mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm';
+            viewerRecorder = new MediaRecorder(str, { mimeType: mime });
+            viewerRecorder.ondataavailable = function(e) { if (e.data.size) viewerRecordChunks.push(e.data); };
+            viewerRecorder.onstop = function() {
+                var blob = new Blob(viewerRecordChunks, { type: 'video/webm' });
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'cctv-watch-' + Date.now() + '.webm';
+                a.click();
+                URL.revokeObjectURL(a.href);
+            };
+            viewerRecorder.start();
+            ind.classList.remove('d-none');
+            ind.style.display = 'flex';
+            btn.innerHTML = '<i class="bi bi-stop-circle me-1"></i> Stop Record';
+        });
+
+        // ── Snap (viewer) ──
+        document.getElementById('snap-btn').addEventListener('click', function() {
+            var v = remoteVideo;
+            if (!v.videoWidth) return;
+            var c = document.createElement('canvas');
+            c.width = v.videoWidth;
+            c.height = v.videoHeight;
+            c.getContext('2d').drawImage(v, 0, 0);
+            c.toBlob(function(blob) {
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'cctv-snap-' + Date.now() + '.png';
+                a.click();
+                URL.revokeObjectURL(a.href);
+            }, 'image/png');
+        });
+
+        // ── Mute (viewer = mute playback) ──
+        document.getElementById('mute-btn').addEventListener('click', function() {
+            var btn = this;
+            remoteVideo.muted = !remoteVideo.muted;
+            btn.innerHTML = remoteVideo.muted ? '<i class="bi bi-volume-mute me-1"></i> Unmute' : '<i class="bi bi-volume-up me-1"></i> Mute';
         });
 
         // ── Signaling helpers ──
@@ -214,8 +291,19 @@
             };
 
             pc.ontrack = function(e) {
-                if (e.streams && e.streams[0]) {
-                    remoteVideo.srcObject = e.streams[0];
+                if (e.track.kind !== 'video') return;
+                videoTrackCount++;
+                if (videoTrackCount === 1) {
+                    if (e.streams && e.streams[0]) {
+                        remoteVideo.srcObject = e.streams[0];
+                        remoteVideoPip.classList.add('d-none');
+                    }
+                    document.getElementById('record-btn').disabled = false;
+                    document.getElementById('snap-btn').disabled = false;
+                } else {
+                    var pipStream = new MediaStream([e.track]);
+                    remoteVideoPip.srcObject = pipStream;
+                    remoteVideoPip.classList.remove('d-none');
                 }
             };
 

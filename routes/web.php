@@ -208,6 +208,11 @@ Route::middleware(['auth', 'company'])->group(function () {
         Route::post('/livestream/{livestream}/stop', [App\Http\Controllers\LiveStreamController::class, 'stop'])->name('livestream.stop');
         Route::post('/livestream/{livestream}/signal', [App\Http\Controllers\LiveStreamController::class, 'storeSignal'])->name('livestream.signal');
         Route::get('/livestream/{livestream}/signals', [App\Http\Controllers\LiveStreamController::class, 'getSignals'])->name('livestream.signals');
+        Route::get('/troubleshoot/connect', [App\Http\Controllers\TroubleshootController::class, 'connectForm'])->name('troubleshoot.connect');
+        Route::post('/troubleshoot/verify', [App\Http\Controllers\TroubleshootController::class, 'verifyAndWatch'])->name('troubleshoot.verify');
+        Route::get('/troubleshoot/watch/{code}', [App\Http\Controllers\TroubleshootController::class, 'technicianWatch'])->name('troubleshoot.watch');
+        Route::post('/troubleshoot/{code}/signal', [App\Http\Controllers\TroubleshootController::class, 'technicianStoreSignal'])->name('troubleshoot.tech.signal');
+        Route::get('/troubleshoot/{code}/signals', [App\Http\Controllers\TroubleshootController::class, 'technicianGetSignals'])->name('troubleshoot.tech.signals');
     });
 });
 
@@ -231,6 +236,11 @@ Route::middleware(['auth', 'company', 'role:customer'])->prefix('portal')->name(
     Route::post('/payments', [App\Http\Controllers\CustomerPortalController::class, 'storePayment'])->name('payments.store');
     Route::get('/profile', [App\Http\Controllers\CustomerPortalController::class, 'profile'])->name('profile');
     Route::put('/profile', [App\Http\Controllers\CustomerPortalController::class, 'updateProfile'])->name('profile.update');
+    Route::get('/troubleshoot', [App\Http\Controllers\TroubleshootController::class, 'customerPage'])->name('troubleshoot');
+    Route::post('/troubleshoot/start', [App\Http\Controllers\TroubleshootController::class, 'start'])->name('troubleshoot.start');
+    Route::post('/troubleshoot/end', [App\Http\Controllers\TroubleshootController::class, 'end'])->name('troubleshoot.end');
+    Route::post('/troubleshoot/{troubleshoot}/signal', [App\Http\Controllers\TroubleshootController::class, 'customerStoreSignal'])->name('troubleshoot.signal');
+    Route::get('/troubleshoot/{troubleshoot}/signals', [App\Http\Controllers\TroubleshootController::class, 'customerGetSignals'])->name('troubleshoot.signals');
 });
 
 Auth::routes();

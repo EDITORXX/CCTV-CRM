@@ -30,8 +30,10 @@ class LiveStreamController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'title'    => 'nullable|string|max:255',
-            'password' => 'required|string|min:4|max:50',
+            'title'      => 'nullable|string|max:255',
+            'password'   => 'required|string|min:4|max:50',
+            'device_id_1' => 'nullable|string|max:255',
+            'device_id_2' => 'nullable|string|max:255',
         ]);
 
         $stream = LiveStream::create([
@@ -45,9 +47,11 @@ class LiveStreamController extends Controller
         ]);
 
         session(["_live_plain_pass_{$stream->id}" => $request->password]);
+        session(["_live_device_1_{$stream->id}" => $request->device_id_1]);
+        session(["_live_device_2_{$stream->id}" => $request->device_id_2]);
 
         return redirect()->route('livestream.show', $stream)
-            ->with('success', 'Live stream started! Share the link below.');
+            ->with('success', 'CCTV View started! Share the link below.');
     }
 
     public function show(LiveStream $livestream)
@@ -57,8 +61,10 @@ class LiveStreamController extends Controller
         }
 
         return view('livestream.show', [
-            'stream'   => $livestream,
-            'shareUrl' => route('livestream.viewer', $livestream->token),
+            'stream'      => $livestream,
+            'shareUrl'    => route('livestream.viewer', $livestream->token),
+            'deviceId1'   => session("_live_device_1_{$livestream->id}"),
+            'deviceId2'   => session("_live_device_2_{$livestream->id}"),
         ]);
     }
 

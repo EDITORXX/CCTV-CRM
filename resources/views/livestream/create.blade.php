@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Start Live Stream')
+@section('title', 'Start CCTV View')
 
 @section('styles')
 <style>
@@ -39,7 +39,7 @@
 <div class="row justify-content-center">
     <div class="col-lg-8">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4 class="mb-0">Start Live Stream</h4>
+            <h4 class="mb-0">Start CCTV View</h4>
             <a href="{{ route('livestream.index') }}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left me-1"></i> Back
             </a>
@@ -50,15 +50,23 @@
         </div>
 
         <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <span><i class="bi bi-camera-video me-1"></i> Camera Preview</span>
-                <select id="device-select" class="form-select form-select-sm" style="width:auto;min-width:200px;" disabled>
-                    <option>Loading devices...</option>
-                </select>
+                <div class="d-flex gap-2 align-items-center">
+                    <label class="small text-muted mb-0">Main:</label>
+                    <select id="device-select" class="form-select form-select-sm" style="width:auto;min-width:180px;" disabled>
+                        <option>Loading...</option>
+                    </select>
+                    <label class="small text-muted mb-0">Second (optional):</label>
+                    <select id="device-select-2" class="form-select form-select-sm" style="width:auto;min-width:180px;" disabled>
+                        <option value="">None</option>
+                    </select>
+                </div>
             </div>
             <div class="card-body p-0">
-                <div class="preview-container">
+                <div class="preview-container position-relative">
                     <video id="preview-video" autoplay muted playsinline></video>
+                    <video id="preview-video-2" autoplay muted playsinline class="d-none" style="position:absolute;top:0.5rem;right:0.5rem;width:25%;max-width:200px;border:2px solid #fff;border-radius:8px;object-fit:cover;"></video>
                     <div id="preview-placeholder" class="preview-placeholder">
                         <i class="bi bi-camera-video-off"></i>
                         <p class="mt-2 mb-0">Select a video device to preview</p>
@@ -71,6 +79,8 @@
             <div class="card-body">
                 <form method="POST" action="{{ route('livestream.store') }}" id="stream-form">
                     @csrf
+                    <input type="hidden" name="device_id_1" id="device-id-1" value="">
+                    <input type="hidden" name="device_id_2" id="device-id-2" value="">
                     <div class="mb-3">
                         <label for="title" class="form-label">Stream Title <span class="text-muted">(optional)</span></label>
                         <input type="text" class="form-control" id="title" name="title" placeholder="e.g. Customer site - Sector 21" value="{{ old('title') }}">
@@ -89,7 +99,7 @@
                         <div class="form-text">Viewers will need this password to watch your stream.</div>
                     </div>
                     <button type="submit" class="btn btn-success btn-lg w-100" id="go-live-btn" disabled>
-                        <i class="bi bi-broadcast-pin me-1"></i> Go Live
+                        <i class="bi bi-camera-video me-1"></i> Go Live
                     </button>
                 </form>
             </div>
@@ -101,13 +111,16 @@
 @section('scripts')
 <script>
 (function() {
-    var deviceSelect = document.getElementById('device-select');
-    var previewVideo = document.getElementById('preview-video');
-    var placeholder  = document.getElementById('preview-placeholder');
-    var goLiveBtn    = document.getElementById('go-live-btn');
-    var statusEl     = document.getElementById('device-status');
-    var genPassBtn   = document.getElementById('gen-pass-btn');
+    var deviceSelect  = document.getElementById('device-select');
+    var deviceSelect2 = document.getElementById('device-select-2');
+    var previewVideo  = document.getElementById('preview-video');
+    var previewVideo2 = document.getElementById('preview-video-2');
+    var placeholder   = document.getElementById('preview-placeholder');
+    var goLiveBtn     = document.getElementById('go-live-btn');
+    var statusEl      = document.getElementById('device-status');
+    var genPassBtn    = document.getElementById('gen-pass-btn');
     var currentStream = null;
+    var currentStream2 = null;
 
     genPassBtn.addEventListener('click', function() {
         var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -139,15 +152,21 @@
             opt.value = d.deviceId;
             opt.textContent = d.label || ('Camera ' + (i + 1));
             deviceSelect.appendChild(opt);
+            var opt2 = document.createElement('option');
+            opt2.value = d.deviceId;
+            opt2.textContent = d.label || ('Camera ' + (i + 1));
+            deviceSelect2.appendChild(opt2);
         });
 
         deviceSelect.disabled = false;
+        deviceSelect2.disabled = false;
 
         statusEl.className = 'device-status bg-success bg-opacity-10 text-success';
         statusEl.innerHTML = '<i class="bi bi-check-circle me-1"></i> ' + videoDevices.length + ' video device(s) found. Select and preview.';
         statusEl.classList.remove('d-none');
 
         startPreview(videoDevices[0].deviceId);
+        document.getElementById('device-id-1').value = videoDevices[0].deviceId;
     }
 
     async function startPreview(deviceId) {
@@ -172,8 +191,29 @@
         }
     }
 
+    async function startPreview2(deviceId) {
+        if (currentStream2) { currentStream2.getTracks().forEach(function(t) { t.stop(); }); currentStream2 = null; }
+        if (!deviceId) { previewVideo2.classList.add('d-none'); return; }
+        try {
+            currentStream2 = await navigator.mediaDevices.getUserMedia({
+                video: { deviceId: { exact: deviceId }, width: { ideal: 640 }, height: { ideal: 360 } },
+                audio: false
+            });
+            previewVideo2.srcObject = currentStream2;
+            previewVideo2.classList.remove('d-none');
+        } catch (e) {
+            previewVideo2.classList.add('d-none');
+        }
+    }
+
     deviceSelect.addEventListener('change', function() {
         if (this.value) startPreview(this.value);
+        document.getElementById('device-id-1').value = this.value || '';
+    });
+
+    deviceSelect2.addEventListener('change', function() {
+        startPreview2(this.value || null);
+        document.getElementById('device-id-2').value = this.value || '';
     });
 
     if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {

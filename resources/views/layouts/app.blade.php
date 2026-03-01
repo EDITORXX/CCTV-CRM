@@ -295,6 +295,11 @@
                         <i class="bi bi-life-preserver"></i> Help Center
                     </a>
                 </li>
+                <li>
+                    <a href="{{ route('portal.troubleshoot') }}" class="{{ request()->routeIs('portal.troubleshoot*') ? 'active' : '' }}">
+                        <i class="bi bi-tools"></i> Troubleshoot
+                    </a>
+                </li>
             @elseif($userRole === 'technician')
                 {{-- Technician sidebar --}}
                 <li class="nav-label">Work</li>
@@ -325,7 +330,7 @@
                 </li>
                 <li>
                     <a href="{{ route('livestream.index') }}" class="{{ request()->routeIs('livestream.*') ? 'active' : '' }}">
-                        <i class="bi bi-broadcast-pin"></i> Live Stream
+                        <i class="bi bi-camera-video"></i> CCTV View
                     </a>
                 </li>
                 <li>
@@ -428,7 +433,7 @@
                 </li>
                 <li>
                     <a href="{{ route('livestream.index') }}" class="{{ request()->routeIs('livestream.*') ? 'active' : '' }}">
-                        <i class="bi bi-broadcast-pin"></i> Live Stream
+                        <i class="bi bi-camera-video"></i> CCTV View
                     </a>
                 </li>
                 <li>
