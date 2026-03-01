@@ -32,6 +32,13 @@
         border-radius: .5rem;
         margin-bottom: 1rem;
     }
+    .device-selects { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+    .device-selects label { white-space: nowrap; }
+    @media (max-width: 767px) {
+        .device-selects { flex-direction: column; align-items: stretch; width: 100%; }
+        .device-selects select { width: 100% !important; min-width: 0 !important; }
+        .preview-container { aspect-ratio: 4/3; }
+    }
 </style>
 @endsection
 
@@ -50,18 +57,21 @@
         </div>
 
         <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <span><i class="bi bi-camera-video me-1"></i> Camera Preview</span>
-                <div class="d-flex gap-2 align-items-center">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span><i class="bi bi-camera-video me-1"></i> Camera Preview</span>
+                </div>
+                <div class="device-selects">
                     <label class="small text-muted mb-0">Main:</label>
-                    <select id="device-select" class="form-select form-select-sm" style="width:auto;min-width:180px;" disabled>
+                    <select id="device-select" class="form-select form-select-sm" style="width:auto;min-width:160px;" disabled>
                         <option>Loading...</option>
                     </select>
-                    <label class="small text-muted mb-0">Second (optional):</label>
-                    <select id="device-select-2" class="form-select form-select-sm" style="width:auto;min-width:180px;" disabled>
+                    <label class="small text-muted mb-0">Second:</label>
+                    <select id="device-select-2" class="form-select form-select-sm" style="width:auto;min-width:160px;" disabled>
                         <option value="">None</option>
                     </select>
                 </div>
+                <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>Allow camera access when prompted for second camera</small>
             </div>
             <div class="card-body p-0">
                 <div class="preview-container position-relative">
@@ -86,9 +96,9 @@
                         <input type="text" class="form-control" id="title" name="title" placeholder="e.g. Customer site - Sector 21" value="{{ old('title') }}">
                     </div>
                     <div class="mb-3">
-                        <label for="password" class="form-label">Stream Password <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <input type="text" class="form-control @error('password') is-invalid @enderror" id="password" name="password" placeholder="Set a password for viewers" value="{{ old('password') }}" required minlength="4">
+                        <label for="password" class="form-label">Stream Password</label>
+                        <div class="input-group" id="password-group">
+                            <input type="text" class="form-control @error('password') is-invalid @enderror" id="password" name="password" placeholder="Set a password for viewers" value="{{ old('password') }}" minlength="4">
                             <button type="button" class="btn btn-outline-secondary" id="gen-pass-btn" title="Generate random password">
                                 <i class="bi bi-shuffle"></i>
                             </button>
@@ -96,7 +106,10 @@
                         @error('password')
                             <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
-                        <div class="form-text">Viewers will need this password to watch your stream.</div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="no-password-cb">
+                            <label class="form-check-label small" for="no-password-cb">No password (open link — anyone with link can view)</label>
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-success btn-lg w-100" id="go-live-btn" disabled>
                         <i class="bi bi-camera-video me-1"></i> Go Live
@@ -121,6 +134,21 @@
     var genPassBtn    = document.getElementById('gen-pass-btn');
     var currentStream = null;
     var currentStream2 = null;
+
+    var noPassCb = document.getElementById('no-password-cb');
+    var passField = document.getElementById('password');
+    var passGroup = document.getElementById('password-group');
+    noPassCb.addEventListener('change', function() {
+        if (this.checked) {
+            passField.value = '';
+            passField.disabled = true;
+            passField.removeAttribute('required');
+            passGroup.style.opacity = '0.4';
+        } else {
+            passField.disabled = false;
+            passGroup.style.opacity = '1';
+        }
+    });
 
     genPassBtn.addEventListener('click', function() {
         var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

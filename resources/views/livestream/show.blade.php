@@ -73,6 +73,27 @@
     .stream-controls .btn { font-size: .85rem; }
     .recording-dot { width: 8px; height: 8px; background: #dc3545; border-radius: 50%; animation: blink 1s infinite; }
     @keyframes blink { 50% { opacity: .4; } }
+
+    @media (max-width: 576px) {
+        .stream-controls .btn span.btn-label { display: none; }
+        .stream-controls .btn { padding: .35rem .55rem; font-size: .8rem; }
+        .stream-controls > .fw-semibold { display: none; }
+        .share-url { font-size: .75rem; }
+    }
+    @media (max-width: 767px) {
+        #device-row .d-flex { flex-direction: column; }
+        #device-row select { width: 100% !important; min-width: 0 !important; }
+    }
+    @media (orientation: landscape) and (max-height: 500px) {
+        .stream-controls { padding: .25rem 0; }
+        .stream-controls .btn { padding: .25rem .4rem; font-size: .75rem; }
+        .broadcast-container { aspect-ratio: auto; height: calc(100vh - 100px); }
+    }
+
+    .broadcast-container:-webkit-full-screen,
+    .broadcast-container:fullscreen {
+        width: 100vw; height: 100vh; aspect-ratio: auto;
+    }
 </style>
 @endsection
 
@@ -105,11 +126,13 @@
 
         <div class="stream-controls mb-3">
             <span class="fw-semibold me-2">Controls:</span>
-            <button type="button" class="btn btn-outline-secondary btn-sm" id="rotate-btn" title="Rotate"><i class="bi bi-arrow-clockwise me-1"></i> Rotate</button>
-            <button type="button" class="btn btn-outline-danger btn-sm" id="record-btn" title="Record"><i class="bi bi-record-circle me-1"></i> Record</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm" id="snap-btn" title="Snapshot"><i class="bi bi-camera me-1"></i> Snap</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm" id="mute-btn" title="Mute audio"><i class="bi bi-mic me-1"></i> Mute</button>
-            <span id="record-indicator" class="d-none align-items-center gap-1"><span class="recording-dot"></span><small>Recording</small></span>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="rotate-btn" title="Rotate Main"><i class="bi bi-arrow-clockwise"></i> <span class="btn-label">Rotate</span></button>
+            <button type="button" class="btn btn-outline-secondary btn-sm d-none" id="rotate-pip-btn" title="Rotate PiP"><i class="bi bi-arrow-repeat"></i> <span class="btn-label">Rotate PiP</span></button>
+            <button type="button" class="btn btn-outline-danger btn-sm" id="record-btn" title="Record"><i class="bi bi-record-circle"></i> <span class="btn-label">Record</span></button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="snap-btn" title="Snapshot"><i class="bi bi-camera"></i> <span class="btn-label">Snap</span></button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="mute-btn" title="Mute audio"><i class="bi bi-mic"></i> <span class="btn-label">Mute</span></button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="fullscreen-btn" title="Fullscreen"><i class="bi bi-arrows-fullscreen"></i> <span class="btn-label">Fullscreen</span></button>
+            <span id="record-indicator" class="d-none align-items-center gap-1"><span class="recording-dot"></span><small>REC</small></span>
         </div>
 
         <div id="device-row" class="mb-3">
@@ -133,12 +156,17 @@
                     <label class="form-label small fw-semibold text-muted mb-1">CCTV View Link</label>
                     <div class="share-url" id="share-url">{{ $shareUrl }}</div>
                 </div>
-                <div class="mb-3">
+                @if(session('_live_plain_pass_' . $stream->id))
+                <div class="mb-3" id="pass-section">
                     <label class="form-label small fw-semibold text-muted mb-1">Password</label>
-                    <div class="share-url" id="share-pass">{{ session('_live_plain_pass_' . $stream->id, '****') }}</div>
+                    <div class="share-url" id="share-pass">{{ session('_live_plain_pass_' . $stream->id) }}</div>
                 </div>
                 <button type="button" class="btn btn-primary w-100 mb-2" id="copy-btn">
                     <i class="bi bi-clipboard me-1"></i> Copy Link & Password
+                </button>
+                @endif
+                <button type="button" class="btn btn-outline-primary w-100 mb-2" id="copy-link-btn">
+                    <i class="bi bi-link-45deg me-1"></i> Copy Link Only
                 </button>
                 <button type="button" class="btn btn-success w-100" id="whatsapp-btn">
                     <i class="bi bi-whatsapp me-1"></i> Share via WhatsApp
@@ -184,33 +212,65 @@
         { urls: 'stun:stun1.l.google.com:19302' }
     ];
 
+    var HAS_PASSWORD = {{ session('_live_plain_pass_' . $stream->id) ? 'true' : 'false' }};
+
     // ── Copy / Share ──
 
-    document.getElementById('copy-btn').addEventListener('click', function() {
-        var pass = document.getElementById('share-pass').textContent;
-        var text = 'CCTV View\nLink: ' + SHARE_URL + '\nPassword: ' + pass;
-        navigator.clipboard.writeText(text).then(function() {
-            var btn = document.getElementById('copy-btn');
-            btn.innerHTML = '<i class="bi bi-check2 me-1"></i> Copied!';
-            setTimeout(function() { btn.innerHTML = '<i class="bi bi-clipboard me-1"></i> Copy Link & Password'; }, 2000);
+    if (HAS_PASSWORD && document.getElementById('copy-btn')) {
+        document.getElementById('copy-btn').addEventListener('click', function() {
+            var pass = document.getElementById('share-pass').textContent;
+            var text = 'CCTV View\nLink: ' + SHARE_URL + '\nPassword: ' + pass;
+            navigator.clipboard.writeText(text).then(function() {
+                var btn = document.getElementById('copy-btn');
+                btn.innerHTML = '<i class="bi bi-check2 me-1"></i> Copied!';
+                setTimeout(function() { btn.innerHTML = '<i class="bi bi-clipboard me-1"></i> Copy Link & Password'; }, 2000);
+            });
+        });
+    }
+
+    document.getElementById('copy-link-btn').addEventListener('click', function() {
+        navigator.clipboard.writeText(SHARE_URL).then(function() {
+            var btn = document.getElementById('copy-link-btn');
+            btn.innerHTML = '<i class="bi bi-check2 me-1"></i> Link Copied!';
+            setTimeout(function() { btn.innerHTML = '<i class="bi bi-link-45deg me-1"></i> Copy Link Only'; }, 2000);
         });
     });
 
     document.getElementById('whatsapp-btn').addEventListener('click', function() {
-        var pass = document.getElementById('share-pass').textContent;
-        var text = 'CCTV View\nLink: ' + SHARE_URL + '\nPassword: ' + pass;
+        var text = 'CCTV View\nLink: ' + SHARE_URL;
+        if (HAS_PASSWORD) {
+            var pass = document.getElementById('share-pass').textContent;
+            text += '\nPassword: ' + pass;
+        }
         window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
     });
 
-    // ── Rotation ──
+    // ── Rotation (Main) ──
     var videoWrap = document.getElementById('video-rotate-wrap');
     var rotations = [0, 90, 180, 270];
+    var mainRotIdx = 0;
     document.getElementById('rotate-btn').addEventListener('click', function() {
-        var current = parseInt(videoWrap.getAttribute('data-rotation') || '0', 10);
-        var idx = (rotations.indexOf(current) + 1) % 4;
-        var deg = rotations[idx];
-        videoWrap.setAttribute('data-rotation', deg);
-        videoWrap.style.transform = 'rotate(' + deg + 'deg)';
+        mainRotIdx = (mainRotIdx + 1) % 4;
+        localVideo.style.transform = 'rotate(' + rotations[mainRotIdx] + 'deg)';
+    });
+
+    // ── Rotation (PiP) ──
+    var pipRotIdx = 0;
+    document.getElementById('rotate-pip-btn').addEventListener('click', function() {
+        pipRotIdx = (pipRotIdx + 1) % 4;
+        localVideo2.style.transform = 'rotate(' + rotations[pipRotIdx] + 'deg)';
+    });
+
+    // ── Fullscreen ──
+    document.getElementById('fullscreen-btn').addEventListener('click', function() {
+        var el = document.getElementById('video-rotate-wrap');
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        } else if (el.requestFullscreen) {
+            el.requestFullscreen();
+        } else if (el.webkitRequestFullscreen) {
+            el.webkitRequestFullscreen();
+        }
     });
 
     // ── Record ──
@@ -223,7 +283,7 @@
         if (mediaRecorder && mediaRecorder.state === 'recording') {
             mediaRecorder.stop();
             ind.classList.add('d-none');
-            btn.innerHTML = '<i class="bi bi-record-circle me-1"></i> Record';
+            btn.innerHTML = '<i class="bi bi-record-circle"></i> <span class="btn-label">Record</span>';
             return;
         }
         recordChunks = [];
@@ -241,7 +301,7 @@
         mediaRecorder.start();
         ind.classList.remove('d-none');
         ind.style.display = 'flex';
-        btn.innerHTML = '<i class="bi bi-stop-circle me-1"></i> Stop Record';
+        btn.innerHTML = '<i class="bi bi-stop-circle"></i> <span class="btn-label">Stop</span>';
     });
 
     // ── Snap ──
@@ -269,7 +329,7 @@
         if (audioTracks.length === 0) return;
         var enabled = !audioTracks[0].enabled;
         audioTracks[0].enabled = enabled;
-        btn.innerHTML = enabled ? '<i class="bi bi-mic me-1"></i> Mute' : '<i class="bi bi-mic-mute me-1"></i> Unmute';
+        btn.innerHTML = enabled ? '<i class="bi bi-mic"></i> <span class="btn-label">Mute</span>' : '<i class="bi bi-mic-mute"></i> <span class="btn-label">Unmute</span>';
         Object.keys(peers).forEach(function(pid) {
             var senders = peers[pid].pc.getSenders();
             senders.forEach(function(s) {
@@ -326,7 +386,10 @@
                 });
                 localVideo2.srcObject = localStream2;
                 localVideo2.classList.remove('d-none');
+                document.getElementById('rotate-pip-btn').classList.remove('d-none');
             } catch (e) {}
+        } else {
+            document.getElementById('rotate-pip-btn').classList.add('d-none');
         }
 
         if (!pollTimer) startPolling();
@@ -406,6 +469,30 @@
                 } catch(e) {}
             }
         }
+        else if (type === 'quality-change') {
+            applyQuality(fromPeer, payload);
+        }
+    }
+
+    var QUALITY_MAP = { '144p': 150000, '360p': 500000, '720p': 1500000, '1080p': 4000000, 'auto': 0 };
+    function applyQuality(peerId, qualityObj) {
+        var q = typeof qualityObj === 'string' ? qualityObj : (qualityObj.quality || 'auto');
+        var maxBitrate = QUALITY_MAP[q] || 0;
+        if (!peers[peerId]) return;
+        var senders = peers[peerId].pc.getSenders();
+        senders.forEach(function(sender) {
+            if (!sender.track || sender.track.kind !== 'video') return;
+            var params = sender.getParameters();
+            if (!params.encodings || params.encodings.length === 0) {
+                params.encodings = [{}];
+            }
+            if (maxBitrate > 0) {
+                params.encodings[0].maxBitrate = maxBitrate;
+            } else {
+                delete params.encodings[0].maxBitrate;
+            }
+            sender.setParameters(params).catch(function() {});
+        });
     }
 
     function sendSignal(toPeer, type, payload) {

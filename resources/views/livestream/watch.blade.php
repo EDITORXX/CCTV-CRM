@@ -88,6 +88,23 @@
         .stream-controls .btn { font-size: .85rem; }
         .recording-dot { width: 8px; height: 8px; background: #dc3545; border-radius: 50%; animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: .4; } }
+        .quality-select { background: #222; border: 1px solid #444; color: #fff; font-size: .8rem; padding: .25rem .5rem; border-radius: .35rem; }
+
+        @media (max-width: 576px) {
+            .controls-bar { padding: .5rem .5rem; gap: .5rem; flex-wrap: wrap; justify-content: center; }
+            .controls-bar .stream-title { font-size: .75rem; }
+            .stream-controls .btn span.btn-label { display: none; }
+            .stream-controls .btn { padding: .3rem .45rem; font-size: .75rem; }
+            .stream-controls { justify-content: center; }
+        }
+        @media (orientation: landscape) and (max-height: 500px) {
+            .controls-bar { padding: .35rem .75rem; }
+            .controls-bar .btn { padding: .25rem .5rem; font-size: .75rem; }
+            .video-wrap { height: calc(100vh - 40px); }
+            .stream-controls .btn span.btn-label { display: none; }
+        }
+        .video-wrap:-webkit-full-screen,
+        .video-wrap:fullscreen { width: 100vw; height: 100vh; background: #000; }
     </style>
 </head>
 <body>
@@ -126,13 +143,21 @@
             <i class="bi bi-camera-video text-danger"></i>
             <span class="stream-title">{{ $stream->title ?: 'CCTV View' }}</span>
         </div>
-        <div class="d-flex align-items-center gap-2 stream-controls">
-            <button type="button" class="btn btn-outline-light btn-sm" id="rotate-btn" title="Rotate"><i class="bi bi-arrow-clockwise me-1"></i> Rotate</button>
-            <button type="button" class="btn btn-outline-light btn-sm" id="record-btn" title="Record" disabled><i class="bi bi-record-circle me-1"></i> Record</button>
-            <button type="button" class="btn btn-outline-light btn-sm" id="snap-btn" title="Snapshot" disabled><i class="bi bi-camera me-1"></i> Snap</button>
-            <button type="button" class="btn btn-outline-light btn-sm" id="mute-btn" title="Mute"><i class="bi bi-volume-mute me-1"></i> Mute</button>
-            <button type="button" class="btn btn-outline-light btn-sm" id="fullscreen-btn" title="Fullscreen"><i class="bi bi-fullscreen"></i></button>
-            <span id="record-indicator" class="d-none align-items-center gap-1" style="display:none;"><span class="recording-dot"></span><small>Recording</small></span>
+        <div class="d-flex align-items-center gap-2 stream-controls flex-wrap justify-content-center">
+            <button type="button" class="btn btn-outline-light btn-sm" id="rotate-btn" title="Rotate Main"><i class="bi bi-arrow-clockwise"></i> <span class="btn-label">Rotate</span></button>
+            <button type="button" class="btn btn-outline-light btn-sm d-none" id="rotate-pip-btn" title="Rotate PiP"><i class="bi bi-arrow-repeat"></i> <span class="btn-label">PiP</span></button>
+            <button type="button" class="btn btn-outline-light btn-sm" id="record-btn" title="Record" disabled><i class="bi bi-record-circle"></i> <span class="btn-label">Record</span></button>
+            <button type="button" class="btn btn-outline-light btn-sm" id="snap-btn" title="Snapshot" disabled><i class="bi bi-camera"></i> <span class="btn-label">Snap</span></button>
+            <button type="button" class="btn btn-outline-light btn-sm" id="mute-btn" title="Mute"><i class="bi bi-volume-mute"></i> <span class="btn-label">Mute</span></button>
+            <button type="button" class="btn btn-outline-light btn-sm" id="fullscreen-btn" title="Fullscreen"><i class="bi bi-arrows-fullscreen"></i> <span class="btn-label">Full</span></button>
+            <select class="quality-select" id="quality-select" title="Stream quality">
+                <option value="auto" selected>Auto</option>
+                <option value="144p">144p</option>
+                <option value="360p">360p</option>
+                <option value="720p">HD</option>
+                <option value="1080p">Full HD</option>
+            </select>
+            <span id="record-indicator" class="d-none align-items-center gap-1" style="display:none;"><span class="recording-dot"></span><small>REC</small></span>
         </div>
     </div>
 
@@ -168,19 +193,28 @@
         // ── Fullscreen ──
         document.getElementById('fullscreen-btn').addEventListener('click', function() {
             var el = document.getElementById('video-rotate-wrap');
-            if (el.requestFullscreen) el.requestFullscreen();
-            else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else if (el.requestFullscreen) {
+                el.requestFullscreen();
+            } else if (el.webkitRequestFullscreen) {
+                el.webkitRequestFullscreen();
+            }
         });
 
-        // ── Rotation ──
-        var videoWrap = document.getElementById('video-rotate-wrap');
+        // ── Rotation (Main video) ──
         var rotations = [0, 90, 180, 270];
+        var mainRotIdx = 0;
         document.getElementById('rotate-btn').addEventListener('click', function() {
-            var current = parseInt(videoWrap.getAttribute('data-rotation') || '0', 10);
-            var idx = (rotations.indexOf(current) + 1) % 4;
-            var deg = rotations[idx];
-            videoWrap.setAttribute('data-rotation', deg);
-            videoWrap.style.transform = 'rotate(' + deg + 'deg)';
+            mainRotIdx = (mainRotIdx + 1) % 4;
+            remoteVideo.style.transform = 'rotate(' + rotations[mainRotIdx] + 'deg)';
+        });
+
+        // ── Rotation (PiP) ──
+        var pipRotIdx = 0;
+        document.getElementById('rotate-pip-btn').addEventListener('click', function() {
+            pipRotIdx = (pipRotIdx + 1) % 4;
+            remoteVideoPip.style.transform = 'rotate(' + rotations[pipRotIdx] + 'deg)';
         });
 
         // ── Record (viewer) ──
@@ -194,7 +228,7 @@
             if (viewerRecorder && viewerRecorder.state === 'recording') {
                 viewerRecorder.stop();
                 ind.style.display = 'none';
-                btn.innerHTML = '<i class="bi bi-record-circle me-1"></i> Record';
+                btn.innerHTML = '<i class="bi bi-record-circle"></i> <span class="btn-label">Record</span>';
                 return;
             }
             viewerRecordChunks = [];
@@ -212,7 +246,7 @@
             viewerRecorder.start();
             ind.classList.remove('d-none');
             ind.style.display = 'flex';
-            btn.innerHTML = '<i class="bi bi-stop-circle me-1"></i> Stop Record';
+            btn.innerHTML = '<i class="bi bi-stop-circle"></i> <span class="btn-label">Stop</span>';
         });
 
         // ── Snap (viewer) ──
@@ -236,7 +270,7 @@
         document.getElementById('mute-btn').addEventListener('click', function() {
             var btn = this;
             remoteVideo.muted = !remoteVideo.muted;
-            btn.innerHTML = remoteVideo.muted ? '<i class="bi bi-volume-mute me-1"></i> Unmute' : '<i class="bi bi-volume-up me-1"></i> Mute';
+            btn.innerHTML = remoteVideo.muted ? '<i class="bi bi-volume-mute"></i> <span class="btn-label">Unmute</span>' : '<i class="bi bi-volume-up"></i> <span class="btn-label">Mute</span>';
         });
 
         // ── Signaling helpers ──
@@ -304,6 +338,7 @@
                     var pipStream = new MediaStream([e.track]);
                     remoteVideoPip.srcObject = pipStream;
                     remoteVideoPip.classList.remove('d-none');
+                    document.getElementById('rotate-pip-btn').classList.remove('d-none');
                 }
             };
 
@@ -381,6 +416,12 @@
             errorEl.classList.remove('hidden');
             liveBadge.style.display = 'none';
         }
+
+        // ── Quality selector ──
+        document.getElementById('quality-select').addEventListener('change', function() {
+            var quality = this.value;
+            sendSignal('tech', 'quality-change', JSON.stringify({ quality: quality }));
+        });
 
         // ── Init ──
         startViewing();

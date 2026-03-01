@@ -157,6 +157,20 @@
             margin-top: .35rem;
             text-align: center;
         }
+
+        @media (max-width: 576px) {
+            body { padding: .5rem; }
+            .brand-area { margin-bottom: 1.25rem; }
+            .brand-area .brand-logo { max-width: 150px; }
+            .brand-area h3 { font-size: 1.25rem; }
+            .login-card { padding: 1.25rem; }
+            .login-card .form-control,
+            .login-card .form-select { padding: .6rem .85rem; font-size: .85rem; }
+            .input-icon-group .form-control,
+            .input-icon-group .form-select { padding-left: 2.5rem; }
+            .btn-login { padding: .6rem; font-size: .9rem; }
+            .action-buttons { flex-direction: column; }
+        }
     </style>
 </head>
 <body>

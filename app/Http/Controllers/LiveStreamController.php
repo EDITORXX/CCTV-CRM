@@ -31,7 +31,7 @@ class LiveStreamController extends Controller
     {
         $request->validate([
             'title'      => 'nullable|string|max:255',
-            'password'   => 'required|string|min:4|max:50',
+            'password'   => 'nullable|string|min:4|max:50',
             'device_id_1' => 'nullable|string|max:255',
             'device_id_2' => 'nullable|string|max:255',
         ]);
@@ -40,13 +40,13 @@ class LiveStreamController extends Controller
             'user_id'    => auth()->id(),
             'company_id' => session('current_company_id'),
             'token'      => LiveStream::generateToken(),
-            'password'   => $request->password,
+            'password'   => $request->password ?: null,
             'title'      => $request->title,
             'status'     => 'active',
             'started_at' => now(),
         ]);
 
-        session(["_live_plain_pass_{$stream->id}" => $request->password]);
+        session(["_live_plain_pass_{$stream->id}" => $request->password ?: null]);
         session(["_live_device_1_{$stream->id}" => $request->device_id_1]);
         session(["_live_device_2_{$stream->id}" => $request->device_id_2]);
 
@@ -97,7 +97,7 @@ class LiveStreamController extends Controller
 
         $request->validate([
             'to_peer' => 'required|string|max:64',
-            'type'    => 'required|string|in:offer,answer,ice-candidate',
+            'type'    => 'required|string|in:offer,answer,ice-candidate,quality-change',
             'payload' => 'required|string',
         ]);
 
@@ -148,6 +148,14 @@ class LiveStreamController extends Controller
             return view('livestream.ended');
         }
 
+        if (is_null($stream->password)) {
+            session(["live_verified_{$stream->id}" => true]);
+            if (!session("live_peer_id_{$stream->id}")) {
+                session(["live_peer_id_{$stream->id}" => 'viewer_' . substr(md5(uniqid(mt_rand(), true)), 0, 12)]);
+            }
+            return redirect()->route('livestream.watch', $token);
+        }
+
         if (session("live_verified_{$stream->id}")) {
             return redirect()->route('livestream.watch', $token);
         }
@@ -187,6 +195,13 @@ class LiveStreamController extends Controller
             return view('livestream.ended');
         }
 
+        if (is_null($stream->password)) {
+            session(["live_verified_{$stream->id}" => true]);
+            if (!session("live_peer_id_{$stream->id}")) {
+                session(["live_peer_id_{$stream->id}" => 'viewer_' . substr(md5(uniqid(mt_rand(), true)), 0, 12)]);
+            }
+        }
+
         if (!session("live_verified_{$stream->id}")) {
             return redirect()->route('livestream.viewer', $token);
         }
@@ -205,7 +220,7 @@ class LiveStreamController extends Controller
             ->where('status', 'active')
             ->firstOrFail();
 
-        if (!session("live_verified_{$stream->id}")) {
+        if (!session("live_verified_{$stream->id}") && !is_null($stream->password)) {
             abort(403);
         }
 
@@ -213,7 +228,7 @@ class LiveStreamController extends Controller
 
         $request->validate([
             'to_peer' => 'required|string|max:64',
-            'type'    => 'required|string|in:offer,answer,ice-candidate',
+            'type'    => 'required|string|in:offer,answer,ice-candidate,quality-change',
             'payload' => 'required|string',
         ]);
 
@@ -234,7 +249,7 @@ class LiveStreamController extends Controller
             ->where('token', $token)
             ->firstOrFail();
 
-        if (!session("live_verified_{$stream->id}")) {
+        if (!session("live_verified_{$stream->id}") && !is_null($stream->password)) {
             abort(403);
         }
 
