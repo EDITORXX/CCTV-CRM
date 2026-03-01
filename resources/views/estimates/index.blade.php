@@ -3,16 +3,16 @@
 @section('title', 'Estimates')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
         <h4 class="mb-1">Estimates</h4>
         <p class="text-muted mb-0">Manage estimates for customers</p>
     </div>
-    <div class="d-flex gap-2">
-        <a href="{{ route('quotation-templates.index') }}" class="btn btn-outline-secondary">
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ route('quotation-templates.index') }}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-file-earmark-ruled me-1"></i> Templates
         </a>
-        <a href="{{ route('estimates.create') }}" class="btn btn-primary">
+        <a href="{{ route('estimates.create') }}" class="btn btn-primary btn-sm">
             <i class="bi bi-plus-lg me-1"></i> New Estimate
         </a>
     </div>

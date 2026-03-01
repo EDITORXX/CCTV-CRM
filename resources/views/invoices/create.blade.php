@@ -3,12 +3,12 @@
 @section('title', 'New Invoice')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
         <h4 class="mb-1">New Invoice</h4>
         <p class="text-muted mb-0">Create a sales invoice for a customer</p>
     </div>
-    <a href="{{ route('invoices.index') }}" class="btn btn-outline-secondary">
+    <a href="{{ route('invoices.index') }}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left me-1"></i> Back
     </a>
 </div>
@@ -168,19 +168,23 @@
 </form>
 @endsection
 
+@php
+    $productsJson = $products->map(function($p) {
+        return [
+            'id' => $p->id,
+            'name' => $p->name,
+            'category' => optional($p->category)->name ?? '',
+            'is_serialized' => $p->is_serialized ?? false,
+        ];
+    });
+@endphp
+
 @section('scripts')
 <script>
 $(document).ready(function() {
     var rowIndex = 0;
 
-    var products = @json($products->map(function($p) {
-        return [
-            'id' => $p->id,
-            'name' => $p->name,
-            'category' => $p->category->name ?? '',
-            'is_serialized' => $p->is_serialized ?? false,
-        ];
-    }));
+    var products = @json($productsJson);
 
     function buildProductOptions() {
         var opts = '<option value="">— Select Product —</option>';

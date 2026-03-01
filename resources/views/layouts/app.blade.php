@@ -226,6 +226,82 @@
         /* ── Scrollbar ── */
         .sidebar::-webkit-scrollbar { width: 4px; }
         .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 2px; }
+
+        /* ══════════════════════════════════════════
+           GLOBAL MOBILE RESPONSIVE
+           ══════════════════════════════════════════ */
+
+        /* Tables: always scrollable on mobile */
+        .table-responsive { -webkit-overflow-scrolling: touch; }
+        .dataTables_wrapper { overflow-x: auto; }
+        .dataTables_wrapper .row { margin: 0; }
+
+        @media (max-width: 767.98px) {
+            /* Content padding */
+            .content-body { padding: .75rem; }
+
+            /* Topbar compact */
+            .topbar { padding: 0 .75rem; height: 50px; }
+            .topbar .page-title { font-size: .95rem; }
+            .topbar .btn { font-size: .8rem; padding: .3rem .5rem; }
+
+            /* Page headers: stack title + action buttons */
+            .d-flex.justify-content-between.align-items-center.mb-4,
+            .d-flex.justify-content-between.align-items-center.mb-3 {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: .5rem;
+            }
+            .d-flex.justify-content-between.align-items-center.mb-4 > .btn,
+            .d-flex.justify-content-between.align-items-center.mb-4 > a.btn,
+            .d-flex.justify-content-between.align-items-center.mb-3 > .btn,
+            .d-flex.justify-content-between.align-items-center.mb-3 > a.btn,
+            .d-flex.justify-content-between.align-items-center.mb-4 > div:last-child,
+            .d-flex.justify-content-between.align-items-center.mb-3 > div:last-child {
+                align-self: flex-end;
+            }
+
+            /* Card headers: stack on mobile */
+            .card-header.d-flex { flex-wrap: wrap; gap: .5rem; }
+
+            /* Tables: smaller text */
+            .table { font-size: .8rem; }
+            .table th, .table td { padding: .45rem .5rem; white-space: nowrap; }
+
+            /* DataTables controls */
+            .dataTables_wrapper .dataTables_length,
+            .dataTables_wrapper .dataTables_filter { text-align: left !important; margin-bottom: .5rem; }
+            .dataTables_wrapper .dataTables_length label,
+            .dataTables_wrapper .dataTables_filter label { font-size: .8rem; }
+            .dataTables_wrapper .dataTables_info { font-size: .75rem; }
+            .dataTables_wrapper .dataTables_paginate .paginate_button { padding: .3rem .6rem !important; font-size: .8rem; }
+
+            /* Stat cards: smaller text and icon */
+            .stat-card .stat-icon, .card-body .rounded-3[style*="width:50px"] {
+                width: 40px !important; height: 40px !important; font-size: 1.1rem !important;
+            }
+            .card-body h4 { font-size: 1.1rem; }
+            .card-body small { font-size: .7rem; }
+
+            /* Buttons: compact */
+            .btn-lg { padding: .5rem .75rem; font-size: .9rem; }
+
+            /* Action button groups: wrap all flex-gap combos */
+            .d-flex.gap-2, .d-flex.gap-3 { flex-wrap: wrap; }
+
+            /* Button groups: wrap instead of overflow */
+            .btn-group { flex-wrap: wrap; border-radius: .375rem; }
+            .btn-group .btn { flex: 0 0 auto; border-radius: .375rem !important; margin: 1px; }
+
+            /* Cards inside rows */
+            .card { margin-bottom: .5rem; }
+
+            /* Forms: compact */
+            .form-control, .form-select { font-size: .85rem; padding: .5rem .75rem; }
+
+            /* Badge compact */
+            .badge { font-size: .7rem; }
+        }
     </style>
 
     @yield('styles')

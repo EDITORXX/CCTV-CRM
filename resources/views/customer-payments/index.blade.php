@@ -3,21 +3,20 @@
 @section('title', 'Payment Approvals')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
         <h4 class="mb-1">Payment Approvals</h4>
-        <p class="text-muted mb-0">
-            Review and approve customer payment submissions
+        <p class="text-muted mb-0">Review and approve customer payment submissions
             @if($pendingCount > 0)
-                <span class="badge bg-warning text-dark ms-2">{{ $pendingCount }} pending</span>
+                <span class="badge bg-warning text-dark ms-1">{{ $pendingCount }} pending</span>
             @endif
         </p>
     </div>
-    <div class="btn-group btn-group-sm">
-        <a href="{{ route('customer-payments.index') }}" class="btn {{ !request('status') ? 'btn-primary' : 'btn-outline-primary' }}">All</a>
-        <a href="{{ route('customer-payments.index', ['status' => 'pending']) }}" class="btn {{ request('status') === 'pending' ? 'btn-warning' : 'btn-outline-warning' }}">Pending</a>
-        <a href="{{ route('customer-payments.index', ['status' => 'approved']) }}" class="btn {{ request('status') === 'approved' ? 'btn-success' : 'btn-outline-success' }}">Approved</a>
-        <a href="{{ route('customer-payments.index', ['status' => 'rejected']) }}" class="btn {{ request('status') === 'rejected' ? 'btn-danger' : 'btn-outline-danger' }}">Rejected</a>
+    <div class="d-flex gap-1 flex-wrap">
+        <a href="{{ route('customer-payments.index') }}" class="btn btn-sm {{ !request('status') ? 'btn-primary' : 'btn-outline-primary' }}">All</a>
+        <a href="{{ route('customer-payments.index', ['status' => 'pending']) }}" class="btn btn-sm {{ request('status') === 'pending' ? 'btn-warning' : 'btn-outline-warning' }}">Pending</a>
+        <a href="{{ route('customer-payments.index', ['status' => 'approved']) }}" class="btn btn-sm {{ request('status') === 'approved' ? 'btn-success' : 'btn-outline-success' }}">Approved</a>
+        <a href="{{ route('customer-payments.index', ['status' => 'rejected']) }}" class="btn btn-sm {{ request('status') === 'rejected' ? 'btn-danger' : 'btn-outline-danger' }}">Rejected</a>
     </div>
 </div>
 

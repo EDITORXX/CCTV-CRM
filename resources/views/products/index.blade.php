@@ -3,19 +3,19 @@
 @section('title', 'Products')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
         <h4 class="mb-1">Products</h4>
         <p class="text-muted mb-0">Manage your product inventory</p>
     </div>
-    <div class="d-flex gap-2">
-        <a href="{{ route('products.import') }}" class="btn btn-outline-primary">
-            <i class="bi bi-file-earmark-excel me-1"></i> Import from Excel
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ route('products.import') }}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-file-earmark-excel me-1"></i> Import
         </a>
-        <a href="{{ route('products.bulk-create') }}" class="btn btn-outline-secondary">
+        <a href="{{ route('products.bulk-create') }}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-grid-3x3-gap me-1"></i> Add Multiple
         </a>
-        <a href="{{ route('products.create') }}" class="btn btn-primary">
+        <a href="{{ route('products.create') }}" class="btn btn-primary btn-sm">
             <i class="bi bi-plus-lg me-1"></i> Add New Product
         </a>
     </div>
@@ -24,9 +24,9 @@
 {{-- Category Filter --}}
 <div class="card border-0 shadow-sm mb-3">
     <div class="card-body py-2">
-        <form method="GET" action="{{ route('products.index') }}" class="d-flex align-items-center gap-3">
+        <form method="GET" action="{{ route('products.index') }}" class="d-flex align-items-center gap-2 flex-wrap">
             <label class="form-label mb-0 fw-semibold text-nowrap">Filter by Category:</label>
-            <select name="category" class="form-select form-select-sm" style="max-width: 220px;" onchange="this.form.submit()">
+            <select name="category" class="form-select form-select-sm" style="max-width: 220px; min-width:140px;" onchange="this.form.submit()">
                 <option value="">All Categories</option>
                 @foreach(['Camera', 'DVR_NVR', 'HDD', 'Cable', 'SMPS', 'Accessories', 'IP', 'Analog', 'Other'] as $cat)
                     <option value="{{ $cat }}" {{ request('category') == $cat ? 'selected' : '' }}>{{ str_replace('_', '/', $cat) }}</option>

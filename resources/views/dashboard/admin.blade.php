@@ -45,7 +45,10 @@
                     <h4 class="mb-0 fw-bold {{ ($monthlyProfit ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
                         ₹{{ number_format($monthlyProfit ?? 0) }}
                     </h4>
-                    <small class="text-muted">Sale ₹{{ number_format($monthlySalesWithoutGst ?? 0) }} − Cost ₹{{ number_format($monthlyCOGS ?? 0) }} − Reg Exp ₹{{ number_format($monthlyRegularExpenses ?? 0) }} − Site Exp ₹{{ number_format($monthlySiteExpenses ?? 0) }}</small>
+                    <small class="text-muted d-block" style="line-height:1.4;">
+                        Sale ₹{{ number_format($monthlySalesWithoutGst ?? 0) }} − Cost ₹{{ number_format($monthlyCOGS ?? 0) }}<br class="d-sm-none">
+                        − Reg ₹{{ number_format($monthlyRegularExpenses ?? 0) }} − Site ₹{{ number_format($monthlySiteExpenses ?? 0) }}
+                    </small>
                 </div>
             </div>
         </div>
@@ -178,6 +181,7 @@
             </div>
         </div>
     </div>
+</div>
 
 <div class="row g-4">
     {{-- Current Stock Summary --}}
