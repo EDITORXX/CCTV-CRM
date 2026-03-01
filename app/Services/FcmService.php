@@ -83,6 +83,7 @@ class FcmService
             'aud' => 'https://oauth2.googleapis.com/token',
             'iat' => $now,
             'exp' => $now + 3600,
+            'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
         ];
         $headerB64 = $this->base64UrlEncode(json_encode($header));
         $payloadB64 = $this->base64UrlEncode(json_encode($payload));
@@ -93,7 +94,6 @@ class FcmService
         }
         $signature = '';
         openssl_sign($signatureInput, $signature, $key, OPENSSL_ALGO_SHA256);
-        openssl_free_key($key);
         $signatureB64 = $this->base64UrlEncode($signature);
         return $signatureInput . '.' . $signatureB64;
     }
@@ -136,7 +136,6 @@ class FcmService
         if (!$key) {
             return 'Invalid private_key in credentials (openssl failed). Ensure the key is correct and use actual newlines if pasted.';
         }
-        openssl_free_key($key);
         $this->credentials = $creds;
         $this->projectId = $creds['project_id'] ?? null;
         $jwt = $this->createJwt();
