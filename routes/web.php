@@ -193,6 +193,7 @@ Route::middleware(['auth', 'company'])->group(function () {
 
     // API-like routes for AJAX
     Route::get('/api/products/{product}/stock', [App\Http\Controllers\ProductController::class, 'getStock'])->name('api.product.stock');
+    Route::get('/api/products/{product}/serials', [App\Http\Controllers\ProductController::class, 'getSerials'])->name('api.product.serials');
     Route::get('/api/customers/{customer}/sites', [App\Http\Controllers\SiteController::class, 'getForCustomer'])->name('api.customer.sites');
     Route::post('/api/fcm-token', [App\Http\Controllers\Api\FcmTokenController::class, 'store'])->name('api.fcm-token.store');
 

@@ -92,6 +92,16 @@ class ProductController extends Controller
         ]);
     }
 
+    public function getSerials(Product $product)
+    {
+        $serials = $product->serialNumbers()
+            ->where('status', 'in_stock')
+            ->select('id', 'serial_number')
+            ->get();
+
+        return response()->json($serials);
+    }
+
     public function downloadImportTemplate()
     {
         return Excel::download(new ProductTemplateExport(), 'products_import_template.xlsx');
