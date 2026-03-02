@@ -168,6 +168,7 @@
 </form>
 @endsection
 
+@section('scripts')
 @php
     $productsJson = $products->map(function($p) {
         return [
@@ -178,8 +179,6 @@
         ];
     });
 @endphp
-
-@section('scripts')
 <script>
 $(document).ready(function() {
     var rowIndex = 0;
