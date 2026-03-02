@@ -117,8 +117,7 @@
                 <table class="table table-bordered align-middle mb-0" id="itemsTable">
                     <thead class="table-light">
                         <tr>
-                            <th width="200">Product</th>
-                            <th width="180">Description (if no product)</th>
+                            <th width="280">Product</th>
                             <th width="70">Qty</th>
                             <th width="110">Unit Price</th>
                             <th width="80" class="gst-col">GST%</th>
@@ -201,10 +200,16 @@ $(document).ready(function() {
         var qty = data.qty || 1;
         var price = data.unit_price || 0;
         var opts = buildProductOptions();
-        var selected = productId ? ' value="' + productId + '"' : '';
+        var isCustom = !productId && desc;
         var html = '<tr data-row="' + rowIndex + '">' +
-            '<td><select class="form-select form-select-sm item-product" name="items[' + rowIndex + '][product_id]">' + opts + '</select></td>' +
-            '<td><input type="text" class="form-control form-control-sm item-desc" name="items[' + rowIndex + '][description]" value="' + desc + '" placeholder="Free text"></td>' +
+            '<td>' +
+                '<div class="d-flex gap-1 mb-1">' +
+                    '<button type="button" class="btn btn-sm px-2 py-0 mode-select-btn ' + (!isCustom ? 'btn-primary' : 'btn-outline-secondary') + '" title="Select from list"><i class="bi bi-list-ul"></i> Select</button>' +
+                    '<button type="button" class="btn btn-sm px-2 py-0 mode-custom-btn ' + (isCustom ? 'btn-primary' : 'btn-outline-secondary') + '" title="Type custom name"><i class="bi bi-pencil"></i> Custom</button>' +
+                '</div>' +
+                '<select class="form-select form-select-sm item-product" name="items[' + rowIndex + '][product_id]" ' + (isCustom ? 'style="display:none"' : '') + '>' + opts + '</select>' +
+                '<input type="text" class="form-control form-control-sm item-desc" name="items[' + rowIndex + '][description]" value="' + desc + '" placeholder="Product name likhein..." ' + (!isCustom ? 'style="display:none"' : '') + '>' +
+            '</td>' +
             '<td><input type="number" class="form-control form-control-sm item-qty" name="items[' + rowIndex + '][qty]" min="1" value="' + qty + '" required></td>' +
             '<td><input type="number" class="form-control form-control-sm item-price" name="items[' + rowIndex + '][unit_price]" min="0" step="0.01" value="' + price + '" required></td>' +
             '<td class="gst-col" ' + gstDisplay + '><input type="number" class="form-control form-control-sm item-gst" name="items[' + rowIndex + '][gst_percent]" min="0" max="100" step="0.01" value="18"></td>' +
@@ -284,6 +289,26 @@ $(document).ready(function() {
             $.each(data, function(i, site) { opts += '<option value="' + site.id + '">' + site.site_name + '</option>'; });
             $siteSelect.html(opts);
         });
+    });
+
+    $(document).on('click', '.mode-select-btn', function() {
+        var $td = $(this).closest('td');
+        $td.find('.item-product').show().prop('disabled', false);
+        $td.find('.item-desc').hide().val('');
+        $(this).removeClass('btn-outline-secondary').addClass('btn-primary');
+        $td.find('.mode-custom-btn').removeClass('btn-primary').addClass('btn-outline-secondary');
+    });
+
+    $(document).on('click', '.mode-custom-btn', function() {
+        var $td = $(this).closest('td');
+        $td.find('.item-product').hide().val('').prop('disabled', true);
+        $td.find('.item-desc').show().focus();
+        $(this).removeClass('btn-outline-secondary').addClass('btn-primary');
+        $td.find('.mode-select-btn').removeClass('btn-primary').addClass('btn-outline-secondary');
+        var $row = $(this).closest('tr');
+        $row.find('.item-price').val(0);
+        $row.find('[name*="warranty_months"]').val(0);
+        calculateTotals();
     });
 
     $(document).on('change', '.item-product', function() {
