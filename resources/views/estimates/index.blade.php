@@ -80,7 +80,7 @@
     </div>
 </div>
 @empty
-<div class="card border-0 shadow-sm">
+<div class="card border-0 shadow-sm d-none d-md-block">
     <div class="card-body text-center text-muted py-5">
         <i class="bi bi-file-earmark-text fs-1 d-block mb-2"></i>
         No estimates yet. <a href="{{ route('estimates.create') }}">Create your first estimate</a>.
