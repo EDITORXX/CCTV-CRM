@@ -40,4 +40,10 @@ return [
         'credentials' => env('FIREBASE_CREDENTIALS', 'storage/app/firebase-credentials.json'),
     ],
 
+    'google' => [
+        'client_id'     => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect'      => env('GOOGLE_REDIRECT_URI'),
+    ],
+
 ];

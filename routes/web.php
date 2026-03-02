@@ -14,6 +14,10 @@ Route::middleware(['installed'])->group(function () {
     Route::post('/install', [App\Http\Controllers\InstallController::class, 'store'])->name('install.store');
 });
 
+// Google OAuth
+Route::get('/auth/google', [App\Http\Controllers\Auth\GoogleController::class, 'redirect'])->name('google.redirect');
+Route::get('/auth/google/callback', [App\Http\Controllers\Auth\GoogleController::class, 'callback'])->name('google.callback');
+
 Auth::routes();
 
 // Notification test (mail/notification setup)
