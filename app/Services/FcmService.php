@@ -209,7 +209,13 @@ class FcmService
                 $success++;
             } else {
                 $failure++;
-                $errors[] = 'Token ' . substr($fcmToken, 0, 20) . '...: ' . $response->status() . ' ' . $response->body();
+                $body = $response->body();
+                $errors[] = 'Token ' . substr($fcmToken, 0, 20) . '...: ' . $response->status() . ' ' . $body;
+
+                if (str_contains($body, 'UNREGISTERED') || str_contains($body, 'NotRegistered') || $response->status() === 404) {
+                    FcmToken::where('token', $fcmToken)->delete();
+                    $errors[count($errors) - 1] .= ' [auto-removed]';
+                }
             }
         }
 
