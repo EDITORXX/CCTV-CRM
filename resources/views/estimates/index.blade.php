@@ -38,7 +38,12 @@
                     @forelse($estimates as $estimate)
                     <tr>
                         <td><strong>{{ $estimate->estimate_number }}</strong></td>
-                        <td>{{ $estimate->customer->name ?? '-' }}</td>
+                        <td>
+                            {{ $estimate->customer_display_name }}
+                            @if($estimate->isWalkIn())
+                                <span class="badge bg-warning text-dark" style="font-size:0.65em;">Walk-in</span>
+                            @endif
+                        </td>
                         <td>{{ $estimate->site->site_name ?? '-' }}</td>
                         <td>{{ $estimate->estimate_date->format('d M Y') }}</td>
                         <td>{{ $estimate->valid_until ? $estimate->valid_until->format('d M Y') : '-' }}</td>

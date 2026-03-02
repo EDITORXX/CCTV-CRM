@@ -56,8 +56,8 @@ class EstimateController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'customer_id' => 'required|exists:customers,id',
+        $rules = [
+            'customer_type' => 'required|in:existing,walkin',
             'site_id' => 'nullable|exists:sites,id',
             'estimate_number' => 'required|string',
             'estimate_date' => 'required|date',
@@ -73,7 +73,16 @@ class EstimateController extends Controller
             'items.*.gst_percent' => 'nullable|numeric|min:0|max:100',
             'items.*.discount' => 'nullable|numeric|min:0',
             'items.*.warranty_months' => 'nullable|integer|min:0',
-        ]);
+        ];
+
+        if ($request->customer_type === 'existing') {
+            $rules['customer_id'] = 'required|exists:customers,id';
+        } else {
+            $rules['customer_name'] = 'required|string|max:255';
+            $rules['customer_phone'] = 'nullable|string|max:20';
+        }
+
+        $request->validate($rules);
 
         foreach ($request->items as $i => $item) {
             if (empty($item['product_id']) && empty(trim($item['description'] ?? ''))) {
@@ -90,9 +99,8 @@ class EstimateController extends Controller
             $gstAmount = 0;
             $totalDiscount = $request->discount ?? 0;
 
-            $estimate = Estimate::create([
+            $estimateData = [
                 'company_id' => $companyId,
-                'customer_id' => $request->customer_id,
                 'site_id' => $request->site_id,
                 'estimate_number' => $request->estimate_number,
                 'estimate_date' => $request->estimate_date,
@@ -102,7 +110,16 @@ class EstimateController extends Controller
                 'notes' => $request->notes,
                 'status' => 'draft',
                 'created_by' => auth()->id(),
-            ]);
+            ];
+
+            if ($request->customer_type === 'existing') {
+                $estimateData['customer_id'] = $request->customer_id;
+            } else {
+                $estimateData['customer_name'] = $request->customer_name;
+                $estimateData['customer_phone'] = $request->customer_phone;
+            }
+
+            $estimate = Estimate::create($estimateData);
 
             foreach ($request->items as $item) {
                 $gstPercent = $isGst ? ($item['gst_percent'] ?? 0) : 0;
@@ -215,10 +232,46 @@ class EstimateController extends Controller
         return redirect()->route('estimates.index')->with('success', 'Estimate deleted.');
     }
 
+    public function quickCreateCustomer(Request $request, Estimate $estimate)
+    {
+        if ($estimate->customer_id) {
+            return redirect()->route('estimates.show', $estimate)->with('info', 'Customer already linked.');
+        }
+
+        $request->validate([
+            'phone' => 'required|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'address' => 'nullable|string',
+        ]);
+
+        $companyId = session('current_company_id');
+
+        $customer = Customer::create([
+            'company_id' => $companyId,
+            'name' => $estimate->customer_name,
+            'phone' => $request->phone,
+            'email' => $request->email,
+            'address' => $request->address,
+            'created_by' => auth()->id(),
+        ]);
+
+        $estimate->update([
+            'customer_id' => $customer->id,
+            'customer_phone' => $request->phone,
+        ]);
+
+        return redirect()->route('estimates.show', $estimate)->with('success', 'Customer "' . $customer->name . '" created and linked to estimate.');
+    }
+
     public function convertToInvoice(Estimate $estimate)
     {
         if ($estimate->isConverted()) {
             return redirect()->route('estimates.show', $estimate)->with('error', 'Already converted.');
+        }
+
+        if ($estimate->isWalkIn()) {
+            return redirect()->route('estimates.show', $estimate)
+                ->with('error', 'Please create a customer first before converting to invoice. Use the "Create Customer" button.');
         }
 
         $estimate->load('items.product');

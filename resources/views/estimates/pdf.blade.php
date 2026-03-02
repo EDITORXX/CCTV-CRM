@@ -74,10 +74,14 @@
             <div class="bill-to">
                 <div class="section-title">Prepared For</div>
                 <table class="info-table">
-                    <tr><td class="label">Name:</td><td>{{ $estimate->customer->name }}</td></tr>
-                    @if($estimate->customer->phone)<tr><td class="label">Phone:</td><td>{{ $estimate->customer->phone }}</td></tr>@endif
-                    @if($estimate->customer->address)<tr><td class="label">Address:</td><td>{{ $estimate->customer->address }}</td></tr>@endif
-                    @if($estimate->customer->gstin)<tr><td class="label">GSTIN:</td><td>{{ $estimate->customer->gstin }}</td></tr>@endif
+                    <tr><td class="label">Name:</td><td>{{ $estimate->customer_display_name }}</td></tr>
+                    @if($estimate->customer && $estimate->customer->phone)
+                        <tr><td class="label">Phone:</td><td>{{ $estimate->customer->phone }}</td></tr>
+                    @elseif($estimate->customer_phone)
+                        <tr><td class="label">Phone:</td><td>{{ $estimate->customer_phone }}</td></tr>
+                    @endif
+                    @if($estimate->customer && $estimate->customer->address)<tr><td class="label">Address:</td><td>{{ $estimate->customer->address }}</td></tr>@endif
+                    @if($estimate->customer && $estimate->customer->gstin)<tr><td class="label">GSTIN:</td><td>{{ $estimate->customer->gstin }}</td></tr>@endif
                     @if($estimate->site)<tr><td class="label">Site:</td><td>{{ $estimate->site->site_name }}</td></tr>@endif
                 </table>
             </div>

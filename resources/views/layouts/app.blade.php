@@ -414,6 +414,12 @@
                         <i class="bi bi-life-preserver"></i> Help Center
                     </a>
                 </li>
+                <li class="nav-label">Account</li>
+                <li>
+                    <a href="{{ route('profile.show') }}" class="{{ request()->routeIs('profile.*') ? 'active' : '' }}">
+                        <i class="bi bi-person-circle"></i> My Profile
+                    </a>
+                </li>
             @else
                 {{-- Admin/Manager/Accountant sidebar --}}
                 @if($userRole && !in_array($userRole, ['technician']))

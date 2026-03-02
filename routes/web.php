@@ -53,6 +53,11 @@ Route::middleware(['auth', 'company'])->group(function () {
 
     Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
 
+    // Profile (all roles)
+    Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
+    Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/password', [App\Http\Controllers\ProfileController::class, 'changePassword'])->name('profile.password');
+
     // Customers
     Route::resource('customers', App\Http\Controllers\CustomerController::class);
 
@@ -166,6 +171,7 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::middleware(['role:company_admin,manager,accountant,technician'])->group(function () {
         Route::resource('estimates', App\Http\Controllers\EstimateController::class);
         Route::post('/estimates/{estimate}/convert', [App\Http\Controllers\EstimateController::class, 'convertToInvoice'])->name('estimates.convert');
+        Route::post('/estimates/{estimate}/quick-create-customer', [App\Http\Controllers\EstimateController::class, 'quickCreateCustomer'])->name('estimates.quick-create-customer');
         Route::post('/estimates/{estimate}/purchase-order', [App\Http\Controllers\EstimateController::class, 'createPurchaseOrder'])->name('estimates.purchase-order');
         Route::get('/estimates/{estimate}/pdf', [App\Http\Controllers\EstimateController::class, 'pdf'])->name('estimates.pdf');
         Route::get('/estimates/{estimate}/download', [App\Http\Controllers\EstimateController::class, 'download'])->name('estimates.download');

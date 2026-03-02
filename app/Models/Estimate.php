@@ -9,9 +9,10 @@ class Estimate extends Model
     use \App\Traits\BelongsToCompany;
 
     protected $fillable = [
-        'company_id', 'customer_id', 'site_id', 'estimate_number', 'estimate_date',
-        'valid_until', 'is_gst', 'subtotal', 'gst_amount', 'discount', 'total',
-        'status', 'notes', 'converted_invoice_id', 'created_by',
+        'company_id', 'customer_id', 'customer_name', 'customer_phone', 'site_id',
+        'estimate_number', 'estimate_date', 'valid_until', 'is_gst', 'subtotal',
+        'gst_amount', 'discount', 'total', 'status', 'notes',
+        'converted_invoice_id', 'created_by',
     ];
 
     protected $casts = [
@@ -52,5 +53,20 @@ class Estimate extends Model
     public function isConverted()
     {
         return $this->status === 'converted';
+    }
+
+    public function isWalkIn(): bool
+    {
+        return is_null($this->customer_id);
+    }
+
+    public function getCustomerDisplayNameAttribute(): string
+    {
+        return $this->customer ? $this->customer->name : ($this->customer_name ?? 'Walk-in');
+    }
+
+    public function getCustomerDisplayPhoneAttribute(): ?string
+    {
+        return $this->customer ? $this->customer->phone : $this->customer_phone;
     }
 }

@@ -28,9 +28,30 @@
         </div>
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-md-4">
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Customer Type <span class="text-danger">*</span></label>
+                    <div class="d-flex gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="customer_type" id="customerTypeExisting" value="existing"
+                                   {{ old('customer_type', 'existing') === 'existing' ? 'checked' : '' }}>
+                            <label class="form-check-label" for="customerTypeExisting">
+                                <i class="bi bi-person-check me-1"></i> Registered Customer
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="customer_type" id="customerTypeWalkin" value="walkin"
+                                   {{ old('customer_type') === 'walkin' ? 'checked' : '' }}>
+                            <label class="form-check-label" for="customerTypeWalkin">
+                                <i class="bi bi-person-plus me-1"></i> Walk-in (Naam se banaao)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Existing customer fields --}}
+                <div class="col-md-4" id="existingCustomerFields">
                     <label for="customer_id" class="form-label">Customer <span class="text-danger">*</span></label>
-                    <select class="form-select @error('customer_id') is-invalid @enderror" id="customer_id" name="customer_id" required>
+                    <select class="form-select @error('customer_id') is-invalid @enderror" id="customer_id" name="customer_id">
                         <option value="">-- Select Customer --</option>
                         @foreach($customers as $customer)
                             <option value="{{ $customer->id }}" {{ old('customer_id') == $customer->id ? 'selected' : '' }}>
@@ -39,7 +60,20 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-4">
+
+                {{-- Walk-in customer fields --}}
+                <div class="col-md-4" id="walkinCustomerFields" style="display:none;">
+                    <label for="customer_name" class="form-label">Customer Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control @error('customer_name') is-invalid @enderror"
+                           id="customer_name" name="customer_name" value="{{ old('customer_name') }}" placeholder="Customer ka naam likhein">
+                </div>
+                <div class="col-md-4" id="walkinPhoneField" style="display:none;">
+                    <label for="customer_phone" class="form-label">Phone (Optional)</label>
+                    <input type="text" class="form-control" id="customer_phone" name="customer_phone"
+                           value="{{ old('customer_phone') }}" placeholder="Phone number">
+                </div>
+
+                <div class="col-md-4" id="siteField">
                     <label for="site_id" class="form-label">Site</label>
                     <select class="form-select" id="site_id" name="site_id">
                         <option value="">-- Select Customer First --</option>
@@ -214,6 +248,30 @@ $(document).ready(function() {
         $('#summaryDiscount').text('-₹' + overallDiscount.toFixed(2));
         $('#summaryGrandTotal').text('₹' + grandTotal.toFixed(2));
     }
+
+    function toggleCustomerType() {
+        var isWalkin = $('#customerTypeWalkin').is(':checked');
+        if (isWalkin) {
+            $('#existingCustomerFields').hide();
+            $('#walkinCustomerFields').show();
+            $('#walkinPhoneField').show();
+            $('#siteField').hide();
+            $('#customer_id').prop('required', false).val('');
+            $('#customer_name').prop('required', true);
+            $('#site_id').val('');
+        } else {
+            $('#existingCustomerFields').show();
+            $('#walkinCustomerFields').hide();
+            $('#walkinPhoneField').hide();
+            $('#siteField').show();
+            $('#customer_id').prop('required', true);
+            $('#customer_name').prop('required', false).val('');
+            $('#customer_phone').val('');
+        }
+    }
+
+    $('input[name="customer_type"]').on('change', toggleCustomerType);
+    toggleCustomerType();
 
     $('#customer_id').on('change', function() {
         var customerId = $(this).val();

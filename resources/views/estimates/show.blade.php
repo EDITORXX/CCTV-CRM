@@ -62,7 +62,13 @@
                     </div>
                     <div class="col-md-4">
                         <small class="text-muted d-block">Customer</small>
-                        <strong>{{ $estimate->customer->name }}</strong>
+                        <strong>{{ $estimate->customer_display_name }}</strong>
+                        @if($estimate->isWalkIn())
+                            <span class="badge bg-warning text-dark ms-1">Walk-in</span>
+                        @endif
+                        @if($estimate->customer_display_phone)
+                            <br><small class="text-muted"><i class="bi bi-telephone me-1"></i>{{ $estimate->customer_display_phone }}</small>
+                        @endif
                     </div>
                     <div class="col-md-4">
                         <small class="text-muted d-block">Site</small>
@@ -167,16 +173,59 @@
         </div>
         @endif
 
+        @if($estimate->isWalkIn() && !$estimate->isConverted())
+        <div class="card border-0 shadow-sm mb-4 border-start border-warning border-4">
+            <div class="card-header bg-white fw-semibold">
+                <i class="bi bi-person-plus me-1"></i> Create Customer
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    Walk-in estimate hai — invoice banane se pehle customer create karna hoga.
+                </p>
+                <form action="{{ route('estimates.quick-create-customer', $estimate) }}" method="POST">
+                    @csrf
+                    <div class="mb-2">
+                        <label class="form-label small">Name</label>
+                        <input type="text" class="form-control form-control-sm bg-light" value="{{ $estimate->customer_name }}" readonly>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Phone <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm" name="phone"
+                               value="{{ $estimate->customer_phone }}" required placeholder="Phone number daalein">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Email</label>
+                        <input type="email" class="form-control form-control-sm" name="email" placeholder="Optional">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">Address</label>
+                        <textarea class="form-control form-control-sm" name="address" rows="2" placeholder="Optional"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100">
+                        <i class="bi bi-person-check me-1"></i> Create Customer & Link
+                    </button>
+                </form>
+            </div>
+        </div>
+        @endif
+
         @if(!$estimate->isConverted())
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white fw-semibold"><i class="bi bi-arrow-repeat me-1"></i> Actions</div>
             <div class="card-body d-grid gap-2">
-                <form action="{{ route('estimates.convert', $estimate) }}" method="POST">
-                    @csrf
-                    <button type="submit" class="btn btn-success w-100" onclick="return confirm('Convert this estimate to an invoice?')">
+                @if($estimate->isWalkIn())
+                    <button type="button" class="btn btn-secondary w-100" disabled title="Pehle customer create karein">
                         <i class="bi bi-receipt me-1"></i> Convert to Invoice
                     </button>
-                </form>
+                    <small class="text-danger text-center"><i class="bi bi-exclamation-triangle me-1"></i>Pehle customer create karein — upar wala form use karein</small>
+                @else
+                    <form action="{{ route('estimates.convert', $estimate) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="btn btn-success w-100" onclick="return confirm('Convert this estimate to an invoice?')">
+                            <i class="bi bi-receipt me-1"></i> Convert to Invoice
+                        </button>
+                    </form>
+                @endif
 
                 @php $hasShortage = collect($stockInfo)->contains(fn($s) => $s['short'] > 0); @endphp
                 @if($hasShortage)
