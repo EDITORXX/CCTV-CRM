@@ -73,6 +73,7 @@ class EstimateController extends Controller
             'items.*.gst_percent' => 'nullable|numeric|min:0|max:100',
             'items.*.discount' => 'nullable|numeric|min:0',
             'items.*.warranty_months' => 'nullable|integer|min:0',
+            'items.*.save_as_product' => 'nullable|boolean',
         ];
 
         if ($request->customer_type === 'existing') {
@@ -131,11 +132,23 @@ class EstimateController extends Controller
                 $subtotal += $lineSubtotal;
                 $gstAmount += $lineGst;
 
-                $product = isset($item['product_id']) && $item['product_id'] ? Product::find($item['product_id']) : null;
+                $productId = $item['product_id'] ?? null;
+                $product = $productId ? Product::find($productId) : null;
+
+                if (!$productId && !empty($item['save_as_product']) && !empty(trim($item['description'] ?? ''))) {
+                    $product = Product::create([
+                        'company_id' => $companyId,
+                        'name' => trim($item['description']),
+                        'sale_price' => $item['unit_price'],
+                        'warranty_months' => $item['warranty_months'] ?? 12,
+                        'created_by' => auth()->id(),
+                    ]);
+                    $productId = $product->id;
+                }
 
                 EstimateItem::create([
                     'estimate_id' => $estimate->id,
-                    'product_id' => $item['product_id'] ?? null,
+                    'product_id' => $productId ?: null,
                     'description' => $item['description'] ?? null,
                     'qty' => $item['qty'],
                     'unit_price' => $item['unit_price'],
@@ -209,13 +222,42 @@ class EstimateController extends Controller
             return redirect()->route('estimates.show', $estimate)->with('error', 'Cannot update a converted estimate.');
         }
 
-        $request->validate([
+        $rules = [
+            'customer_type' => 'required|in:existing,walkin',
+            'estimate_date' => 'required|date',
+            'valid_until' => 'nullable|date',
             'status' => 'nullable|in:draft,sent,accepted,rejected',
             'notes' => 'nullable|string',
-            'valid_until' => 'nullable|date',
-        ]);
+        ];
 
-        $estimate->update($request->only(['status', 'notes', 'valid_until']));
+        if ($request->customer_type === 'existing') {
+            $rules['customer_id'] = 'required|exists:customers,id';
+        } else {
+            $rules['customer_name'] = 'required|string|max:255';
+            $rules['customer_phone'] = 'nullable|string|max:20';
+        }
+
+        $request->validate($rules);
+
+        $data = [
+            'estimate_date' => $request->estimate_date,
+            'valid_until' => $request->valid_until,
+            'status' => $request->status,
+            'notes' => $request->notes,
+        ];
+
+        if ($request->customer_type === 'existing') {
+            $data['customer_id'] = $request->customer_id;
+            $data['customer_name'] = null;
+            $data['customer_phone'] = null;
+        } else {
+            $data['customer_id'] = null;
+            $data['customer_name'] = $request->customer_name;
+            $data['customer_phone'] = $request->customer_phone;
+            $data['site_id'] = null;
+        }
+
+        $estimate->update($data);
 
         return redirect()->route('estimates.show', $estimate)->with('success', 'Estimate updated.');
     }
