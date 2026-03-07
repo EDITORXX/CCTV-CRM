@@ -8,12 +8,13 @@
         <h4 class="mb-1">Service Tickets</h4>
         <p class="text-muted mb-0">Manage customer complaints and service requests</p>
     </div>
-    <a href="{{ route('tickets.create') }}" class="btn btn-primary">
+    <a href="{{ route('tickets.create') }}" class="btn btn-primary btn-sm">
         <i class="bi bi-plus-lg me-1"></i> New Ticket
     </a>
 </div>
 
-<div class="card border-0 shadow-sm">
+{{-- Desktop Table --}}
+<div class="card border-0 shadow-sm d-none d-md-block">
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-hover align-middle" id="ticketsTable">
@@ -111,22 +112,111 @@
         </div>
     </div>
 </div>
+
+{{-- Mobile Card View --}}
+<div class="d-md-none">
+    @forelse($tickets as $ticket)
+    <div class="card border-0 shadow-sm mb-2">
+        <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="flex-grow-1" style="min-width:0;">
+                    <a href="{{ route('tickets.show', $ticket) }}" class="fw-bold text-decoration-none text-dark d-block">
+                        {{ $ticket->ticket_number }}
+                    </a>
+                    <div class="small text-muted">{{ $ticket->customer->name ?? '—' }}</div>
+                </div>
+                <div class="d-flex gap-1 ms-2 flex-shrink-0">
+                    @switch($ticket->priority)
+                        @case('low')
+                            <span class="badge bg-info">Low</span>
+                            @break
+                        @case('medium')
+                            <span class="badge bg-warning text-dark">Med</span>
+                            @break
+                        @case('high')
+                            <span class="badge bg-danger">High</span>
+                            @break
+                        @default
+                            <span class="badge bg-secondary">{{ ucfirst($ticket->priority) }}</span>
+                    @endswitch
+                    @switch($ticket->status)
+                        @case('open')
+                            <span class="badge bg-warning text-dark">Open</span>
+                            @break
+                        @case('in_progress')
+                            <span class="badge bg-primary">In Progress</span>
+                            @break
+                        @case('resolved')
+                            <span class="badge bg-success">Resolved</span>
+                            @break
+                        @case('closed')
+                            <span class="badge bg-secondary">Closed</span>
+                            @break
+                        @default
+                            <span class="badge bg-secondary">{{ ucfirst($ticket->status) }}</span>
+                    @endswitch
+                </div>
+            </div>
+            <div class="d-flex flex-wrap gap-1 mb-2">
+                @if($ticket->complaint_type)
+                    <span class="badge bg-light text-dark border">{{ $ticket->complaint_type }}</span>
+                @endif
+                @if($ticket->site)
+                    <span class="badge bg-light text-dark border"><i class="bi bi-geo-alt me-1"></i>{{ $ticket->site->name }}</span>
+                @endif
+            </div>
+            <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-1">
+                <div class="small text-muted">
+                    <span>
+                        <i class="bi bi-person-gear me-1"></i>
+                        @if($ticket->assignedTechnicians && $ticket->assignedTechnicians->count())
+                            {{ $ticket->assignedTechnicians->pluck('name')->join(', ') }}
+                        @else
+                            Unassigned
+                        @endif
+                    </span>
+                    <span class="ms-2"><i class="bi bi-calendar3 me-1"></i>{{ $ticket->created_at->format('d M') }}</span>
+                </div>
+                <div class="btn-group btn-group-sm">
+                    <a href="{{ route('tickets.show', $ticket) }}" class="btn btn-outline-info btn-sm"><i class="bi bi-eye"></i></a>
+                    <a href="{{ route('tickets.edit', $ticket) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil"></i></a>
+                    <form action="{{ route('tickets.destroy', $ticket) }}" method="POST"
+                          onsubmit="return confirm('Delete this ticket?')" class="d-inline">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    @empty
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5 text-muted">
+            <i class="bi bi-headset fs-1 d-block mb-2"></i>
+            No tickets found. <a href="{{ route('tickets.create') }}">Create your first ticket</a>.
+        </div>
+    </div>
+    @endforelse
+</div>
 @endsection
 
 @section('scripts')
 <script>
     $(document).ready(function() {
-        $('#ticketsTable').DataTable({
-            paging: true,
-            pageLength: 25,
-            order: [[9, 'desc']],
-            columnDefs: [
-                { orderable: false, targets: [10] }
-            ],
-            language: {
-                emptyTable: '<div class="text-center py-4 text-muted"><i class="bi bi-headset fs-1 d-block mb-2"></i>No tickets found. <a href="{{ route('tickets.create') }}">Create your first ticket</a>.</div>'
-            }
-        });
+        if ($(window).width() >= 768) {
+            $('#ticketsTable').DataTable({
+                paging: true,
+                pageLength: 25,
+                order: [[9, 'desc']],
+                columnDefs: [
+                    { orderable: false, targets: [10] }
+                ],
+                language: {
+                    emptyTable: '<div class="text-center py-4 text-muted"><i class="bi bi-headset fs-1 d-block mb-2"></i>No tickets found. <a href="{{ route('tickets.create') }}">Create your first ticket</a>.</div>'
+                }
+            });
+        }
     });
 </script>
 @endsection
