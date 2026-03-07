@@ -171,6 +171,16 @@ Route::middleware(['auth', 'company'])->group(function () {
         Route::resource('customer-advances', App\Http\Controllers\CustomerAdvanceController::class)->except(['edit', 'update', 'destroy']);
     });
 
+    // Tasks (admin, manager, technician)
+    Route::middleware(['role:company_admin,manager,technician'])->group(function () {
+        Route::resource('tasks', App\Http\Controllers\TaskController::class);
+        Route::post('/tasks/{task}/complete', [App\Http\Controllers\TaskController::class, 'markComplete'])->name('tasks.complete');
+        Route::post('/tasks/{task}/in-progress', [App\Http\Controllers\TaskController::class, 'markInProgress'])->name('tasks.in-progress');
+        Route::get('/task-categories', [App\Http\Controllers\TaskCategoryController::class, 'index'])->name('task-categories.index');
+        Route::post('/task-categories', [App\Http\Controllers\TaskCategoryController::class, 'store'])->name('task-categories.store');
+        Route::delete('/task-categories/{task_category}', [App\Http\Controllers\TaskCategoryController::class, 'destroy'])->name('task-categories.destroy');
+    });
+
     // Estimates (admin, manager, accountant, technician)
     Route::middleware(['role:company_admin,manager,accountant,technician'])->group(function () {
         Route::resource('estimates', App\Http\Controllers\EstimateController::class);

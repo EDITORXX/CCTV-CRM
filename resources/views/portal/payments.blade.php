@@ -80,6 +80,61 @@
     {{ $customerPayments->links() }}
 </div>
 
+{{-- Advance Payments --}}
+@if(isset($advances) && $advances->count())
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-wallet2 me-1 text-success"></i> Advance Payments
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Receipt #</th>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Method</th>
+                        <th>Used</th>
+                        <th>Balance</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($advances as $adv)
+                    <tr>
+                        <td><strong>{{ $adv->receipt_number }}</strong></td>
+                        <td class="text-muted">{{ $adv->payment_date->format('d M Y') }}</td>
+                        <td class="fw-semibold text-success">₹{{ number_format($adv->amount, 2) }}</td>
+                        <td>{{ ucfirst($adv->payment_method ?? '-') }}</td>
+                        <td>₹{{ number_format($adv->allocatedAmount(), 2) }}</td>
+                        <td>
+                            @if($adv->remaining_balance > 0)
+                                <span class="badge bg-info">₹{{ number_format($adv->remaining_balance, 2) }}</span>
+                            @else
+                                <span class="badge bg-secondary">Fully Used</span>
+                            @endif
+                        </td>
+                        <td class="small text-muted">{{ $adv->notes ?? '-' }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+                <tfoot class="table-light">
+                    <tr class="fw-bold">
+                        <td colspan="2">Total</td>
+                        <td class="text-success">₹{{ number_format($advances->sum('amount'), 2) }}</td>
+                        <td></td>
+                        <td>₹{{ number_format($advances->sum(fn($a) => $a->allocatedAmount()), 2) }}</td>
+                        <td>₹{{ number_format($advances->sum('remaining_balance'), 2) }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+@endif
+
 {{-- Submit Payment Modal --}}
 <div class="modal fade" id="submitPaymentModal" tabindex="-1">
     <div class="modal-dialog">

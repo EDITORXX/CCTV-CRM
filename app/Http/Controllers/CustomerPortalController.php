@@ -44,9 +44,8 @@ class CustomerPortalController extends Controller
     {
         $customer = $this->getCustomer();
         $invoices = $customer->invoices()->with(['site', 'items.product'])->latest()->paginate(20);
-        $products = Product::where('company_id', session('current_company_id'))->orderBy('name')->get();
 
-        return view('portal.invoices', compact('invoices', 'products'));
+        return view('portal.invoices', compact('invoices'));
     }
 
     public function showInvoice(Invoice $invoice)
@@ -147,7 +146,13 @@ class CustomerPortalController extends Controller
 
         $company = \App\Models\Company::find(session('current_company_id'));
 
-        return view('portal.payments', compact('customerPayments', 'unpaidInvoices', 'company'));
+        $advances = \App\Models\CustomerAdvance::where('customer_id', $customer->id)
+            ->where('company_id', session('current_company_id'))
+            ->with('creator')
+            ->latest('payment_date')
+            ->get();
+
+        return view('portal.payments', compact('customerPayments', 'unpaidInvoices', 'company', 'advances'));
     }
 
     public function storePayment(Request $request)
