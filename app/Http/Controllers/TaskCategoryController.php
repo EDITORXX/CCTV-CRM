@@ -35,7 +35,8 @@ class TaskCategoryController extends Controller
             'created_by' => auth()->id(),
         ]);
 
-        return redirect()->route('task-categories.index')->with('success', 'Task category added.');
+        $redirect = $request->input('_redirect', route('task-categories.index'));
+        return redirect($redirect)->with('success', 'Task category added.');
     }
 
     public function destroy(TaskCategory $taskCategory)

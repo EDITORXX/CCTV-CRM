@@ -86,6 +86,22 @@
                             <option value="">-- Select Product --</option>
                         </select>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Vendor <span class="text-danger">*</span></label>
+                        <select class="form-select" id="modalVendorId">
+                            <option value="">-- Select Vendor --</option>
+                            @foreach($vendors as $vendor)
+                                <option value="{{ $vendor->id }}">{{ $vendor->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Purchase Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="modalGstType">
+                            <option value="with_gst" selected>With GST</option>
+                            <option value="without_gst">Without GST</option>
+                        </select>
+                    </div>
                     <div class="row g-3">
                         <div class="col-6">
                             <label class="form-label fw-semibold">Qty <span class="text-danger">*</span></label>
@@ -95,7 +111,7 @@
                             <label class="form-label fw-semibold">Unit Price (₹) <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" id="modalPrice" min="0" step="0.01" value="0">
                         </div>
-                        <div class="col-6">
+                        <div class="col-6" id="modalGstWrapper">
                             <label class="form-label fw-semibold">GST %</label>
                             <input type="number" class="form-control" id="modalGst" min="0" max="100" step="0.01" value="18">
                         </div>
@@ -189,9 +205,13 @@ $(document).ready(function() {
         $('#modalProductId').val('');
         $('#modalQty').val(1);
         $('#modalPrice').val(0);
-        $('#modalGst').val(18);
+        $('#modalGstType').val('with_gst');
+        $('#modalGst').val(18).prop('disabled', false);
+        $('#modalGstWrapper').show();
         $('#modalSerials').val('');
         populateModalProducts();
+        var currentVendor = $('#vendor_id').val();
+        $('#modalVendorId').val(currentVendor || '');
     }
 
     function addItemCard(data) {
@@ -211,7 +231,9 @@ $(document).ready(function() {
             '<div class="d-flex flex-wrap gap-2 small mb-2">' +
                 '<span class="badge bg-light text-dark border">Qty: ' + data.qty + '</span>' +
                 '<span class="badge bg-light text-dark border">₹' + parseFloat(data.unit_price).toFixed(2) + '</span>' +
-                '<span class="badge bg-light text-dark border">' + (data.gst_percent || 0) + '% GST</span>' +
+                (data.gst_percent > 0
+                    ? '<span class="badge bg-success-subtle text-success border">With GST (' + data.gst_percent + '%)</span>'
+                    : '<span class="badge bg-warning-subtle text-warning border">Without GST</span>') +
             '</div>' +
             '<div class="small text-muted mb-1">Serials: ' + $('<span>').text(serialText).html() + '</div>' +
             '<div class="text-end fw-bold text-success">₹' + lineTotal.toFixed(2) + '</div>' +
@@ -244,18 +266,49 @@ $(document).ready(function() {
         $('#modalPrice').val($opt.data('price') || 0);
     });
 
+    $('#modalGstType').on('change', function() {
+        if ($(this).val() === 'without_gst') {
+            $('#modalGst').val(0).prop('disabled', true);
+            $('#modalGstWrapper').hide();
+        } else {
+            $('#modalGst').val(18).prop('disabled', false);
+            $('#modalGstWrapper').show();
+        }
+    });
+
+    $('#modalVendorId').on('change', function() {
+        $('#vendor_id').val($(this).val());
+        $(this).removeClass('is-invalid');
+    });
+
     $('#modalAddBtn').on('click', function() {
         var productId = $('#modalProductId').val();
+        var vendorId = $('#modalVendorId').val();
+        var hasError = false;
+
         if (!productId) {
             $('#modalProductId').addClass('is-invalid').focus();
-            return;
+            hasError = true;
+        } else {
+            $('#modalProductId').removeClass('is-invalid');
         }
-        $('#modalProductId').removeClass('is-invalid');
+
+        if (!vendorId) {
+            $('#modalVendorId').addClass('is-invalid');
+            if (!hasError) $('#modalVendorId').focus();
+            hasError = true;
+        } else {
+            $('#modalVendorId').removeClass('is-invalid');
+        }
+
+        if (hasError) return;
+
+        $('#vendor_id').val(vendorId);
 
         var productName = $('#modalProductId option:selected').text();
         var qty = parseInt($('#modalQty').val(), 10) || 1;
         var unitPrice = parseFloat($('#modalPrice').val()) || 0;
-        var gstPercent = parseFloat($('#modalGst').val()) || 0;
+        var gstPercent = ($('#modalGstType').val() === 'without_gst') ? 0 : (parseFloat($('#modalGst').val()) || 0);
         var serials = $.trim($('#modalSerials').val());
         if (qty < 1) qty = 1;
 

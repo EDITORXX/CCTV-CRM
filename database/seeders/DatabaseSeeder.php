@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             CompanySeeder::class,
             ExpenseCategorySeeder::class,
+            TaskCategorySeeder::class,
             SampleDataSeeder::class,
             GoldSecurityDummyDataSeeder::class,
             QuotationTemplateSeeder::class,

@@ -380,6 +380,16 @@
                 {{-- Technician sidebar --}}
                 <li class="nav-label">Work</li>
                 <li>
+                    <a href="{{ route('tasks.index') }}" class="{{ request()->routeIs('tasks.*') ? 'active' : '' }}">
+                        <i class="bi bi-list-task"></i> My Tasks
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('task-categories.index') }}" class="{{ request()->routeIs('task-categories.*') ? 'active' : '' }}">
+                        <i class="bi bi-tags"></i> Task Categories
+                    </a>
+                </li>
+                <li>
                     <a href="{{ route('tickets.index') }}" class="{{ request()->routeIs('tickets.*') ? 'active' : '' }}">
                         <i class="bi bi-headset"></i> Service Tickets
                     </a>
@@ -423,6 +433,20 @@
             @else
                 {{-- Admin/Manager/Accountant sidebar --}}
                 @if($userRole && !in_array($userRole, ['technician']))
+                @if($userRole && in_array($userRole, ['company_admin', 'manager']))
+                <li class="nav-label">Task Management</li>
+                <li>
+                    <a href="{{ route('tasks.index') }}" class="{{ request()->routeIs('tasks.*') ? 'active' : '' }}">
+                        <i class="bi bi-list-task"></i> Tasks
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('task-categories.index') }}" class="{{ request()->routeIs('task-categories.*') ? 'active' : '' }}">
+                        <i class="bi bi-tags"></i> Task Categories
+                    </a>
+                </li>
+                @endif
+
                 <li class="nav-label">Operations</li>
                 <li>
                     <a href="{{ route('customers.index') }}" class="{{ request()->routeIs('customers.*') ? 'active' : '' }}">
