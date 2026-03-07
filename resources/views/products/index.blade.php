@@ -9,23 +9,22 @@
         <p class="text-muted mb-0">Manage your product inventory</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-        <a href="{{ route('products.import') }}" class="btn btn-outline-primary btn-sm">
+        <a href="{{ route('products.import') }}" class="btn btn-outline-primary btn-sm d-none d-md-inline-flex">
             <i class="bi bi-file-earmark-excel me-1"></i> Import
         </a>
-        <a href="{{ route('products.bulk-create') }}" class="btn btn-outline-secondary btn-sm">
+        <a href="{{ route('products.bulk-create') }}" class="btn btn-outline-secondary btn-sm d-none d-md-inline-flex">
             <i class="bi bi-grid-3x3-gap me-1"></i> Add Multiple
         </a>
         <a href="{{ route('products.create') }}" class="btn btn-primary btn-sm">
-            <i class="bi bi-plus-lg me-1"></i> Add New Product
+            <i class="bi bi-plus-lg me-1"></i> Add Product
         </a>
     </div>
 </div>
 
-{{-- Category Filter --}}
 <div class="card border-0 shadow-sm mb-3">
     <div class="card-body py-2">
         <form method="GET" action="{{ route('products.index') }}" class="d-flex align-items-center gap-2 flex-wrap">
-            <label class="form-label mb-0 fw-semibold text-nowrap">Filter by Category:</label>
+            <label class="form-label mb-0 fw-semibold text-nowrap">Filter:</label>
             <select name="category" class="form-select form-select-sm" style="max-width: 220px; min-width:140px;" onchange="this.form.submit()">
                 <option value="">All Categories</option>
                 @foreach(['Camera', 'DVR_NVR', 'HDD', 'Cable', 'SMPS', 'Accessories', 'IP', 'Analog', 'Other'] as $cat)
@@ -34,14 +33,15 @@
             </select>
             @if(request('category'))
                 <a href="{{ route('products.index') }}" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-x-lg"></i> Clear
+                    <i class="bi bi-x-lg"></i>
                 </a>
             @endif
         </form>
     </div>
 </div>
 
-<div class="card border-0 shadow-sm">
+{{-- Desktop Table View --}}
+<div class="card border-0 shadow-sm d-none d-md-block">
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-hover align-middle" id="productsTable">
@@ -52,15 +52,20 @@
                         <th>Category</th>
                         <th>Brand</th>
                         <th>Model</th>
-                        <th>Unit</th>
                         <th class="text-end">Sale Price</th>
-                        <th class="text-center">Track Serial</th>
-                        <th class="text-end">Stock Qty</th>
-                        <th width="150">Actions</th>
+                        <th class="text-center">Stock</th>
+                        <th width="130">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($products as $product)
+                    @php
+                        if ($product->track_serial) {
+                            $stockQty = $product->serialNumbers()->where('status', 'in_stock')->count();
+                        } else {
+                            $stockQty = $product->purchaseItems()->sum('qty') - $product->invoiceItems()->sum('qty');
+                        }
+                    @endphp
                     <tr>
                         <td>{{ $loop->iteration + ($products->currentPage() - 1) * $products->perPage() }}</td>
                         <td>
@@ -68,22 +73,12 @@
                                 {{ $product->name }}
                             </a>
                         </td>
-                        <td><span class="badge bg-secondary">{{ $product->category }}</span></td>
+                        <td><span class="badge bg-secondary">{{ str_replace('_', '/', $product->category) }}</span></td>
                         <td>{{ $product->brand ?? '—' }}</td>
                         <td>{{ $product->model_number ?? '—' }}</td>
-                        <td>{{ $product->unit }}</td>
-                        <td class="text-end fw-semibold">{{ number_format($product->sale_price, 2) }}</td>
+                        <td class="text-end fw-semibold">₹{{ number_format($product->sale_price, 2) }}</td>
                         <td class="text-center">
-                            @if($product->track_serial)
-                                <span class="badge bg-success"><i class="bi bi-check-lg"></i> Yes</span>
-                            @else
-                                <span class="badge bg-light text-muted">No</span>
-                            @endif
-                        </td>
-                        <td class="text-end">
-                            <span class="badge {{ ($product->stock_qty ?? 0) > 0 ? 'bg-primary' : 'bg-danger' }}">
-                                {{ $product->stock_qty ?? 0 }}
-                            </span>
+                            <span class="badge {{ $stockQty > 0 ? 'bg-success' : 'bg-danger' }}">{{ $stockQty }}</span>
                         </td>
                         <td>
                             <div class="btn-group btn-group-sm">
@@ -94,7 +89,7 @@
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 <form action="{{ route('products.destroy', $product) }}" method="POST"
-                                      onsubmit="return confirm('Are you sure you want to delete this product?')" class="d-inline">
+                                      onsubmit="return confirm('Delete this product?')" class="d-inline">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-outline-danger" title="Delete">
@@ -113,22 +108,96 @@
         </div>
     </div>
 </div>
+
+{{-- Mobile Card View --}}
+<div class="d-md-none">
+    @forelse($products as $product)
+    @php
+        if ($product->track_serial) {
+            $stockQty = $product->serialNumbers()->where('status', 'in_stock')->count();
+        } else {
+            $stockQty = $product->purchaseItems()->sum('qty') - $product->invoiceItems()->sum('qty');
+        }
+    @endphp
+    <div class="card border-0 shadow-sm mb-2">
+        <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="flex-grow-1" style="min-width:0;">
+                    <a href="{{ route('products.show', $product) }}" class="fw-bold text-decoration-none text-dark d-block text-truncate">
+                        {{ $product->name }}
+                    </a>
+                    <div class="d-flex flex-wrap gap-1 mt-1">
+                        <span class="badge bg-secondary">{{ str_replace('_', '/', $product->category) }}</span>
+                        @if($product->brand)
+                            <span class="badge bg-light text-dark border">{{ $product->brand }}</span>
+                        @endif
+                    </div>
+                </div>
+                <div class="text-end ms-2 flex-shrink-0">
+                    <div class="fw-bold text-success">₹{{ number_format($product->sale_price, 2) }}</div>
+                    <span class="badge {{ $stockQty > 0 ? 'bg-success' : 'bg-danger' }} mt-1">
+                        Stock: {{ $stockQty }}
+                    </span>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-1">
+                <div class="small text-muted">
+                    @if($product->model_number)
+                        <i class="bi bi-cpu me-1"></i>{{ $product->model_number }}
+                    @endif
+                    @if($product->warranty_months)
+                        <span class="ms-2"><i class="bi bi-shield-check me-1"></i>{{ $product->warranty_months }}m</span>
+                    @endif
+                </div>
+                <div class="btn-group btn-group-sm">
+                    <a href="{{ route('products.show', $product) }}" class="btn btn-outline-info btn-sm" title="View">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                    <a href="{{ route('products.edit', $product) }}" class="btn btn-outline-primary btn-sm" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <form action="{{ route('products.destroy', $product) }}" method="POST"
+                          onsubmit="return confirm('Delete this product?')" class="d-inline">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    @empty
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5 text-muted">
+            <i class="bi bi-box-seam fs-1 d-block mb-2"></i>
+            No products found. <a href="{{ route('products.create') }}">Add your first product</a>.
+        </div>
+    </div>
+    @endforelse
+    <div class="d-flex justify-content-end mt-3">
+        {{ $products->withQueryString()->links() }}
+    </div>
+</div>
 @endsection
 
 @section('scripts')
 <script>
     $(document).ready(function() {
-        $('#productsTable').DataTable({
-            paging: false,
-            info: false,
-            order: [[1, 'asc']],
-            columnDefs: [
-                { orderable: false, targets: [7, 9] }
-            ],
-            language: {
-                emptyTable: '<div class="text-center py-4 text-muted"><i class="bi bi-box-seam fs-1 d-block mb-2"></i>No products found. <a href="{{ route('products.create') }}">Add your first product</a>.</div>'
-            }
-        });
+        if ($(window).width() >= 768) {
+            $('#productsTable').DataTable({
+                paging: false,
+                info: false,
+                order: [[1, 'asc']],
+                columnDefs: [
+                    { orderable: false, targets: [7] }
+                ],
+                language: {
+                    emptyTable: '<div class="text-center py-4 text-muted"><i class="bi bi-box-seam fs-1 d-block mb-2"></i>No products found. <a href="{{ route('products.create') }}">Add your first product</a>.</div>'
+                }
+            });
+        }
     });
 </script>
 @endsection
