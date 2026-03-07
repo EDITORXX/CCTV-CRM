@@ -74,6 +74,39 @@ class ProductController extends Controller
         return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
     }
 
+    public function quickStore(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'category' => 'required|string|in:Camera,DVR_NVR,HDD,Cable,SMPS,Accessories,IP,Analog,Other',
+            'brand' => 'nullable|string|max:255',
+            'sale_price' => 'nullable|numeric|min:0',
+            'warranty_months' => 'nullable|integer|min:0',
+        ]);
+
+        $product = Product::create([
+            'company_id' => session('current_company_id'),
+            'created_by' => auth()->id(),
+            'name' => $validated['name'],
+            'category' => $validated['category'],
+            'brand' => $validated['brand'] ?? null,
+            'sale_price' => $validated['sale_price'] ?? null,
+            'warranty_months' => $validated['warranty_months'] ?? null,
+            'unit' => 'pcs',
+            'track_serial' => false,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'product' => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'category' => $product->category,
+                'purchase_price' => 0,
+            ],
+        ]);
+    }
+
     public function getStock(Product $product)
     {
         if ($product->track_serial) {

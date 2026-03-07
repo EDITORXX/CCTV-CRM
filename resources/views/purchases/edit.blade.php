@@ -83,9 +83,14 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Product <span class="text-danger">*</span></label>
-                        <select class="form-select" id="modalProductId">
-                            <option value="">-- Select Product --</option>
-                        </select>
+                        <div class="input-group">
+                            <select class="form-select" id="modalProductId">
+                                <option value="">-- Select Product --</option>
+                            </select>
+                            <button type="button" class="btn btn-outline-success" id="quickCreateProductBtn" title="Create New Product">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Vendor <span class="text-danger">*</span></label>
@@ -127,6 +132,59 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-success" id="modalAddBtn">
                         <i class="bi bi-plus-lg me-1"></i> Add to Purchase
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="quickProductModal" tabindex="-1" aria-labelledby="quickProductModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="quickProductModalLabel"><i class="bi bi-box-seam me-1"></i> Quick Create Product</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Product Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="qpName" placeholder="e.g. CP Plus 2MP Dome Camera">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Category <span class="text-danger">*</span></label>
+                            <select class="form-select" id="qpCategory">
+                                <option value="">-- Select --</option>
+                                <option value="Camera">Camera</option>
+                                <option value="DVR_NVR">DVR/NVR</option>
+                                <option value="HDD">HDD</option>
+                                <option value="Cable">Cable</option>
+                                <option value="SMPS">SMPS</option>
+                                <option value="Accessories">Accessories</option>
+                                <option value="IP">IP</option>
+                                <option value="Analog">Analog</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Brand</label>
+                            <input type="text" class="form-control" id="qpBrand" placeholder="e.g. CP Plus">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Sale Price (₹)</label>
+                            <input type="number" class="form-control" id="qpSalePrice" min="0" step="0.01">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Warranty (months)</label>
+                            <input type="number" class="form-control" id="qpWarranty" min="0" placeholder="e.g. 12">
+                        </div>
+                    </div>
+                    <div id="qpError" class="alert alert-danger small mt-3 d-none"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" id="qpSaveBtn">
+                        <i class="bi bi-check-lg me-1"></i> Create & Select
                     </button>
                 </div>
             </div>
@@ -350,6 +408,69 @@ $(document).ready(function() {
             e.preventDefault();
             alert('Please add at least one item.');
         }
+    });
+
+    $('#quickCreateProductBtn').on('click', function() {
+        bootstrap.Modal.getInstance(document.getElementById('addItemModal')).hide();
+        $('#qpName').val('');
+        $('#qpCategory').val('');
+        $('#qpBrand').val('');
+        $('#qpSalePrice').val('');
+        $('#qpWarranty').val('');
+        $('#qpError').addClass('d-none');
+        $('#qpName, #qpCategory').removeClass('is-invalid');
+        new bootstrap.Modal('#quickProductModal').show();
+    });
+
+    $('#quickProductModal').on('hidden.bs.modal', function() {
+        new bootstrap.Modal('#addItemModal').show();
+    });
+
+    $('#qpSaveBtn').on('click', function() {
+        var name = $.trim($('#qpName').val());
+        var category = $('#qpCategory').val();
+        var hasErr = false;
+        $('#qpName, #qpCategory').removeClass('is-invalid');
+        $('#qpError').addClass('d-none');
+
+        if (!name) { $('#qpName').addClass('is-invalid'); hasErr = true; }
+        if (!category) { $('#qpCategory').addClass('is-invalid'); hasErr = true; }
+        if (hasErr) return;
+
+        var btn = $(this);
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Creating...');
+
+        $.ajax({
+            url: '/api/products/quick-store',
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            data: {
+                name: name,
+                category: category,
+                brand: $.trim($('#qpBrand').val()) || null,
+                sale_price: $('#qpSalePrice').val() || null,
+                warranty_months: $('#qpWarranty').val() || null,
+            },
+            success: function(data) {
+                btn.prop('disabled', false).html('<i class="bi bi-check-lg me-1"></i> Create & Select');
+                if (data.success) {
+                    products.push(data.product);
+                    populateModalProducts();
+                    $('#modalProductId').val(data.product.id);
+                    bootstrap.Modal.getInstance(document.getElementById('quickProductModal')).hide();
+                }
+            },
+            error: function(xhr) {
+                btn.prop('disabled', false).html('<i class="bi bi-check-lg me-1"></i> Create & Select');
+                var msg = 'Failed to create product.';
+                if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                if (xhr.responseJSON && xhr.responseJSON.errors) {
+                    var errs = xhr.responseJSON.errors;
+                    msg = Object.values(errs).flat().join('<br>');
+                }
+                $('#qpError').removeClass('d-none').html(msg);
+            }
+        });
     });
 
     initialItems.forEach(function(item) {
