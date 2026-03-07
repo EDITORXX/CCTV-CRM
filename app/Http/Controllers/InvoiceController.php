@@ -10,6 +10,7 @@ use App\Models\SerialNumber;
 use App\Models\Warranty;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class InvoiceController extends Controller
@@ -45,6 +46,7 @@ class InvoiceController extends Controller
             'site_id' => 'nullable|exists:sites,id',
             'invoice_number' => 'required|string',
             'invoice_date' => 'required|date',
+            'remaining_due_date' => 'nullable|date|after_or_equal:invoice_date',
             'is_gst' => 'boolean',
             'discount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
@@ -71,11 +73,13 @@ class InvoiceController extends Controller
                 'site_id' => $request->site_id,
                 'invoice_number' => $request->invoice_number,
                 'invoice_date' => $request->invoice_date,
+                'remaining_due_date' => $request->remaining_due_date,
+                'due_reminder_sent_at' => null,
                 'is_gst' => $isGst,
                 'discount' => $totalDiscount,
                 'notes' => $request->notes,
                 'status' => 'draft',
-                'created_by' => auth()->id(),
+                'created_by' => Auth::id(),
             ]);
 
             foreach ($request->items as $item) {
@@ -173,10 +177,15 @@ class InvoiceController extends Controller
     public function update(Request $request, Invoice $invoice)
     {
         $request->validate([
-            'status' => 'required|in:draft,sent,paid,cancelled',
+            'status' => 'required|in:draft,sent,partial,paid,cancelled',
+            'remaining_due_date' => 'nullable|date',
             'notes' => 'nullable|string',
         ]);
-        $invoice->update($request->only(['status', 'notes']));
+        $updateData = $request->only(['status', 'remaining_due_date', 'notes']);
+        if ($request->input('remaining_due_date') !== optional($invoice->remaining_due_date)->format('Y-m-d')) {
+            $updateData['due_reminder_sent_at'] = null;
+        }
+        $invoice->update($updateData);
         return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice updated.');
     }
 
@@ -203,7 +212,7 @@ class InvoiceController extends Controller
 
     public function pdf(Invoice $invoice)
     {
-        $invoice->load(['customer', 'site', 'items.product', 'items.serialNumbers', 'creator']);
+        $invoice->load(['customer', 'site', 'items.product', 'items.serialNumbers', 'payments', 'creator']);
         $company = \App\Models\Company::find(session('current_company_id'));
         $pdf = Pdf::loadView('pdf.invoice', compact('invoice', 'company'));
         return $pdf->stream('invoice-' . $invoice->invoice_number . '.pdf');
@@ -211,7 +220,7 @@ class InvoiceController extends Controller
 
     public function download(Invoice $invoice)
     {
-        $invoice->load(['customer', 'site', 'items.product', 'items.serialNumbers', 'creator']);
+        $invoice->load(['customer', 'site', 'items.product', 'items.serialNumbers', 'payments', 'creator']);
         $company = \App\Models\Company::find(session('current_company_id'));
         $pdf = Pdf::loadView('pdf.invoice', compact('invoice', 'company'));
         return $pdf->download('invoice-' . $invoice->invoice_number . '.pdf');

@@ -63,11 +63,30 @@
         .sig-right { display: table-cell; width: 50%; text-align: right; }
         .sig-line { border-top: 1px solid #333; display: inline-block; width: 150px; margin-top: 40px; }
         .sig-label { font-size: 10px; color: #555; margin-top: 3px; }
+        .company-mark-wrap { margin-top: 8px; min-height: 70px; position: relative; }
+        .company-signature { max-height: 55px; max-width: 160px; }
+        .company-stamp { max-height: 70px; max-width: 110px; }
+        .company-mark-separate img { vertical-align: middle; margin-left: 8px; }
+        .company-mark-overlap { width: 170px; height: 80px; display: inline-block; }
+        .company-mark-overlap .company-signature { position: absolute; right: 0; bottom: 0; }
+        .company-mark-overlap .company-stamp { position: absolute; right: 35px; top: 0; opacity: 0.9; }
 
         .watermark { position: fixed; top: 40%; left: 20%; font-size: 80px; color: rgba(0,0,0,0.05); transform: rotate(-30deg); z-index: -1; }
     </style>
 </head>
 <body>
+    @php
+        $layout = $company->documentLayouts()->where('document_type', 'invoice')->first();
+        $showSignature = $layout ? $layout->show_signature : false;
+        $showStamp = $layout ? $layout->show_stamp : true;
+        $layoutMode = $layout ? $layout->layout_mode : 'separate';
+        $signatureFile = $company->signature_path ? public_path('storage/' . $company->signature_path) : null;
+        $stampFile = $company->stamp_path ? public_path('storage/' . $company->stamp_path) : null;
+        $hasSignatureFile = $signatureFile && file_exists($signatureFile);
+        $hasStampFile = $stampFile && file_exists($stampFile);
+        $totalPaid = $invoice->payments->sum('amount');
+        $balanceDue = max(0, $invoice->total - $totalPaid);
+    @endphp
     <div class="invoice-container">
         <!-- Company Header -->
         <div class="header">
@@ -112,6 +131,9 @@
                 <table class="info-table">
                     <tr><td class="label">Invoice No:</td><td><strong>{{ $invoice->invoice_number }}</strong></td></tr>
                     <tr><td class="label">Date:</td><td>{{ $invoice->invoice_date->format('d-M-Y') }}</td></tr>
+                    @if($invoice->remaining_due_date)
+                        <tr><td class="label">Remaining Due:</td><td>{{ $invoice->remaining_due_date->format('d-M-Y') }}</td></tr>
+                    @endif
                     <tr><td class="label">Status:</td><td>{{ ucfirst($invoice->status) }}</td></tr>
                 </table>
             </div>
@@ -171,6 +193,11 @@
                         <strong>Notes:</strong> {{ $invoice->notes }}
                     </div>
                 @endif
+                @if($balanceDue > 0)
+                    <div style="margin-top: 10px; font-size: 10px;">
+                        <strong>Remaining Amount:</strong> ₹ {{ number_format($balanceDue, 2) }}
+                    </div>
+                @endif
             </div>
             <div class="summary-right">
                 <table class="summary-table">
@@ -198,6 +225,16 @@
             </div>
             <div class="sig-right">
                 <div class="sig-line"></div>
+                @if(($showSignature && $hasSignatureFile) || ($showStamp && $hasStampFile))
+                    <div class="company-mark-wrap {{ $layoutMode === 'overlap' ? 'company-mark-overlap' : 'company-mark-separate' }}">
+                        @if($showSignature && $hasSignatureFile)
+                            <img src="{{ $signatureFile }}" alt="Signature" class="company-signature">
+                        @endif
+                        @if($showStamp && $hasStampFile)
+                            <img src="{{ $stampFile }}" alt="Stamp" class="company-stamp">
+                        @endif
+                    </div>
+                @endif
                 <div class="sig-label">For {{ $company->name }}</div>
                 <div class="sig-label">Authorized Signatory</div>
             </div>

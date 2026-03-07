@@ -66,6 +66,16 @@
                     @enderror
                 </div>
 
+                <div class="col-md-4">
+                    <label for="remaining_due_date" class="form-label">Remaining Amount Due Date</label>
+                    <input type="date" class="form-control @error('remaining_due_date') is-invalid @enderror"
+                           id="remaining_due_date" name="remaining_due_date"
+                           value="{{ old('remaining_due_date') }}">
+                    @error('remaining_due_date')
+                        <span class="text-danger small">{{ $message }}</span>
+                    @enderror
+                </div>
+
                 <div class="col-md-4 d-flex align-items-end">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="is_gst" name="is_gst" value="1"

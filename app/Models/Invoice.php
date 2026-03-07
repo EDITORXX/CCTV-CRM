@@ -10,11 +10,14 @@ class Invoice extends Model
 
     protected $fillable = [
         'company_id', 'customer_id', 'site_id', 'invoice_number', 'invoice_date',
+        'remaining_due_date', 'due_reminder_sent_at',
         'is_gst', 'subtotal', 'gst_amount', 'discount', 'total', 'status', 'notes', 'created_by',
     ];
 
     protected $casts = [
         'invoice_date' => 'date',
+        'remaining_due_date' => 'date',
+        'due_reminder_sent_at' => 'datetime',
         'is_gst' => 'boolean',
         'subtotal' => 'decimal:2',
         'gst_amount' => 'decimal:2',
@@ -50,5 +53,10 @@ class Invoice extends Model
     public function isPaid()
     {
         return $this->status === 'paid';
+    }
+
+    public function getOutstandingAmountAttribute(): float
+    {
+        return max(0, (float) $this->total - (float) $this->payments()->sum('amount'));
     }
 }

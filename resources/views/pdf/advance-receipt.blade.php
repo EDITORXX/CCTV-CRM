@@ -44,9 +44,26 @@
         .sig-right { display: table-cell; width: 50%; text-align: right; }
         .sig-line { border-top: 1px solid #333; display: inline-block; width: 150px; margin-top: 40px; }
         .sig-label { font-size: 10px; color: #555; margin-top: 3px; }
+        .company-mark-wrap { margin-top: 8px; min-height: 70px; position: relative; }
+        .company-signature { max-height: 55px; max-width: 160px; }
+        .company-stamp { max-height: 70px; max-width: 110px; }
+        .company-mark-separate img { vertical-align: middle; margin-left: 8px; }
+        .company-mark-overlap { width: 170px; height: 80px; display: inline-block; }
+        .company-mark-overlap .company-signature { position: absolute; right: 0; bottom: 0; }
+        .company-mark-overlap .company-stamp { position: absolute; right: 35px; top: 0; opacity: 0.9; }
     </style>
 </head>
 <body>
+    @php
+        $layout = $company->documentLayouts()->where('document_type', 'advance_receipt')->first();
+        $showSignature = $layout ? $layout->show_signature : false;
+        $showStamp = $layout ? $layout->show_stamp : true;
+        $layoutMode = $layout ? $layout->layout_mode : 'separate';
+        $signatureFile = $company->signature_path ? public_path('storage/' . $company->signature_path) : null;
+        $stampFile = $company->stamp_path ? public_path('storage/' . $company->stamp_path) : null;
+        $hasSignatureFile = $signatureFile && file_exists($signatureFile);
+        $hasStampFile = $stampFile && file_exists($stampFile);
+    @endphp
     <div class="receipt-container">
         <div class="header">
             <div class="header-left">
@@ -119,6 +136,16 @@
             </div>
             <div class="sig-right">
                 <div class="sig-line"></div>
+                @if(($showSignature && $hasSignatureFile) || ($showStamp && $hasStampFile))
+                    <div class="company-mark-wrap {{ $layoutMode === 'overlap' ? 'company-mark-overlap' : 'company-mark-separate' }}">
+                        @if($showSignature && $hasSignatureFile)
+                            <img src="{{ $signatureFile }}" alt="Signature" class="company-signature">
+                        @endif
+                        @if($showStamp && $hasStampFile)
+                            <img src="{{ $stampFile }}" alt="Stamp" class="company-stamp">
+                        @endif
+                    </div>
+                @endif
                 <div class="sig-label">For {{ $company->name }}</div>
                 <div class="sig-label">Authorized Signatory</div>
             </div>

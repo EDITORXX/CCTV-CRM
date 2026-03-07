@@ -25,10 +25,21 @@
                     <select class="form-select @error('status') is-invalid @enderror" id="status" name="status" required>
                         <option value="draft" {{ old('status', $invoice->status) === 'draft' ? 'selected' : '' }}>Draft</option>
                         <option value="sent" {{ old('status', $invoice->status) === 'sent' ? 'selected' : '' }}>Sent</option>
+                        <option value="partial" {{ old('status', $invoice->status) === 'partial' ? 'selected' : '' }}>Partial</option>
                         <option value="paid" {{ old('status', $invoice->status) === 'paid' ? 'selected' : '' }}>Paid</option>
                         <option value="cancelled" {{ old('status', $invoice->status) === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                     </select>
                     @error('status')
+                        <span class="text-danger small">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="col-md-6">
+                    <label for="remaining_due_date" class="form-label">Remaining Amount Due Date</label>
+                    <input type="date" class="form-control @error('remaining_due_date') is-invalid @enderror"
+                           id="remaining_due_date" name="remaining_due_date"
+                           value="{{ old('remaining_due_date', $invoice->remaining_due_date ? $invoice->remaining_due_date->format('Y-m-d') : '') }}">
+                    @error('remaining_due_date')
                         <span class="text-danger small">{{ $message }}</span>
                     @enderror
                 </div>

@@ -59,6 +59,12 @@
                         <td class="text-muted">Date</td>
                         <td>{{ \Carbon\Carbon::parse($invoice->invoice_date)->format('d M Y') }}</td>
                     </tr>
+                    @if($invoice->remaining_due_date)
+                    <tr>
+                        <td class="text-muted">Remaining Due</td>
+                        <td>{{ $invoice->remaining_due_date->format('d M Y') }}</td>
+                    </tr>
+                    @endif
                     <tr>
                         <td class="text-muted">Status</td>
                         <td>

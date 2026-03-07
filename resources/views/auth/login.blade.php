@@ -279,11 +279,13 @@
         <p id="pwa-install-status" class="install-status d-none" style="color: rgba(255,255,255,.5);"></p>
         <p id="notification-status" class="permission-status d-none" style="color: rgba(255,255,255,.5);"></p>
 
+        @if(app()->environment('local'))
         <div class="text-center mt-3">
             <a href="{{ route('quick-login') }}" class="btn btn-outline-light btn-sm">
                 <i class="bi bi-lightning-charge-fill me-1"></i> Quick Demo Login
             </a>
         </div>
+        @endif
 
         <p class="text-center mt-3 small" style="color: rgba(255,255,255,.4);">
             &copy; {{ date('Y') }} {{ config('app.name', 'Gold Security') }}

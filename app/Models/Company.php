@@ -8,7 +8,8 @@ class Company extends Model
 {
     protected $fillable = [
         'name', 'address', 'gstin', 'phone', 'email', 'website',
-        'logo_path', 'payment_qr_path', 'gst_enabled', 'invoice_prefix', 'warranty_default_months',
+        'logo_path', 'payment_qr_path', 'signature_path', 'stamp_path',
+        'gst_enabled', 'invoice_prefix', 'warranty_default_months',
     ];
 
     protected $casts = [
@@ -48,5 +49,10 @@ class Company extends Model
     public function tickets()
     {
         return $this->hasMany(Ticket::class);
+    }
+
+    public function documentLayouts()
+    {
+        return $this->hasMany(CompanyDocumentLayout::class);
     }
 }

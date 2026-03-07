@@ -139,6 +139,7 @@ class EstimateController extends Controller
                     $product = Product::create([
                         'company_id' => $companyId,
                         'name' => trim($item['description']),
+                        'category' => 'Other',
                         'sale_price' => $item['unit_price'],
                         'warranty_months' => $item['warranty_months'] ?? 12,
                         'created_by' => auth()->id(),

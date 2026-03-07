@@ -99,6 +99,38 @@
                     @endif
                 </div>
 
+                <div class="col-md-6">
+                    <label for="signature" class="form-label">Digital Signature</label>
+                    <input type="file" class="form-control @error('signature') is-invalid @enderror"
+                           id="signature" name="signature" accept="image/*">
+                    @error('signature')
+                        <span class="text-danger small">{{ $message }}</span>
+                    @enderror
+                    @if($company->signature_path)
+                        <div class="mt-2">
+                            <img src="{{ asset('storage/' . $company->signature_path) }}" alt="Signature"
+                                 class="img-thumbnail" style="max-height: 70px;">
+                            <small class="text-muted ms-2">Upload new file to replace</small>
+                        </div>
+                    @endif
+                </div>
+
+                <div class="col-md-6">
+                    <label for="stamp" class="form-label">Company Stamp</label>
+                    <input type="file" class="form-control @error('stamp') is-invalid @enderror"
+                           id="stamp" name="stamp" accept="image/*">
+                    @error('stamp')
+                        <span class="text-danger small">{{ $message }}</span>
+                    @enderror
+                    @if($company->stamp_path)
+                        <div class="mt-2">
+                            <img src="{{ asset('storage/' . $company->stamp_path) }}" alt="Stamp"
+                                 class="img-thumbnail" style="max-height: 90px;">
+                            <small class="text-muted ms-2">Upload new file to replace</small>
+                        </div>
+                    @endif
+                </div>
+
                 <div class="col-12">
                     <label for="address" class="form-label">Address</label>
                     <textarea class="form-control @error('address') is-invalid @enderror"
@@ -178,6 +210,57 @@
                             No QR code uploaded yet
                         </div>
                     @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Document Signature / Stamp Display --}}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <h6 class="mb-0 fw-semibold"><i class="bi bi-pen me-2 text-primary"></i>Document Signature / Stamp Settings</h6>
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-3">Choose per document: show stamp/sign only, both (overlap/separate), or none.</p>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Estimate</label>
+                    <select class="form-select @error('document_layouts.estimate.mode') is-invalid @enderror" name="document_layouts[estimate][mode]">
+                        <option value="stamp_only" {{ old('document_layouts.estimate.mode', $documentModes['estimate'] ?? 'stamp_only') === 'stamp_only' ? 'selected' : '' }}>Stamp only</option>
+                        <option value="sign_only" {{ old('document_layouts.estimate.mode', $documentModes['estimate'] ?? 'stamp_only') === 'sign_only' ? 'selected' : '' }}>Signature only</option>
+                        <option value="both_separate" {{ old('document_layouts.estimate.mode', $documentModes['estimate'] ?? 'stamp_only') === 'both_separate' ? 'selected' : '' }}>Both (Separate)</option>
+                        <option value="both_overlap" {{ old('document_layouts.estimate.mode', $documentModes['estimate'] ?? 'stamp_only') === 'both_overlap' ? 'selected' : '' }}>Both (Overlap)</option>
+                        <option value="none" {{ old('document_layouts.estimate.mode', $documentModes['estimate'] ?? 'stamp_only') === 'none' ? 'selected' : '' }}>None</option>
+                    </select>
+                    @error('document_layouts.estimate.mode')
+                        <span class="text-danger small">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Invoice</label>
+                    <select class="form-select @error('document_layouts.invoice.mode') is-invalid @enderror" name="document_layouts[invoice][mode]">
+                        <option value="stamp_only" {{ old('document_layouts.invoice.mode', $documentModes['invoice'] ?? 'stamp_only') === 'stamp_only' ? 'selected' : '' }}>Stamp only</option>
+                        <option value="sign_only" {{ old('document_layouts.invoice.mode', $documentModes['invoice'] ?? 'stamp_only') === 'sign_only' ? 'selected' : '' }}>Signature only</option>
+                        <option value="both_separate" {{ old('document_layouts.invoice.mode', $documentModes['invoice'] ?? 'stamp_only') === 'both_separate' ? 'selected' : '' }}>Both (Separate)</option>
+                        <option value="both_overlap" {{ old('document_layouts.invoice.mode', $documentModes['invoice'] ?? 'stamp_only') === 'both_overlap' ? 'selected' : '' }}>Both (Overlap)</option>
+                        <option value="none" {{ old('document_layouts.invoice.mode', $documentModes['invoice'] ?? 'stamp_only') === 'none' ? 'selected' : '' }}>None</option>
+                    </select>
+                    @error('document_layouts.invoice.mode')
+                        <span class="text-danger small">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Advance Receipt</label>
+                    <select class="form-select @error('document_layouts.advance_receipt.mode') is-invalid @enderror" name="document_layouts[advance_receipt][mode]">
+                        <option value="stamp_only" {{ old('document_layouts.advance_receipt.mode', $documentModes['advance_receipt'] ?? 'stamp_only') === 'stamp_only' ? 'selected' : '' }}>Stamp only</option>
+                        <option value="sign_only" {{ old('document_layouts.advance_receipt.mode', $documentModes['advance_receipt'] ?? 'stamp_only') === 'sign_only' ? 'selected' : '' }}>Signature only</option>
+                        <option value="both_separate" {{ old('document_layouts.advance_receipt.mode', $documentModes['advance_receipt'] ?? 'stamp_only') === 'both_separate' ? 'selected' : '' }}>Both (Separate)</option>
+                        <option value="both_overlap" {{ old('document_layouts.advance_receipt.mode', $documentModes['advance_receipt'] ?? 'stamp_only') === 'both_overlap' ? 'selected' : '' }}>Both (Overlap)</option>
+                        <option value="none" {{ old('document_layouts.advance_receipt.mode', $documentModes['advance_receipt'] ?? 'stamp_only') === 'none' ? 'selected' : '' }}>None</option>
+                    </select>
+                    @error('document_layouts.advance_receipt.mode')
+                        <span class="text-danger small">{{ $message }}</span>
+                    @enderror
                 </div>
             </div>
         </div>
