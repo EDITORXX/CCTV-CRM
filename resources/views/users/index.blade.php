@@ -62,7 +62,7 @@
                         <th>Phone</th>
                         <th>Role</th>
                         <th>Status</th>
-                        <th width="130">Actions</th>
+                        <th width="160">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -96,6 +96,10 @@
                         </td>
                         <td>
                             <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-warning btn-password-manage" title="Password"
+                                        data-user-id="{{ $user->id }}" data-user-name="{{ $user->name }}" data-user-email="{{ $user->email }}">
+                                    <i class="bi bi-key"></i>
+                                </button>
                                 <a href="{{ route('users.edit', $user) }}" class="btn btn-outline-primary" title="Edit">
                                     <i class="bi bi-pencil"></i>
                                 </a>
@@ -121,6 +125,71 @@
         </div>
     </div>
 </div>
+{{-- Password Management Modal --}}
+<div class="modal fade" id="passwordModal" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning bg-opacity-10">
+                <h5 class="modal-title" id="passwordModalLabel">
+                    <i class="bi bi-key-fill text-warning me-2"></i> Password Management
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="fw-semibold" id="pwModalUserName"></div>
+                    <small class="text-muted" id="pwModalUserEmail"></small>
+                </div>
+
+                <div id="pwLoading" class="text-center py-3">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                    <span class="ms-2 text-muted">Loading...</span>
+                </div>
+
+                <div id="pwContent" class="d-none">
+                    <label class="form-label small text-muted mb-1">Current Password</label>
+                    <div class="input-group mb-3">
+                        <input type="password" class="form-control" id="pwCurrentPassword" readonly>
+                        <button class="btn btn-outline-secondary" type="button" id="pwToggleVisibility" title="Show/Hide">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-outline-primary" type="button" id="pwCopyPassword" title="Copy">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+
+                    <div id="pwNoPassword" class="alert alert-info small d-none">
+                        <i class="bi bi-info-circle me-1"></i> No stored password found. Use "Reset Password" to generate one.
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-warning btn-sm" id="pwResetBtn">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Reset Password
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm" id="pwSendEmailBtn">
+                            <i class="bi bi-envelope me-1"></i> Send on Email
+                        </button>
+                    </div>
+
+                    <div id="pwResetResult" class="mt-3 d-none">
+                        <div class="alert alert-success small mb-0">
+                            <i class="bi bi-check-circle me-1"></i> New password generated:
+                            <div class="input-group input-group-sm mt-2">
+                                <input type="text" class="form-control font-monospace" id="pwNewPassword" readonly>
+                                <button class="btn btn-outline-success" type="button" id="pwCopyNewPassword" title="Copy new password">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="pwEmailResult" class="mt-3 d-none"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @section('scripts')
@@ -136,6 +205,126 @@
             language: {
                 emptyTable: '<div class="text-center py-4 text-muted"><i class="bi bi-person-gear fs-1 d-block mb-2"></i>No users found. <a href="{{ route('users.create') }}">Add your first user</a>.</div>'
             }
+        });
+
+        // Password Management Modal
+        var currentUserId = null;
+
+        $(document).on('click', '.btn-password-manage', function() {
+            currentUserId = $(this).data('user-id');
+            $('#pwModalUserName').text($(this).data('user-name'));
+            $('#pwModalUserEmail').text($(this).data('user-email'));
+            $('#pwLoading').show();
+            $('#pwContent').addClass('d-none');
+            $('#pwResetResult').addClass('d-none');
+            $('#pwEmailResult').addClass('d-none');
+            $('#pwNoPassword').addClass('d-none');
+            $('#pwCurrentPassword').attr('type', 'password');
+            $('#pwToggleVisibility i').attr('class', 'bi bi-eye');
+            new bootstrap.Modal('#passwordModal').show();
+
+            $.ajax({
+                url: '/users/' + currentUserId + '/password-info',
+                method: 'GET',
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                success: function(data) {
+                    $('#pwLoading').hide();
+                    $('#pwContent').removeClass('d-none');
+                    if (data.has_password && data.password) {
+                        $('#pwCurrentPassword').val(data.password);
+                        $('#pwNoPassword').addClass('d-none');
+                    } else {
+                        $('#pwCurrentPassword').val('');
+                        $('#pwNoPassword').removeClass('d-none');
+                    }
+                },
+                error: function() {
+                    $('#pwLoading').hide();
+                    $('#pwContent').removeClass('d-none');
+                    $('#pwCurrentPassword').val('');
+                    $('#pwNoPassword').removeClass('d-none').text('Could not load password info.');
+                }
+            });
+        });
+
+        $('#pwToggleVisibility').on('click', function() {
+            var input = $('#pwCurrentPassword');
+            if (input.attr('type') === 'password') {
+                input.attr('type', 'text');
+                $(this).find('i').attr('class', 'bi bi-eye-slash');
+            } else {
+                input.attr('type', 'password');
+                $(this).find('i').attr('class', 'bi bi-eye');
+            }
+        });
+
+        $('#pwCopyPassword').on('click', function() {
+            var pw = $('#pwCurrentPassword').val();
+            if (!pw) return;
+            navigator.clipboard.writeText(pw).then(function() {
+                $('#pwCopyPassword').html('<i class="bi bi-check"></i>');
+                setTimeout(function() { $('#pwCopyPassword').html('<i class="bi bi-clipboard"></i>'); }, 1500);
+            });
+        });
+
+        $('#pwCopyNewPassword').on('click', function() {
+            var pw = $('#pwNewPassword').val();
+            if (!pw) return;
+            navigator.clipboard.writeText(pw).then(function() {
+                $('#pwCopyNewPassword').html('<i class="bi bi-check"></i>');
+                setTimeout(function() { $('#pwCopyNewPassword').html('<i class="bi bi-clipboard"></i>'); }, 1500);
+            });
+        });
+
+        $('#pwResetBtn').on('click', function() {
+            if (!currentUserId) return;
+            if (!confirm('Generate a new password for this user? The old password will be replaced.')) return;
+            var btn = $(this);
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Resetting...');
+            $.ajax({
+                url: '/users/' + currentUserId + '/reset-password',
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                success: function(data) {
+                    btn.prop('disabled', false).html('<i class="bi bi-arrow-clockwise me-1"></i> Reset Password');
+                    if (data.success) {
+                        $('#pwCurrentPassword').val(data.password);
+                        $('#pwNoPassword').addClass('d-none');
+                        $('#pwNewPassword').val(data.password);
+                        $('#pwResetResult').removeClass('d-none');
+                    }
+                },
+                error: function() {
+                    btn.prop('disabled', false).html('<i class="bi bi-arrow-clockwise me-1"></i> Reset Password');
+                    alert('Failed to reset password. Please try again.');
+                }
+            });
+        });
+
+        $('#pwSendEmailBtn').on('click', function() {
+            if (!currentUserId) return;
+            var btn = $(this);
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Sending...');
+            $('#pwEmailResult').addClass('d-none');
+            $.ajax({
+                url: '/users/' + currentUserId + '/send-credentials',
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                success: function(data) {
+                    btn.prop('disabled', false).html('<i class="bi bi-envelope me-1"></i> Send on Email');
+                    $('#pwEmailResult').removeClass('d-none').html(
+                        '<div class="alert alert-success small mb-0"><i class="bi bi-check-circle me-1"></i> ' + (data.message || 'Credentials sent successfully!') + '</div>'
+                    );
+                },
+                error: function(xhr) {
+                    btn.prop('disabled', false).html('<i class="bi bi-envelope me-1"></i> Send on Email');
+                    var msg = 'Failed to send email.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                    $('#pwEmailResult').removeClass('d-none').html(
+                        '<div class="alert alert-danger small mb-0"><i class="bi bi-exclamation-circle me-1"></i> ' + msg + '</div>'
+                    );
+                }
+            });
         });
 
         $('#downloadCredentialsBtn').on('click', function() {

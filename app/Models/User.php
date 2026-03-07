@@ -25,6 +25,7 @@ class User extends Authenticatable
         'phone',
         'is_active',
         'google_id',
+        'plain_password_enc',
     ];
 
     /**
@@ -35,6 +36,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'plain_password_enc',
     ];
 
     /**

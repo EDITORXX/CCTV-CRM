@@ -203,6 +203,9 @@ Route::middleware(['auth', 'company'])->group(function () {
             ->name('users.create-redirect-fallback');
         // Only numeric IDs for {user} so "Add User" etc. never match edit/update/destroy
         Route::resource('users', App\Http\Controllers\UserController::class)->whereNumber('user')->except(['show']);
+        Route::get('/users/{user}/password-info', [App\Http\Controllers\UserController::class, 'getPasswordInfo'])->name('users.password-info');
+        Route::post('/users/{user}/reset-password', [App\Http\Controllers\UserController::class, 'resetPassword'])->name('users.reset-password');
+        Route::post('/users/{user}/send-credentials', [App\Http\Controllers\UserController::class, 'sendPasswordEmail'])->name('users.send-credentials');
     });
 
     // Company Settings

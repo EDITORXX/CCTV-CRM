@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\UserCredentialsMail;
 use App\Models\Company;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
@@ -49,6 +52,7 @@ class UserController extends Controller
                 'email' => $validated['email'],
                 'phone' => $validated['phone'] ?? null,
                 'password' => Hash::make($validated['password']),
+                'plain_password_enc' => encrypt($validated['password']),
                 'is_active' => true,
             ]);
 
@@ -101,6 +105,7 @@ class UserController extends Controller
 
         if (!empty($validated['password'])) {
             $userData['password'] = Hash::make($validated['password']);
+            $userData['plain_password_enc'] = encrypt($validated['password']);
         }
 
         $user->update($userData);
@@ -119,5 +124,68 @@ class UserController extends Controller
         $company->users()->detach($user->id);
 
         return redirect()->route('users.index')->with('success', 'User removed from company.');
+    }
+
+    public function getPasswordInfo(User $user)
+    {
+        $password = null;
+        if ($user->plain_password_enc) {
+            try {
+                $password = decrypt($user->plain_password_enc);
+            } catch (\Exception $e) {
+                $password = null;
+            }
+        }
+
+        return response()->json([
+            'has_password' => !is_null($password),
+            'password' => $password,
+            'name' => $user->name,
+            'email' => $user->email,
+        ]);
+    }
+
+    public function resetPassword(User $user)
+    {
+        $newPassword = Str::random(10);
+
+        $user->update([
+            'password' => Hash::make($newPassword),
+            'plain_password_enc' => encrypt($newPassword),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'password' => $newPassword,
+        ]);
+    }
+
+    public function sendPasswordEmail(User $user)
+    {
+        $password = null;
+        if ($user->plain_password_enc) {
+            try {
+                $password = decrypt($user->plain_password_enc);
+            } catch (\Exception $e) {
+                return response()->json(['success' => false, 'message' => 'Could not decrypt password.'], 400);
+            }
+        }
+
+        if (!$password) {
+            return response()->json(['success' => false, 'message' => 'No password available. Reset the password first.'], 400);
+        }
+
+        if (!$user->email) {
+            return response()->json(['success' => false, 'message' => 'User has no email address.'], 400);
+        }
+
+        Mail::to($user->email)->send(new UserCredentialsMail(
+            $user->name,
+            $user->email,
+            $password,
+            url('/login')
+        ));
+
+        return response()->json(['success' => true, 'message' => 'Credentials sent to ' . $user->email]);
     }
 }
