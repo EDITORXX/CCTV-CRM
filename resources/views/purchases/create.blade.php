@@ -81,12 +81,20 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
+                        <label class="form-label fw-semibold">Filter by Category</label>
+                        <select class="form-select" id="modalCategoryFilter">
+                            <option value="">-- All Categories --</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label fw-semibold">Product <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <select class="form-select" id="modalProductId">
-                                <option value="">-- Select Product --</option>
-                            </select>
-                            <button type="button" class="btn btn-outline-success" id="quickCreateProductBtn" title="Create New Product">
+                        <div class="d-flex gap-2">
+                            <div class="flex-grow-1">
+                                <select class="form-select" id="modalProductId" style="width:100%;">
+                                    <option value="">-- Select Product --</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn btn-outline-success flex-shrink-0" id="quickCreateProductBtn" title="Create New Product">
                                 <i class="bi bi-plus-lg"></i>
                             </button>
                         </div>
@@ -250,23 +258,35 @@ $(document).ready(function() {
     var products = JSON.parse(document.getElementById('purchaseProductsJson').textContent || '[]');
     var oldPurchaseItems = JSON.parse(document.getElementById('oldPurchaseItemsJson').textContent || '[]');
 
-    function populateModalProducts() {
+    function populateCategoryFilter() {
+        var cats = {};
+        products.forEach(function(p) { if (p.category) cats[p.category] = true; });
+        var opts = '<option value="">-- All Categories --</option>';
+        Object.keys(cats).sort().forEach(function(c) {
+            opts += '<option value="' + c + '">' + c.replace('_', '/') + '</option>';
+        });
+        $('#modalCategoryFilter').html(opts);
+    }
+
+    function populateModalProducts(selectedCategory) {
         var opts = '<option value="">-- Select Product --</option>';
         products.forEach(function(p) {
-            var label = p.name + (p.category ? ' [' + p.category + ']' : '');
-            opts += '<option value="' + p.id + '" data-price="' + (p.purchase_price || 0) + '">' + label + '</option>';
+            if (selectedCategory && p.category !== selectedCategory) return;
+            opts += '<option value="' + p.id + '" data-price="' + (p.purchase_price || 0) + '">' + p.name + '</option>';
         });
-        $('#modalProductId').html(opts);
+        $('#modalProductId').html(opts).trigger('change.select2');
     }
 
     function resetModal() {
-        $('#modalProductId').val('');
+        $('#modalCategoryFilter').val('');
+        $('#modalProductId').val(null).trigger('change.select2');
         $('#modalQty').val(1);
         $('#modalPrice').val(0);
         $('#modalGstType').val('with_gst');
         $('#modalGst').val(18).prop('disabled', false);
         $('#modalGstWrapper').show();
         $('#modalSerials').val('');
+        populateCategoryFilter();
         populateModalProducts();
         var currentVendor = $('#vendor_id').val();
         $('#modalVendorId').val(currentVendor || '');
@@ -315,8 +335,19 @@ $(document).ready(function() {
         $('#grandTotal').text('₹' + grandTotal.toFixed(2));
     }
 
+    $('#modalProductId').select2({
+        theme: 'bootstrap-5',
+        dropdownParent: $('#addItemModal'),
+        placeholder: '-- Select Product --',
+        allowClear: true
+    });
+
     $('#addItemModal').on('show.bs.modal', function() {
         resetModal();
+    });
+
+    $('#modalCategoryFilter').on('change', function() {
+        populateModalProducts($(this).val());
     });
 
     $('#modalProductId').on('change', function() {
@@ -442,8 +473,9 @@ $(document).ready(function() {
                 btn.prop('disabled', false).html('<i class="bi bi-check-lg me-1"></i> Create & Select');
                 if (data.success) {
                     products.push(data.product);
-                    populateModalProducts();
-                    $('#modalProductId').val(data.product.id);
+                    populateCategoryFilter();
+                    populateModalProducts($('#modalCategoryFilter').val());
+                    $('#modalProductId').val(data.product.id).trigger('change.select2');
                     bootstrap.Modal.getInstance(document.getElementById('quickProductModal')).hide();
                 }
             },
