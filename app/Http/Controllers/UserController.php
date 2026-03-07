@@ -51,7 +51,7 @@ class UserController extends Controller
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'phone' => $validated['phone'] ?? null,
-                'password' => Hash::make($validated['password']),
+                'password' => $validated['password'],
                 'plain_password_enc' => encrypt($validated['password']),
                 'is_active' => true,
             ]);
@@ -104,7 +104,7 @@ class UserController extends Controller
         ];
 
         if (!empty($validated['password'])) {
-            $userData['password'] = Hash::make($validated['password']);
+            $userData['password'] = $validated['password'];
             $userData['plain_password_enc'] = encrypt($validated['password']);
         }
 
@@ -147,17 +147,25 @@ class UserController extends Controller
 
     public function resetPassword(User $user)
     {
-        $newPassword = Str::random(10);
+        try {
+            $newPassword = Str::random(10);
 
-        $user->update([
-            'password' => Hash::make($newPassword),
-            'plain_password_enc' => encrypt($newPassword),
-        ]);
+            $user->forceFill([
+                'password' => $newPassword,
+                'plain_password_enc' => encrypt($newPassword),
+            ])->save();
 
-        return response()->json([
-            'success' => true,
-            'password' => $newPassword,
-        ]);
+            return response()->json([
+                'success' => true,
+                'password' => $newPassword,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json([
+                'success' => false,
+                'message' => 'Could not reset password: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function sendPasswordEmail(User $user)
