@@ -13,6 +13,7 @@ class Task extends Model
         'assigned_to', 'created_by', 'due_date', 'reminder_date',
         'due_reminder_sent', 'custom_reminder_sent',
         'status', 'completed_at',
+        'customer_id', 'customer_name', 'customer_phone',
     ];
 
     protected $casts = [
@@ -36,5 +37,10 @@ class Task extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
     }
 }

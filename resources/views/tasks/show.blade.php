@@ -115,6 +115,41 @@
             </div>
         </div>
 
+        @if($task->customer_name || $task->customer_phone)
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white fw-semibold">
+                <i class="bi bi-person-badge me-1"></i> Customer Info
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless table-sm mb-0">
+                    @if($task->customer_name)
+                    <tr>
+                        <td class="text-muted" width="130">Name</td>
+                        <td class="fw-semibold">
+                            {{ $task->customer_name }}
+                            @if($task->customer && $task->customer_id)
+                                <a href="{{ route('customers.show', $task->customer_id) }}" class="ms-1 small text-decoration-none">
+                                    <i class="bi bi-box-arrow-up-right"></i> View
+                                </a>
+                            @endif
+                        </td>
+                    </tr>
+                    @endif
+                    @if($task->customer_phone)
+                    <tr>
+                        <td class="text-muted">Phone</td>
+                        <td>
+                            <a href="tel:{{ $task->customer_phone }}" class="text-decoration-none">
+                                <i class="bi bi-telephone-fill text-success me-1"></i>{{ $task->customer_phone }}
+                            </a>
+                        </td>
+                    </tr>
+                    @endif
+                </table>
+            </div>
+        </div>
+        @endif
+
         {{-- Status Actions --}}
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white fw-semibold">

@@ -87,6 +87,48 @@
                     @enderror
                 </div>
 
+                {{-- Customer Info Section --}}
+                <div class="col-12">
+                    <hr class="my-2">
+                    <h6 class="text-muted mb-3"><i class="bi bi-person-lines-fill me-1"></i> Customer Info (Optional)</h6>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="customer_id" class="form-label">Select Existing Customer</label>
+                    <div class="input-group">
+                        <select class="form-select" id="customer_id" name="customer_id">
+                            <option value="">— None —</option>
+                            @foreach($customers as $cust)
+                                <option value="{{ $cust->id }}"
+                                        data-name="{{ $cust->name }}"
+                                        data-phone="{{ $cust->phone }}"
+                                        {{ old('customer_id') == $cust->id ? 'selected' : '' }}>
+                                    {{ $cust->name }} {{ $cust->phone ? '— '.$cust->phone : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#newCustomerModal" title="Create New Customer">
+                            <i class="bi bi-person-plus"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="customer_name" class="form-label">Customer Name</label>
+                    <input type="text" class="form-control" id="customer_name" name="customer_name"
+                           value="{{ old('customer_name') }}" placeholder="Customer name">
+                </div>
+
+                <div class="col-md-4">
+                    <label for="customer_phone" class="form-label">Customer Phone</label>
+                    <input type="text" class="form-control" id="customer_phone" name="customer_phone"
+                           value="{{ old('customer_phone') }}" placeholder="Customer phone">
+                </div>
+
+                <div class="col-12">
+                    <hr class="my-2">
+                </div>
+
                 <div class="col-12">
                     <label for="notes" class="form-label">Notes</label>
                     <textarea class="form-control @error('notes') is-invalid @enderror"
@@ -138,4 +180,111 @@
         </div>
     </div>
 </div>
+
+{{-- New Customer Modal --}}
+<div class="modal fade" id="newCustomerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-person-plus me-1"></i> Create New Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="nc_name" placeholder="Customer name" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Phone</label>
+                    <input type="text" class="form-control" id="nc_phone" placeholder="Phone number">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" id="nc_email" placeholder="Email address">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Address</label>
+                    <textarea class="form-control" id="nc_address" rows="2" placeholder="Address"></textarea>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="nc_create_login">
+                    <label class="form-check-label" for="nc_create_login">
+                        Create login ID for this customer <small class="text-muted">(requires email)</small>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="btnSaveNewCustomer">
+                    <i class="bi bi-check-lg me-1"></i> Create & Select
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const custSelect = document.getElementById('customer_id');
+    const custName = document.getElementById('customer_name');
+    const custPhone = document.getElementById('customer_phone');
+
+    custSelect.addEventListener('change', function() {
+        const opt = this.options[this.selectedIndex];
+        if (this.value) {
+            custName.value = opt.dataset.name || '';
+            custPhone.value = opt.dataset.phone || '';
+        }
+    });
+
+    document.getElementById('btnSaveNewCustomer').addEventListener('click', function() {
+        const name = document.getElementById('nc_name').value.trim();
+        if (!name) {
+            alert('Customer name is required.');
+            return;
+        }
+
+        const phone = document.getElementById('nc_phone').value.trim();
+        const email = document.getElementById('nc_email').value.trim();
+        const address = document.getElementById('nc_address').value.trim();
+        const createLogin = document.getElementById('nc_create_login').checked;
+
+        if (createLogin && !email) {
+            alert('Email is required to create a login ID.');
+            return;
+        }
+
+        let hidden = document.querySelector('input[name="new_customer_name"]');
+        if (!hidden) {
+            hidden = document.createElement('input');
+            hidden.type = 'hidden'; hidden.name = 'new_customer_name';
+            custSelect.closest('form').appendChild(hidden);
+        }
+        hidden.value = name;
+
+        ['new_customer_phone', 'new_customer_email', 'new_customer_address', 'create_login'].forEach(n => {
+            let el = document.querySelector('input[name="'+n+'"]');
+            if (!el) { el = document.createElement('input'); el.type = 'hidden'; el.name = n; custSelect.closest('form').appendChild(el); }
+        });
+        document.querySelector('input[name="new_customer_phone"]').value = phone;
+        document.querySelector('input[name="new_customer_email"]').value = email;
+        document.querySelector('input[name="new_customer_address"]').value = address;
+        document.querySelector('input[name="create_login"]').value = createLogin ? '1' : '0';
+
+        custSelect.value = '';
+        custName.value = name;
+        custPhone.value = phone;
+
+        bootstrap.Modal.getInstance(document.getElementById('newCustomerModal')).hide();
+
+        document.getElementById('nc_name').value = '';
+        document.getElementById('nc_phone').value = '';
+        document.getElementById('nc_email').value = '';
+        document.getElementById('nc_address').value = '';
+        document.getElementById('nc_create_login').checked = false;
+    });
+});
+</script>
 @endsection

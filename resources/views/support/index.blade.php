@@ -43,57 +43,70 @@
     .guide-card:hover {
         box-shadow: 0 .25rem 1rem rgba(0,0,0,.1) !important;
     }
+
+    @media (max-width: 767.98px) {
+        .support-hero { border-radius: .5rem; }
+        .support-hero .hero-title { font-size: 1.15rem; }
+        .support-hero .hero-subtitle { font-size: .8rem; }
+        .video-thumb img { height: 120px; }
+        .video-thumb .play-icon { font-size: 2rem; }
+        .guide-card .card-body h6 { font-size: .9rem; }
+    }
 </style>
 @endsection
 
 @section('content')
 
 {{-- Hero / Search --}}
-<div class="support-hero p-4 mb-4">
-    <div class="row align-items-center">
-        <div class="col-lg-6 mb-3 mb-lg-0">
-            <h3 class="fw-bold mb-1"><i class="bi bi-life-preserver me-2"></i>Help Center</h3>
-            <p class="mb-0 opacity-75">Search FAQs, guides, and video tutorials to solve problems quickly</p>
-        </div>
-        <div class="col-lg-6">
-            <form action="{{ route('support.index') }}" method="GET" class="d-flex gap-2">
+<div class="support-hero p-3 p-md-4 mb-4">
+    <h3 class="fw-bold mb-1 hero-title"><i class="bi bi-life-preserver me-2"></i>Help Center</h3>
+    <p class="mb-3 opacity-75 hero-subtitle">Search FAQs, guides, and video tutorials to solve problems quickly</p>
+    <form action="{{ route('support.index') }}" method="GET">
+        <div class="row g-2">
+            <div class="col-12 col-md">
                 <div class="input-group">
                     <span class="input-group-text bg-white border-0"><i class="bi bi-search"></i></span>
                     <input type="text" class="form-control border-0" name="q" value="{{ $search }}"
                            placeholder="Search for help... e.g. date time setting, mobile app">
                 </div>
-                <select name="brand" class="form-select bg-white border-0" style="max-width:180px;">
+            </div>
+            <div class="col-6 col-md-auto">
+                <select name="brand" class="form-select bg-white border-0 w-100" style="min-width:140px;">
                     <option value="">All Brands</option>
                     @foreach($brands as $b)
                         <option value="{{ $b }}" {{ $brand === $b ? 'selected' : '' }}>{{ $b }}</option>
                     @endforeach
                 </select>
-                <button type="submit" class="btn btn-light fw-semibold">Search</button>
-                @if($search || $brand)
-                    <a href="{{ route('support.index') }}" class="btn btn-outline-light">Clear</a>
-                @endif
-            </form>
+            </div>
+            <div class="col-6 col-md-auto">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-light fw-semibold flex-grow-1">Search</button>
+                    @if($search || $brand)
+                        <a href="{{ route('support.index') }}" class="btn btn-outline-light flex-grow-1">Clear</a>
+                    @endif
+                </div>
+            </div>
         </div>
-    </div>
+    </form>
 </div>
 
 {{-- Tabs --}}
 <ul class="nav nav-tabs mb-4" role="tablist">
     <li class="nav-item" role="presentation">
         <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#faqTab" type="button">
-            <i class="bi bi-question-circle me-1"></i> FAQs
+            <i class="bi bi-question-circle me-1"></i><span class="d-none d-sm-inline">FAQs</span>
             <span class="badge bg-primary ms-1">{{ $faqs->count() }}</span>
         </button>
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#guidesTab" type="button">
-            <i class="bi bi-journal-text me-1"></i> Guides
+            <i class="bi bi-journal-text me-1"></i><span class="d-none d-sm-inline">Guides</span>
             <span class="badge bg-primary ms-1">{{ $guides->count() }}</span>
         </button>
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#videosTab" type="button">
-            <i class="bi bi-play-circle me-1"></i> Videos
+            <i class="bi bi-play-circle me-1"></i><span class="d-none d-sm-inline">Videos</span>
             <span class="badge bg-primary ms-1">{{ $videos->count() }}</span>
         </button>
     </li>
@@ -137,7 +150,7 @@
         @if($guides->count())
         <div class="row g-3">
             @foreach($guides as $guide)
-            <div class="col-md-6">
+            <div class="col-12 col-md-6">
                 <div class="card border-0 shadow-sm guide-card h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-2">
@@ -195,7 +208,7 @@
         @if($videos->count())
         <div class="row g-3">
             @foreach($videos as $video)
-            <div class="col-md-4 col-lg-3">
+            <div class="col-6 col-md-4 col-lg-3">
                 <div class="card border-0 shadow-sm video-card h-100" data-bs-toggle="modal" data-bs-target="#videoModal{{ $video->id }}">
                     <div class="video-thumb">
                         @if($video->thumbnail_url)
@@ -207,14 +220,14 @@
                         @endif
                         <div class="play-icon"><i class="bi bi-play-circle-fill"></i></div>
                     </div>
-                    <div class="card-body p-3">
+                    <div class="card-body p-2 p-md-3">
                         <h6 class="fw-semibold mb-1 small">{{ Str::limit($video->title, 55) }}</h6>
                         <div class="d-flex gap-1 flex-wrap">
                             @if($video->brand)
-                                <span class="badge bg-secondary" style="font-size:.7rem;">{{ $video->brand }}</span>
+                                <span class="badge bg-secondary" style="font-size:.65rem;">{{ $video->brand }}</span>
                             @endif
                             @if($video->category)
-                                <span class="badge bg-light text-dark" style="font-size:.7rem;">{{ $video->category }}</span>
+                                <span class="badge bg-light text-dark" style="font-size:.65rem;">{{ $video->category }}</span>
                             @endif
                         </div>
                     </div>
@@ -223,7 +236,7 @@
 
             {{-- Video Player Modal --}}
             <div class="modal fade" id="videoModal{{ $video->id }}" tabindex="-1">
-                <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-dialog modal-lg modal-dialog-centered modal-fullscreen-sm-down">
                     <div class="modal-content bg-dark">
                         <div class="modal-header border-0">
                             <h6 class="modal-title text-white fw-semibold">{{ $video->title }}</h6>
@@ -265,7 +278,6 @@
 
 @section('scripts')
 <script>
-    // Stop YouTube playback when modal closes
     $(document).on('hidden.bs.modal', function (e) {
         $(e.target).find('iframe').each(function() {
             var src = $(this).attr('src');

@@ -166,6 +166,19 @@ class FcmService
     }
 
     /**
+     * Send a notification to a specific user's registered devices.
+     */
+    public function sendToUser(int $userId, string $title, string $body): array
+    {
+        $tokens = FcmToken::where('user_id', $userId)->pluck('token')->unique()->values()->all();
+        if (empty($tokens)) {
+            return ['success' => 0, 'failure' => 0, 'errors' => ['No FCM tokens for this user.']];
+        }
+
+        return $this->sendToTokens($tokens, $title, $body);
+    }
+
+    /**
      * Send a notification to all registered FCM tokens.
      * Returns ['success' => int, 'failure' => int, 'errors' => array of strings].
      */
@@ -176,8 +189,13 @@ class FcmService
             return ['success' => 0, 'failure' => 0, 'errors' => ['No FCM tokens registered. Ask users to enable notifications from the app.']];
         }
 
-        $token = $this->getAccessToken();
-        if (!$token) {
+        return $this->sendToTokens($tokens, $title, $body);
+    }
+
+    protected function sendToTokens(array $tokens, string $title, string $body): array
+    {
+        $accessToken = $this->getAccessToken();
+        if (!$accessToken) {
             $reason = $this->getTokenFailureReason();
             return [
                 'success' => 0,
@@ -201,7 +219,7 @@ class FcmService
                     ],
                 ],
             ];
-            $response = Http::withToken($token)
+            $response = Http::withToken($accessToken)
                 ->withHeaders(['Content-Type' => 'application/json'])
                 ->post($url, $payload);
 
@@ -209,10 +227,10 @@ class FcmService
                 $success++;
             } else {
                 $failure++;
-                $body = $response->body();
-                $errors[] = 'Token ' . substr($fcmToken, 0, 20) . '...: ' . $response->status() . ' ' . $body;
+                $respBody = $response->body();
+                $errors[] = 'Token ' . substr($fcmToken, 0, 20) . '...: ' . $response->status() . ' ' . $respBody;
 
-                if (str_contains($body, 'UNREGISTERED') || str_contains($body, 'NotRegistered') || $response->status() === 404) {
+                if (str_contains($respBody, 'UNREGISTERED') || str_contains($respBody, 'NotRegistered') || $response->status() === 404) {
                     FcmToken::where('token', $fcmToken)->delete();
                     $errors[count($errors) - 1] .= ' [auto-removed]';
                 }

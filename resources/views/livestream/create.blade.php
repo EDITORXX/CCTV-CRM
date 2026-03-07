@@ -74,8 +74,11 @@
                     <select id="device-select-2" class="form-select form-select-sm" style="width:auto;min-width:160px;" disabled>
                         <option value="">None</option>
                     </select>
+                    <button type="button" id="refresh-devices-btn" class="btn btn-outline-secondary btn-sm" title="Refresh / Re-scan cameras">
+                        <i class="bi bi-arrow-repeat"></i>
+                    </button>
                 </div>
-                <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>Allow camera access when prompted for second camera</small>
+                <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>USB/External camera connect karein aur Refresh dabayein. Allow camera access when prompted.</small>
             </div>
             <div class="card-body p-0">
                 <div class="preview-container position-relative" id="preview-wrap">
@@ -176,8 +179,28 @@
         }
     });
 
-    async function loadDevices() {
+    async function requestAllCameraPermissions() {
+        var devices = await navigator.mediaDevices.enumerateDevices();
+        var videoDevices = devices.filter(function(d) { return d.kind === 'videoinput'; });
+
+        for (var i = 0; i < videoDevices.length; i++) {
+            var d = videoDevices[i];
+            if (d.deviceId && d.label) continue;
+            try {
+                var s = await navigator.mediaDevices.getUserMedia({
+                    video: { deviceId: { exact: d.deviceId } },
+                    audio: false
+                });
+                s.getTracks().forEach(function(t) { t.stop(); });
+            } catch(e) {}
+        }
+    }
+
+    async function loadDevices(keepSelection) {
+        var prevMain = keepSelection ? deviceSelect.value : null;
+        var prevSecond = keepSelection ? deviceSelect2.value : null;
         var permStream = null;
+
         try {
             permStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         } catch (e) {
@@ -188,41 +211,58 @@
             permStream = null;
         }
 
+        await new Promise(function(r) { setTimeout(r, 400); });
+
+        await requestAllCameraPermissions();
         await new Promise(function(r) { setTimeout(r, 300); });
 
         var devices = await navigator.mediaDevices.enumerateDevices();
         var videoDevices = devices.filter(function(d) { return d.kind === 'videoinput'; });
 
         deviceSelect.innerHTML = '';
+        deviceSelect2.innerHTML = '<option value="">None</option>';
 
         if (videoDevices.length === 0) {
             deviceSelect.innerHTML = '<option>No video device found</option>';
             statusEl.className = 'device-status bg-danger bg-opacity-10 text-danger';
-            statusEl.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i> No video device detected. Connect a USB capture card and refresh.';
+            statusEl.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i> No video device detected. Connect a USB/external camera and tap <strong>Refresh</strong>.';
             statusEl.classList.remove('d-none');
             return;
         }
 
         videoDevices.forEach(function(d, i) {
+            var label = d.label || ('Camera ' + (i + 1));
+            if (!d.label && d.deviceId) {
+                label = 'External Camera ' + (i + 1);
+            }
             var opt = document.createElement('option');
             opt.value = d.deviceId;
-            opt.textContent = d.label || ('Camera ' + (i + 1));
+            opt.textContent = label;
             deviceSelect.appendChild(opt);
             var opt2 = document.createElement('option');
             opt2.value = d.deviceId;
-            opt2.textContent = d.label || ('Camera ' + (i + 1));
+            opt2.textContent = label;
             deviceSelect2.appendChild(opt2);
         });
 
         deviceSelect.disabled = false;
         deviceSelect2.disabled = false;
 
+        if (prevMain && deviceSelect.querySelector('option[value="' + prevMain + '"]')) {
+            deviceSelect.value = prevMain;
+        }
+        if (prevSecond && deviceSelect2.querySelector('option[value="' + prevSecond + '"]')) {
+            deviceSelect2.value = prevSecond;
+        }
+
         statusEl.className = 'device-status bg-success bg-opacity-10 text-success';
         statusEl.innerHTML = '<i class="bi bi-check-circle me-1"></i> ' + videoDevices.length + ' video device(s) found. Select and preview.';
         statusEl.classList.remove('d-none');
 
-        startPreview(videoDevices[0].deviceId);
-        document.getElementById('device-id-1').value = videoDevices[0].deviceId;
+        if (!keepSelection) {
+            startPreview(videoDevices[0].deviceId);
+            document.getElementById('device-id-1').value = videoDevices[0].deviceId;
+        }
     }
 
     async function startPreview(deviceId) {
@@ -300,8 +340,32 @@
         document.getElementById('device-id-2').value = this.value || '';
     });
 
+    document.getElementById('refresh-devices-btn').addEventListener('click', function() {
+        var btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-arrow-repeat spin-icon"></i>';
+        var style = document.createElement('style');
+        style.textContent = '@keyframes spin{to{transform:rotate(360deg)}}.spin-icon{animation:spin .6s linear infinite;}';
+        document.head.appendChild(style);
+
+        loadDevices(true).finally(function() {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-arrow-repeat"></i>';
+            style.remove();
+        });
+    });
+
     if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
         loadDevices();
+
+        if (navigator.mediaDevices.ondevicechange !== undefined) {
+            navigator.mediaDevices.ondevicechange = function() {
+                statusEl.className = 'device-status bg-info bg-opacity-10 text-info';
+                statusEl.innerHTML = '<i class="bi bi-usb-plug me-1"></i> New device detected, refreshing...';
+                statusEl.classList.remove('d-none');
+                loadDevices(true);
+            };
+        }
     } else {
         statusEl.className = 'device-status bg-danger bg-opacity-10 text-danger';
         statusEl.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i> Your browser does not support media devices. Use Chrome or Edge.';

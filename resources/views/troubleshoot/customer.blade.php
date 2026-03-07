@@ -95,10 +95,33 @@
     startBtn.addEventListener('click', async function() {
         startBtn.disabled = true;
         try {
+            var permStream = null;
+            try {
+                permStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            } catch(e) {
+                try { permStream = await navigator.mediaDevices.getUserMedia({ video: true }); } catch(e2) {}
+            }
+            if (permStream) { permStream.getTracks().forEach(function(t) { t.stop(); }); }
+            await new Promise(function(r) { setTimeout(r, 400); });
+
             var devices = await navigator.mediaDevices.enumerateDevices();
             var videoDevices = devices.filter(function(d) { return d.kind === 'videoinput'; });
+
+            for (var di = 0; di < videoDevices.length; di++) {
+                var dev = videoDevices[di];
+                if (dev.deviceId && dev.label) continue;
+                try {
+                    var tempS = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: dev.deviceId } }, audio: false });
+                    tempS.getTracks().forEach(function(t) { t.stop(); });
+                } catch(e) {}
+            }
+            await new Promise(function(r) { setTimeout(r, 300); });
+
+            devices = await navigator.mediaDevices.enumerateDevices();
+            videoDevices = devices.filter(function(d) { return d.kind === 'videoinput'; });
+
             if (videoDevices.length === 0) {
-                alert('No camera found.');
+                alert('No camera found. USB/External camera connect karke retry karein.');
                 startBtn.disabled = false;
                 return;
             }

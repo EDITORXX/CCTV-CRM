@@ -137,14 +137,18 @@
 
         <div id="device-row" class="mb-3">
             <label class="form-label fw-semibold">Video Source</label>
-            <div class="d-flex gap-2 flex-wrap">
+            <div class="d-flex gap-2 flex-wrap align-items-center">
                 <select id="device-select" class="form-select" style="min-width:180px;">
                     <option>Loading...</option>
                 </select>
                 <select id="device-select-2" class="form-select" style="min-width:180px;">
                     <option value="">None (single camera)</option>
                 </select>
+                <button type="button" id="refresh-devices-btn" class="btn btn-outline-secondary btn-sm" title="Refresh / Re-scan cameras (USB/External)">
+                    <i class="bi bi-arrow-repeat"></i> Refresh
+                </button>
             </div>
+            <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i> USB/External camera connect karein aur Refresh dabayein.</small>
         </div>
     </div>
 
@@ -340,33 +344,73 @@
 
     // ── Device listing & preview ──
 
-    async function loadDevices() {
+    async function requestAllCameraPermissions() {
+        var devices = await navigator.mediaDevices.enumerateDevices();
+        var videoDevices = devices.filter(function(d) { return d.kind === 'videoinput'; });
+        for (var i = 0; i < videoDevices.length; i++) {
+            var d = videoDevices[i];
+            if (d.deviceId && d.label) continue;
+            try {
+                var s = await navigator.mediaDevices.getUserMedia({
+                    video: { deviceId: { exact: d.deviceId } },
+                    audio: false
+                });
+                s.getTracks().forEach(function(t) { t.stop(); });
+            } catch(e) {}
+        }
+    }
+
+    async function loadDevices(keepSelection) {
+        var prevMain = keepSelection ? deviceSelect.value : null;
+        var prevSecond = keepSelection ? deviceSelect2.value : null;
         var perm = null;
+
         try { perm = await navigator.mediaDevices.getUserMedia({ video: true, audio: true }); } catch(e) {
             try { perm = await navigator.mediaDevices.getUserMedia({ video: true }); } catch(e2) {}
         }
         if (perm) { perm.getTracks().forEach(function(t) { t.stop(); }); }
+
+        await new Promise(function(r) { setTimeout(r, 400); });
+
+        await requestAllCameraPermissions();
         await new Promise(function(r) { setTimeout(r, 300); });
+
         var devices = await navigator.mediaDevices.enumerateDevices();
         var videoDevices = devices.filter(function(d) { return d.kind === 'videoinput'; });
+
         deviceSelect.innerHTML = '';
         deviceSelect2.innerHTML = '<option value="">None (single camera)</option>';
+
         videoDevices.forEach(function(d, i) {
+            var label = d.label || ('Camera ' + (i + 1));
+            if (!d.label && d.deviceId) {
+                label = 'External Camera ' + (i + 1);
+            }
             var opt = document.createElement('option');
             opt.value = d.deviceId;
-            opt.textContent = d.label || ('Camera ' + (i + 1));
+            opt.textContent = label;
             deviceSelect.appendChild(opt);
             var opt2 = document.createElement('option');
             opt2.value = d.deviceId;
-            opt2.textContent = d.label || ('Camera ' + (i + 1));
+            opt2.textContent = label;
             deviceSelect2.appendChild(opt2);
         });
-        var d1 = DEVICE_ID_1 || (videoDevices[0] && videoDevices[0].deviceId);
-        var d2 = DEVICE_ID_2 || null;
-        if (d1) {
-            deviceSelect.value = d1;
-            if (d2) deviceSelect2.value = d2;
-            await startCapture(d1, d2);
+
+        if (keepSelection) {
+            if (prevMain && deviceSelect.querySelector('option[value="' + prevMain + '"]')) {
+                deviceSelect.value = prevMain;
+            }
+            if (prevSecond && deviceSelect2.querySelector('option[value="' + prevSecond + '"]')) {
+                deviceSelect2.value = prevSecond;
+            }
+        } else {
+            var d1 = DEVICE_ID_1 || (videoDevices[0] && videoDevices[0].deviceId);
+            var d2 = DEVICE_ID_2 || null;
+            if (d1) {
+                deviceSelect.value = d1;
+                if (d2) deviceSelect2.value = d2;
+                await startCapture(d1, d2);
+            }
         }
         startPolling();
     }
@@ -541,6 +585,28 @@
             var signals = await res.json();
             signals.forEach(handleSignal);
         } catch(e) {}
+    }
+
+    // ── Refresh Devices ──
+    document.getElementById('refresh-devices-btn').addEventListener('click', function() {
+        var btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-arrow-repeat spin-icon"></i> Scanning...';
+        var style = document.createElement('style');
+        style.textContent = '@keyframes spin{to{transform:rotate(360deg)}}.spin-icon{animation:spin .6s linear infinite;}';
+        document.head.appendChild(style);
+
+        loadDevices(true).finally(function() {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Refresh';
+            style.remove();
+        });
+    });
+
+    if (navigator.mediaDevices.ondevicechange !== undefined) {
+        navigator.mediaDevices.ondevicechange = function() {
+            loadDevices(true);
+        };
     }
 
     // ── Init ──

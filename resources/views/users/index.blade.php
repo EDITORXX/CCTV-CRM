@@ -9,14 +9,14 @@
         <p class="text-muted mb-0">Manage user accounts and roles</p>
     </div>
     <a href="{{ route('users.create') }}" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i> Add New User
+        <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline"> Add New</span> User
     </a>
 </div>
 
 @if(session('created_user_email'))
 <div class="alert alert-success border-0 shadow-sm mb-4" role="alert">
     <div class="d-flex align-items-start gap-3">
-        <div class="flex-shrink-0">
+        <div class="flex-shrink-0 d-none d-sm-block">
             <i class="bi bi-check-circle-fill fs-2 text-success"></i>
         </div>
         <div class="flex-grow-1">
@@ -50,7 +50,8 @@
 </div>
 @endif
 
-<div class="card border-0 shadow-sm">
+{{-- Desktop table --}}
+<div class="card border-0 shadow-sm d-none d-md-block">
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-hover align-middle" id="usersTable">
@@ -125,6 +126,66 @@
         </div>
     </div>
 </div>
+
+{{-- Mobile card view --}}
+<div class="d-md-none">
+    @forelse($users as $user)
+    @php
+        $roleColors = ['company_admin' => 'danger', 'manager' => 'warning', 'accountant' => 'info', 'technician' => 'primary', 'customer' => 'secondary'];
+        $role = $user->pivot->role ?? 'customer';
+    @endphp
+    <div class="card border-0 shadow-sm mb-2">
+        <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="min-w-0">
+                    <div class="fw-bold">{{ $user->name }}</div>
+                    <small class="text-muted text-break">{{ $user->email }}</small>
+                </div>
+                <span class="badge bg-{{ $roleColors[$role] ?? 'secondary' }} ms-2 flex-shrink-0">
+                    {{ ucfirst(str_replace('_', ' ', $role)) }}
+                </span>
+            </div>
+            <div class="d-flex flex-wrap gap-1 mb-2">
+                @if($user->phone)
+                    <span class="badge bg-light text-dark border" style="font-size:.7rem;">
+                        <i class="bi bi-phone me-1"></i>{{ $user->phone }}
+                    </span>
+                @endif
+                @if($user->is_active)
+                    <span class="badge bg-success" style="font-size:.7rem;">Active</span>
+                @else
+                    <span class="badge bg-danger" style="font-size:.7rem;">Inactive</span>
+                @endif
+            </div>
+            <div class="d-flex justify-content-end">
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-warning btn-sm btn-password-manage"
+                            data-user-id="{{ $user->id }}" data-user-name="{{ $user->name }}" data-user-email="{{ $user->email }}">
+                        <i class="bi bi-key"></i>
+                    </button>
+                    <a href="{{ route('users.edit', $user) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil"></i></a>
+                    @if(auth()->id() !== $user->id)
+                    <form action="{{ route('users.destroy', $user) }}" method="POST"
+                          onsubmit="return confirm('Delete this user?')" class="d-inline">
+                        @csrf @method('DELETE')
+                        <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
+                    </form>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+    @empty
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-person-gear fs-1 d-block mb-2"></i>
+        <p>No users found. <a href="{{ route('users.create') }}">Add your first user</a>.</p>
+    </div>
+    @endforelse
+    <div class="d-flex justify-content-end mt-2">
+        {{ $users->links() }}
+    </div>
+</div>
+
 {{-- Password Management Modal --}}
 <div class="modal fade" id="passwordModal" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -207,7 +268,6 @@
             }
         });
 
-        // Password Management Modal
         var currentUserId = null;
 
         $(document).on('click', '.btn-password-manage', function() {

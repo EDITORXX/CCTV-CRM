@@ -195,6 +195,17 @@
                     @endswitch
                 </div>
             </div>
+            @if($task->customer_name)
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="small"><i class="bi bi-person-badge me-1 text-secondary"></i>{{ $task->customer_name }}</span>
+                @if($task->customer_phone)
+                    <span class="small text-muted">{{ $task->customer_phone }}</span>
+                    <a href="tel:{{ $task->customer_phone }}" class="btn btn-success btn-sm py-0 px-2" title="Call Customer">
+                        <i class="bi bi-telephone-fill"></i> Call
+                    </a>
+                @endif
+            </div>
+            @endif
             <div class="d-flex flex-wrap gap-2 mb-2 small text-muted">
                 @if($userRole !== 'technician' && $task->assignee)
                     <span><i class="bi bi-person me-1"></i>{{ $task->assignee->name }}</span>

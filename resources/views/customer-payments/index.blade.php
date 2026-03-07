@@ -20,7 +20,8 @@
     </div>
 </div>
 
-<div class="card border-0 shadow-sm">
+{{-- Desktop table --}}
+<div class="card border-0 shadow-sm d-none d-md-block">
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
@@ -83,29 +84,6 @@
                                     <i class="bi bi-x-lg me-1"></i> Reject
                                 </button>
                             </div>
-
-                            {{-- Reject Modal --}}
-                            <div class="modal fade" id="rejectModal{{ $cp->id }}" tabindex="-1">
-                                <div class="modal-dialog modal-sm">
-                                    <form action="{{ route('customer-payments.reject', $cp) }}" method="POST">
-                                        @csrf
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h6 class="modal-title">Reject Payment</h6>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <label class="form-label">Reason (optional)</label>
-                                                <textarea class="form-control" name="admin_notes" rows="3" placeholder="Why is this being rejected?"></textarea>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                <button type="submit" class="btn btn-sm btn-danger">Reject</button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
                             @else
                                 <span class="text-muted small">No action needed</span>
                             @endif
@@ -124,6 +102,89 @@
         </div>
     </div>
 </div>
+
+{{-- Mobile card view --}}
+<div class="d-md-none">
+    @forelse($payments as $cp)
+    <div class="card border-0 shadow-sm mb-2">
+        <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="min-w-0">
+                    <div class="fw-bold">{{ $cp->customer->name ?? '-' }}</div>
+                    <small class="text-muted">{{ $cp->customer->phone ?? '' }}</small>
+                </div>
+                <span class="fw-bold text-dark ms-2 flex-shrink-0 fs-6">₹{{ number_format($cp->amount, 2) }}</span>
+            </div>
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <a href="{{ asset('storage/' . $cp->screenshot) }}" target="_blank">
+                    <img src="{{ asset('storage/' . $cp->screenshot) }}" alt="Screenshot"
+                         style="width:40px;height:40px;object-fit:cover;border-radius:4px;border:1px solid #dee2e6;">
+                </a>
+                <div>
+                    <code class="small">{{ $cp->invoice->invoice_number ?? '-' }}</code>
+                    <div class="d-flex gap-1 mt-1">
+                        @if($cp->status === 'pending')
+                            <span class="badge bg-warning text-dark" style="font-size:.7rem;">Pending</span>
+                        @elseif($cp->status === 'approved')
+                            <span class="badge bg-success" style="font-size:.7rem;">Approved</span>
+                        @else
+                            <span class="badge bg-danger" style="font-size:.7rem;">Rejected</span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">{{ $cp->created_at->format('d M Y, h:i A') }}</small>
+                @if($cp->status === 'pending')
+                <div class="d-flex gap-1">
+                    <form action="{{ route('customer-payments.approve', $cp) }}" method="POST"
+                          onsubmit="return confirm('Approve ₹{{ number_format($cp->amount, 2) }}?')">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-success py-0 px-2"><i class="bi bi-check-lg"></i></button>
+                    </form>
+                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2"
+                            data-bs-toggle="modal" data-bs-target="#rejectModal{{ $cp->id }}">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                @endif
+            </div>
+        </div>
+    </div>
+    @empty
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-credit-card-2-front fs-1 d-block mb-2"></i>
+        <p>No payment submissions found.</p>
+    </div>
+    @endforelse
+</div>
+
+{{-- Reject Modals (shared for both views) --}}
+@foreach($payments as $cp)
+    @if($cp->status === 'pending')
+    <div class="modal fade" id="rejectModal{{ $cp->id }}" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <form action="{{ route('customer-payments.reject', $cp) }}" method="POST">
+                @csrf
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h6 class="modal-title">Reject Payment</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label class="form-label">Reason (optional)</label>
+                        <textarea class="form-control" name="admin_notes" rows="3" placeholder="Why is this being rejected?"></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
+@endforeach
 
 <div class="mt-3">
     {{ $payments->appends(request()->query())->links() }}
