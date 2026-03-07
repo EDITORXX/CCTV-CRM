@@ -115,9 +115,63 @@ class PurchaseController extends Controller
             'bill_number' => 'nullable|string|max:100',
             'bill_date' => 'required|date',
             'notes' => 'nullable|string',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.qty' => 'required|integer|min:1',
+            'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.gst_percent' => 'nullable|numeric|min:0|max:100',
+            'items.*.serials' => 'nullable|string',
         ]);
 
-        $purchase->update($request->only(['vendor_id', 'bill_number', 'bill_date', 'notes']));
+        DB::transaction(function () use ($request, $purchase) {
+            $purchase->update($request->only(['vendor_id', 'bill_number', 'bill_date', 'notes']));
+
+            $purchase->items->each(function ($item) {
+                SerialNumber::where('purchase_item_id', $item->id)->delete();
+            });
+            $purchase->items()->delete();
+
+            $totalAmount = 0;
+            $gstAmount = 0;
+
+            foreach ($request->items as $item) {
+                $gstPercent = $item['gst_percent'] ?? 0;
+                $lineTotal = $item['qty'] * $item['unit_price'];
+                $lineGst = $lineTotal * ($gstPercent / 100);
+                $lineGrandTotal = $lineTotal + $lineGst;
+
+                $totalAmount += $lineGrandTotal;
+                $gstAmount += $lineGst;
+
+                $purchaseItem = PurchaseItem::create([
+                    'purchase_id' => $purchase->id,
+                    'product_id' => $item['product_id'],
+                    'qty' => $item['qty'],
+                    'unit_price' => $item['unit_price'],
+                    'gst_percent' => $gstPercent,
+                    'total' => $lineGrandTotal,
+                ]);
+
+                if (!empty($item['serials'])) {
+                    $serials = array_filter(array_map('trim', explode(',', $item['serials'])));
+                    foreach ($serials as $serial) {
+                        SerialNumber::create([
+                            'company_id' => session('current_company_id'),
+                            'product_id' => $item['product_id'],
+                            'purchase_item_id' => $purchaseItem->id,
+                            'serial_number' => $serial,
+                            'status' => 'in_stock',
+                        ]);
+                    }
+                }
+            }
+
+            $purchase->update([
+                'total_amount' => $totalAmount,
+                'gst_amount' => $gstAmount,
+            ]);
+        });
+
         return redirect()->route('purchases.show', $purchase)->with('success', 'Purchase updated.');
     }
 

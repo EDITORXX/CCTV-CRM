@@ -70,7 +70,7 @@
                             @php $subtotal = 0; $totalGst = 0; @endphp
                             @forelse($purchase->items as $item)
                             @php
-                                $lineBase = $item->quantity * $item->unit_price;
+                                $lineBase = $item->qty * $item->unit_price;
                                 $lineGst = $lineBase * ($item->gst_percent / 100);
                                 $lineTotal = $lineBase + $lineGst;
                                 $subtotal += $lineBase;
@@ -87,7 +87,7 @@
                                         </div>
                                     @endif
                                 </td>
-                                <td>{{ $item->quantity }}</td>
+                                <td>{{ $item->qty }}</td>
                                 <td>₹{{ number_format($item->unit_price, 2) }}</td>
                                 <td>{{ $item->gst_percent }}%</td>
                                 <td class="fw-semibold">₹{{ number_format($lineTotal, 2) }}</td>
