@@ -69,7 +69,7 @@
                     <select class="form-select @error('role') is-invalid @enderror" id="role" name="role" required>
                         <option value="">Select Role</option>
                         @foreach(['company_admin' => 'Company Admin', 'manager' => 'Manager', 'accountant' => 'Accountant', 'technician' => 'Technician', 'customer' => 'Customer'] as $value => $label)
-                            <option value="{{ $value }}" {{ old('role', $user->role) == $value ? 'selected' : '' }}>{{ $label }}</option>
+                            <option value="{{ $value }}" {{ old('role', $role) == $value ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
                     </select>
                     @error('role')
