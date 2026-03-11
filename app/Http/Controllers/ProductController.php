@@ -135,6 +135,20 @@ class ProductController extends Controller
         return response()->json($serials);
     }
 
+    public function getList(Request $request)
+    {
+        $products = Product::orderBy('name')->get(['id', 'name', 'sale_price', 'warranty_months', 'track_serial']);
+        return response()->json($products->map(function ($p) {
+            return [
+                'id' => $p->id,
+                'name' => $p->name,
+                'sale_price' => $p->sale_price,
+                'warranty_months' => $p->warranty_months,
+                'track_serial' => (bool) $p->track_serial,
+            ];
+        })->values());
+    }
+
     public function downloadImportTemplate()
     {
         return Excel::download(new ProductTemplateExport(), 'products_import_template.xlsx');

@@ -269,30 +269,30 @@
 $(document).ready(function() {
     var rowIndex = 0;
     var expenseRowIndex = 0;
-    @php
-        $productList = ($products ?? collect())->map(function($p) {
-            return [
-                'id' => $p->id,
-                'name' => $p->name,
-                'sale_price' => $p->sale_price,
-                'warranty_months' => $p->warranty_months,
-                'track_serial' => $p->track_serial ?? false,
-            ];
-        })->values();
-    @endphp
-    var products = @json($productList);
-    if (!Array.isArray(products)) products = [];
+    var products = [];
 
     function populateModalProducts() {
-        var opts = '<option value="">-- Select Product --</option>';
-        if (products && products.length > 0) {
-            products.forEach(function(p) {
-                opts += '<option value="' + p.id + '" data-price="' + (p.sale_price || 0) + '" data-warranty="' + (p.warranty_months || 0) + '" data-serial="' + (p.track_serial ? '1' : '0') + '">' + (p.name || 'Product #' + p.id) + '</option>';
-            });
-        } else {
-            opts += '<option value="" disabled>No products found — add products first</option>';
-        }
-        $('#modalProductId').html(opts);
+        var $select = $('#modalProductId');
+        $select.html('<option value="">-- Loading... --</option>');
+        var url = "{{ route('api.products.list') }}";
+        $.ajax({
+            url: url,
+            method: 'GET',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        }).done(function(data) {
+            products = Array.isArray(data) ? data : [];
+            var opts = '<option value="">-- Select Product --</option>';
+            if (products.length > 0) {
+                products.forEach(function(p) {
+                    opts += '<option value="' + p.id + '" data-price="' + (p.sale_price || 0) + '" data-warranty="' + (p.warranty_months || 0) + '" data-serial="' + (p.track_serial ? '1' : '0') + '">' + (p.name || 'Product #' + p.id) + '</option>';
+                });
+            } else {
+                opts += '<option value="" disabled>No products found — add products first</option>';
+            }
+            $select.html(opts);
+        }).fail(function() {
+            $select.html('<option value="">-- Select Product --</option><option value="" disabled>Failed to load. Retry or add products first.</option>');
+        });
     }
 
     function resetModal() {
