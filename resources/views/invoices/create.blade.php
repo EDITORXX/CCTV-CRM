@@ -281,15 +281,19 @@ $(document).ready(function() {
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
         }).done(function(data) {
             products = Array.isArray(data) ? data : [];
-            var opts = '<option value="">-- Select Product --</option>';
+            $select.empty();
+            $select.append($('<option value="">-- Select Product --</option>'));
             if (products.length > 0) {
                 products.forEach(function(p) {
-                    opts += '<option value="' + p.id + '" data-price="' + (p.sale_price || 0) + '" data-warranty="' + (p.warranty_months || 0) + '" data-serial="' + (p.track_serial ? '1' : '0') + '">' + (p.name || 'Product #' + p.id) + '</option>';
+                    var opt = $('<option></option>').val(p.id).text(p.name || ('Product #' + p.id));
+                    opt.attr('data-price', (p.sale_price || 0));
+                    opt.attr('data-warranty', (p.warranty_months || 0));
+                    opt.attr('data-serial', (p.track_serial ? '1' : '0'));
+                    $select.append(opt);
                 });
             } else {
-                opts += '<option value="" disabled>No products found — add products first</option>';
+                $select.append($('<option value="" disabled>No products found. Add products first.</option>'));
             }
-            $select.html(opts);
         }).fail(function() {
             $select.html('<option value="">-- Select Product --</option><option value="" disabled>Failed to load. Retry or add products first.</option>');
         });
@@ -553,9 +557,10 @@ $(document).ready(function() {
         reindexExpenseRows();
     });
 
-    @if(old('customer_id'))
+    var oldCustomerId = "{{ old('customer_id', '') }}";
+    if (oldCustomerId) {
         $('#customer_id').trigger('change');
-    @endif
+    }
 });
 </script>
 @endsection
