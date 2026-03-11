@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Edit Site — ' . $site->name)
+@section('title', 'Edit Site — ' . $site->site_name)
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -8,7 +8,7 @@
         <h4 class="mb-1">Edit Site</h4>
         <p class="text-muted mb-0">
             Customer: <a href="{{ route('customers.show', $customer) }}" class="text-decoration-none">{{ $customer->name }}</a>
-            &mdash; Site: <strong>{{ $site->name }}</strong>
+            &mdash; Site: <strong>{{ $site->site_name }}</strong>
         </p>
     </div>
     <a href="{{ route('customers.show', $customer) }}" class="btn btn-outline-secondary">
@@ -24,10 +24,10 @@
 
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label for="name" class="form-label">Site Name <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('name') is-invalid @enderror"
-                           id="name" name="name" value="{{ old('name', $site->name) }}" required>
-                    @error('name')
+                    <label for="site_name" class="form-label">Site Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control @error('site_name') is-invalid @enderror"
+                           id="site_name" name="site_name" value="{{ old('site_name', $site->site_name) }}" required>
+                    @error('site_name')
                         <span class="text-danger small">{{ $message }}</span>
                     @enderror
                 </div>

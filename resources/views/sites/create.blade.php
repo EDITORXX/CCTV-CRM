@@ -22,10 +22,10 @@
 
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label for="name" class="form-label">Site Name <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('name') is-invalid @enderror"
-                           id="name" name="name" value="{{ old('name') }}" required>
-                    @error('name')
+                    <label for="site_name" class="form-label">Site Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control @error('site_name') is-invalid @enderror"
+                           id="site_name" name="site_name" value="{{ old('site_name') }}" required>
+                    @error('site_name')
                         <span class="text-danger small">{{ $message }}</span>
                     @enderror
                 </div>
