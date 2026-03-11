@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Models\InvoiceExpense;
 use App\Models\Customer;
 use App\Models\Site;
 use App\Models\Product;
@@ -58,6 +59,9 @@ class InvoiceController extends Controller
             'items.*.discount' => 'nullable|numeric|min:0',
             'items.*.warranty_months' => 'nullable|integer|min:0',
             'items.*.serial_ids' => 'nullable|string',
+            'expenses' => 'nullable|array',
+            'expenses.*.description' => 'nullable|string|max:255',
+            'expenses.*.amount' => 'nullable|numeric|min:0',
         ]);
 
         DB::transaction(function () use ($request) {
@@ -153,6 +157,20 @@ class InvoiceController extends Controller
                 'gst_amount' => $gstAmount,
                 'total' => $grandTotal,
             ]);
+
+            if ($request->filled('expenses')) {
+                foreach ($request->expenses as $exp) {
+                    $desc = trim($exp['description'] ?? '');
+                    $amt = isset($exp['amount']) ? (float) $exp['amount'] : 0;
+                    if ($desc !== '' || $amt > 0) {
+                        InvoiceExpense::create([
+                            'invoice_id' => $invoice->id,
+                            'description' => $desc ?: 'Expense',
+                            'amount' => $amt,
+                        ]);
+                    }
+                }
+            }
         });
 
         return redirect()->route('invoices.index')->with('success', 'Invoice created successfully.');
@@ -160,7 +178,7 @@ class InvoiceController extends Controller
 
     public function show(Invoice $invoice)
     {
-        $invoice->load(['customer', 'site', 'items.product', 'items.serialNumbers', 'payments', 'creator']);
+        $invoice->load(['customer', 'site', 'items.product', 'items.serialNumbers', 'payments', 'invoiceExpenses', 'creator']);
         $totalPaid = $invoice->payments->sum('amount');
         $balance = $invoice->total - $totalPaid;
         return view('invoices.show', compact('invoice', 'totalPaid', 'balance'));
@@ -205,6 +223,7 @@ class InvoiceController extends Controller
 
         $invoice->items()->delete();
         $invoice->payments()->delete();
+        $invoice->invoiceExpenses()->delete();
         $invoice->delete();
 
         return redirect()->route('invoices.index')->with('success', 'Invoice deleted.');
@@ -224,5 +243,26 @@ class InvoiceController extends Controller
         $company = \App\Models\Company::find(session('current_company_id'));
         $pdf = Pdf::loadView('pdf.invoice', compact('invoice', 'company'));
         return $pdf->download('invoice-' . $invoice->invoice_number . '.pdf');
+    }
+
+    public function storeExpense(Request $request, Invoice $invoice)
+    {
+        $request->validate([
+            'description' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0',
+        ]);
+        InvoiceExpense::create([
+            'invoice_id' => $invoice->id,
+            'description' => $request->description,
+            'amount' => $request->amount,
+        ]);
+        return redirect()->route('invoices.show', $invoice)->with('success', 'Expense added.');
+    }
+
+    public function destroyExpense(InvoiceExpense $invoice_expense)
+    {
+        $invoice = $invoice_expense->invoice;
+        $invoice_expense->delete();
+        return redirect()->route('invoices.show', $invoice)->with('success', 'Expense removed.');
     }
 }

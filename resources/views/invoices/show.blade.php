@@ -92,7 +92,7 @@
                     </tr>
                     <tr>
                         <td class="text-muted">Site</td>
-                        <td>{{ $invoice->site->name ?? '—' }}</td>
+                        <td>{{ $invoice->site->site_name ?? '—' }}</td>
                     </tr>
                     <tr>
                         <td class="text-muted">GST Invoice</td>
@@ -197,6 +197,81 @@
                         </tfoot>
                     </table>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Internal expenses & profit --}}
+@php
+    $totalExpenses = $invoice->invoiceExpenses->sum('amount');
+    $profit = $invoice->total - $totalExpenses;
+@endphp
+<div class="row g-4 mt-2">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white fw-semibold">
+                <i class="bi bi-cash-stack me-1"></i> Internal expenses & profit
+            </div>
+            <div class="card-body">
+                @if($invoice->invoiceExpenses && $invoice->invoiceExpenses->count() > 0)
+                <div class="table-responsive mb-3">
+                    <table class="table table-sm table-bordered mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Description</th>
+                                <th width="120" class="text-end">Amount</th>
+                                <th width="80"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($invoice->invoiceExpenses as $exp)
+                            <tr>
+                                <td>{{ $exp->description }}</td>
+                                <td class="text-end">₹{{ number_format($exp->amount, 2) }}</td>
+                                <td>
+                                    <form action="{{ route('invoice-expenses.destroy', $exp) }}" method="POST" class="d-inline" onsubmit="return confirm('Remove this expense?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                @else
+                <p class="text-muted mb-3">No internal expenses. Add below to track costs and see profit.</p>
+                @endif
+                <div class="mb-3">
+                    <table class="table table-sm table-borderless mb-0 w-auto">
+                        <tr>
+                            <td class="text-muted">Total expenses</td>
+                            <td class="fw-semibold ps-3">₹{{ number_format($totalExpenses, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Profit</td>
+                            <td class="fw-bold text-success fs-5 ps-3">₹{{ number_format($profit, 2) }}</td>
+                        </tr>
+                    </table>
+                </div>
+                <form action="{{ route('invoices.expenses.store', $invoice) }}" method="POST" class="row g-2 align-items-end">
+                    @csrf
+                    <div class="col-md-6">
+                        <label for="exp_description" class="form-label small">Description</label>
+                        <input type="text" class="form-control form-control-sm" id="exp_description" name="description" placeholder="e.g. Labour, material" required maxlength="255">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="exp_amount" class="form-label small">Amount (₹)</label>
+                        <input type="number" class="form-control form-control-sm" id="exp_amount" name="amount" min="0" step="0.01" value="0" required>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-success btn-sm w-100">
+                            <i class="bi bi-plus-lg me-1"></i> Add expense
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

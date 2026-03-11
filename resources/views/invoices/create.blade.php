@@ -39,9 +39,9 @@
                 </div>
 
                 <div class="col-md-4">
-                    <label for="site_id" class="form-label">Site <span class="text-danger">*</span></label>
+                    <label for="site_id" class="form-label">Site <span class="text-muted">(optional)</span></label>
                     <div class="d-flex gap-1">
-                        <select class="form-select @error('site_id') is-invalid @enderror" id="site_id" name="site_id" required>
+                        <select class="form-select @error('site_id') is-invalid @enderror" id="site_id" name="site_id">
                             <option value="">-- Select Customer First --</option>
                         </select>
                         <button type="button" class="btn btn-outline-success btn-add-site flex-shrink-0" id="quickAddSiteBtn" title="Quick add site (same customer)">
@@ -104,6 +104,24 @@
             <p class="text-muted text-center mb-0" id="noItemsMsg">
                 <i class="bi bi-inbox me-1"></i> No items added yet. Click "Add Item" to start.
             </p>
+        </div>
+    </div>
+
+    {{-- Expenses (internal – for profit) --}}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <div>
+                <span class="fw-semibold"><i class="bi bi-cash-stack me-1"></i> Expenses (internal – for profit)</span>
+                <p class="small text-muted mb-0 mt-1">Internal use only; for profit calculation when no site or extra cost lines.</p>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="addExpenseRowBtn">
+                <i class="bi bi-plus-lg me-1"></i> Add row
+            </button>
+        </div>
+        <div class="card-body">
+            <div id="expenseRowsList">
+                <p class="text-muted text-center mb-0 small" id="noExpenseRowsMsg">No expense rows. Click "Add row" to add.</p>
+            </div>
         </div>
     </div>
 
@@ -250,6 +268,7 @@
 <script>
 $(document).ready(function() {
     var rowIndex = 0;
+    var expenseRowIndex = 0;
     @php
         $productList = $products->map(function($p) {
             return [
@@ -350,7 +369,7 @@ $(document).ready(function() {
         if (!customerId) { $siteSelect.html('<option value="">-- Select Customer First --</option>'); return; }
         var url = "{{ route('api.customer.sites', ':id') }}".replace(':id', customerId);
         $.get(url, function(data) {
-            var opts = '<option value="">-- Select Site --</option>';
+            var opts = '<option value="">-- None --</option>';
             $.each(data, function(i, site) { opts += '<option value="' + site.id + '">' + (site.site_name || site.name) + '</option>'; });
             $siteSelect.html(opts);
         }).fail(function() {
@@ -497,6 +516,35 @@ $(document).ready(function() {
     $(document).on('input', '#discount', function() { calculateTotals(); });
 
     $('#is_gst').trigger('change');
+
+    function addExpenseRow() {
+        var idx = expenseRowIndex++;
+        var html = '<div class="row g-2 mb-2 expense-row align-items-end" data-expense-index="' + idx + '">' +
+            '<div class="col-md-7"><label class="form-label small">Description</label>' +
+            '<input type="text" class="form-control form-control-sm" name="expenses[' + idx + '][description]" placeholder="e.g. Labour, material">' +
+            '</div><div class="col-md-3"><label class="form-label small">Amount (₹)</label>' +
+            '<input type="number" class="form-control form-control-sm" name="expenses[' + idx + '][amount]" min="0" step="0.01" value="0">' +
+            '</div><div class="col-md-2"><label class="form-label small d-none d-md-block">&nbsp;</label>' +
+            '<button type="button" class="btn btn-sm btn-outline-danger w-100 remove-expense-row"><i class="bi bi-dash-lg"></i></button></div></div>';
+        $('#expenseRowsList').append(html);
+        $('#noExpenseRowsMsg').hide();
+    }
+    function reindexExpenseRows() {
+        $('#expenseRowsList .expense-row').each(function(i) {
+            $(this).attr('data-expense-index', i);
+            $(this).find('input[name*="[description]"]').attr('name', 'expenses[' + i + '][description]');
+            $(this).find('input[name*="[amount]"]').attr('name', 'expenses[' + i + '][amount]');
+        });
+        expenseRowIndex = $('#expenseRowsList .expense-row').length;
+        if (expenseRowIndex === 0) {
+            $('#noExpenseRowsMsg').show();
+        }
+    }
+    $('#addExpenseRowBtn').on('click', addExpenseRow);
+    $(document).on('click', '.remove-expense-row', function() {
+        $(this).closest('.expense-row').remove();
+        reindexExpenseRows();
+    });
 
     @if(old('customer_id'))
         $('#customer_id').trigger('change');

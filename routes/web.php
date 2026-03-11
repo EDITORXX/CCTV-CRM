@@ -89,6 +89,8 @@ Route::middleware(['auth', 'company'])->group(function () {
 
     // Payments
     Route::post('/invoices/{invoice}/payments', [App\Http\Controllers\PaymentController::class, 'store'])->name('payments.store');
+    Route::post('/invoices/{invoice}/expenses', [App\Http\Controllers\InvoiceController::class, 'storeExpense'])->name('invoices.expenses.store');
+    Route::delete('/invoice-expenses/{invoice_expense}', [App\Http\Controllers\InvoiceController::class, 'destroyExpense'])->name('invoice-expenses.destroy');
 
     // Warranties
     Route::get('/warranties', [App\Http\Controllers\WarrantyController::class, 'index'])->name('warranties.index');
