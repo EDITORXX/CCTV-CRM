@@ -270,7 +270,7 @@ $(document).ready(function() {
     var rowIndex = 0;
     var expenseRowIndex = 0;
     @php
-        $productList = $products->map(function($p) {
+        $productList = ($products ?? collect())->map(function($p) {
             return [
                 'id' => $p->id,
                 'name' => $p->name,
@@ -278,15 +278,20 @@ $(document).ready(function() {
                 'warranty_months' => $p->warranty_months,
                 'track_serial' => $p->track_serial ?? false,
             ];
-        });
+        })->values();
     @endphp
     var products = @json($productList);
+    if (!Array.isArray(products)) products = [];
 
     function populateModalProducts() {
         var opts = '<option value="">-- Select Product --</option>';
-        products.forEach(function(p) {
-            opts += '<option value="' + p.id + '" data-price="' + (p.sale_price || 0) + '" data-warranty="' + (p.warranty_months || 0) + '" data-serial="' + (p.track_serial ? '1' : '0') + '">' + p.name + '</option>';
-        });
+        if (products && products.length > 0) {
+            products.forEach(function(p) {
+                opts += '<option value="' + p.id + '" data-price="' + (p.sale_price || 0) + '" data-warranty="' + (p.warranty_months || 0) + '" data-serial="' + (p.track_serial ? '1' : '0') + '">' + (p.name || 'Product #' + p.id) + '</option>';
+            });
+        } else {
+            opts += '<option value="" disabled>No products found — add products first</option>';
+        }
         $('#modalProductId').html(opts);
     }
 
@@ -446,6 +451,8 @@ $(document).ready(function() {
     });
 
     $('#addItemModal').on('show.bs.modal', function() { resetModal(); });
+
+    populateModalProducts();
 
     $('#modalProductId').on('change', function() {
         var $opt = $(this).find(':selected');
