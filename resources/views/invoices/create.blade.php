@@ -274,7 +274,7 @@ $(document).ready(function() {
     function populateModalProducts() {
         var $select = $('#modalProductId');
         $select.html('<option value="">-- Loading... --</option>');
-        var url = "{{ route('api.products.list') }}";
+        var url = {!! json_encode(route('api.products.list')) !!};
         $.ajax({
             url: url,
             method: 'GET',
@@ -376,7 +376,7 @@ $(document).ready(function() {
         var $siteSelect = $('#site_id');
         $siteSelect.html('<option value="">-- Loading... --</option>');
         if (!customerId) { $siteSelect.html('<option value="">-- Select Customer First --</option>'); return; }
-        var url = "{{ route('api.customer.sites', ':id') }}".replace(':id', customerId);
+        var url = {!! json_encode(route('api.customer.sites', ['customer' => ':id'])) !!}.replace(':id', customerId);
         $.get(url, function(data) {
             var opts = '<option value="">-- None --</option>';
             $.each(data, function(i, site) { opts += '<option value="' + site.id + '">' + (site.site_name || site.name) + '</option>'; });
@@ -414,14 +414,14 @@ $(document).ready(function() {
         }
         $('#quick_site_name').removeClass('is-invalid');
         var customerId = $('#customer_id').val();
-        var url = "{{ url('customers') }}/" + customerId + "/sites";
+        var url = {!! json_encode(url('customers')) !!} + '/' + customerId + '/sites';
         var $btn = $('#quickAddSiteSubmit');
         $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Creating...');
         $.ajax({
             url: url,
             method: 'POST',
             data: {
-                _token: "{{ csrf_token() }}",
+                _token: {!! json_encode(csrf_token()) !!},
                 site_name: siteName,
                 address: '',
                 contact_person: '',
@@ -431,7 +431,7 @@ $(document).ready(function() {
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
         }).done(function(res) {
             var $siteSelect = $('#site_id');
-            var url = "{{ route('api.customer.sites', ':id') }}".replace(':id', $('#customer_id').val());
+            var url = {!! json_encode(route('api.customer.sites', ['customer' => ':id'])) !!}.replace(':id', $('#customer_id').val());
             $.get(url, function(data) {
                 var opts = '<option value="">-- Select Site --</option>';
                 $.each(data, function(i, site) {
@@ -469,7 +469,7 @@ $(document).ready(function() {
         if (isSerialized && $(this).val()) {
             $('#modalSerialsGroup').show();
             $('#modalSerialsHint').text('Loading available serials...');
-            var url = "{{ route('api.product.serials', ':id') }}".replace(':id', $(this).val());
+            var url = {!! json_encode(route('api.product.serials', ['product' => ':id'])) !!}.replace(':id', $(this).val());
             $.get(url, function(data) {
                 if (data.length) {
                     var hint = 'Available: ' + data.map(function(s) { return s.serial_number; }).join(', ');
@@ -557,7 +557,7 @@ $(document).ready(function() {
         reindexExpenseRows();
     });
 
-    var oldCustomerId = "{{ old('customer_id', '') }}";
+    var oldCustomerId = {!! json_encode(old('customer_id', '')) !!};
     if (oldCustomerId) {
         $('#customer_id').trigger('change');
     }
