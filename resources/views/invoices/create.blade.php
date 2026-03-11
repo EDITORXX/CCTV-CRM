@@ -40,9 +40,14 @@
 
                 <div class="col-md-4">
                     <label for="site_id" class="form-label">Site <span class="text-danger">*</span></label>
-                    <select class="form-select @error('site_id') is-invalid @enderror" id="site_id" name="site_id" required>
-                        <option value="">-- Select Customer First --</option>
-                    </select>
+                    <div class="d-flex gap-1">
+                        <select class="form-select @error('site_id') is-invalid @enderror" id="site_id" name="site_id" required>
+                            <option value="">-- Select Customer First --</option>
+                        </select>
+                        <button type="button" class="btn btn-outline-success btn-add-site flex-shrink-0" id="quickAddSiteBtn" title="Quick add site (same customer)">
+                            <i class="bi bi-plus-lg"></i>
+                        </button>
+                    </div>
                     @error('site_id')
                         <span class="text-danger small">{{ $message }}</span>
                     @enderror
@@ -99,6 +104,30 @@
             <p class="text-muted text-center mb-0" id="noItemsMsg">
                 <i class="bi bi-inbox me-1"></i> No items added yet. Click "Add Item" to start.
             </p>
+        </div>
+    </div>
+
+    {{-- Add Item Modal --}}
+    <div class="modal fade" id="quickAddSiteModal" tabindex="-1" aria-labelledby="quickAddSiteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h6 class="modal-title" id="quickAddSiteModalLabel"><i class="bi bi-geo-alt-plus me-1"></i> Quick Add Site</h6>
+                    <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-2">
+                    <p class="small text-muted mb-2">Selected customer ke under naya site — sirf name dalen.</p>
+                    <label for="quick_site_name" class="form-label small fw-semibold">Site Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control form-control-sm" id="quick_site_name" placeholder="e.g. Main Office" maxlength="255">
+                    <div class="invalid-feedback" id="quick_site_name_error">Site name required.</div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success btn-sm" id="quickAddSiteSubmit">
+                        <i class="bi bi-plus-lg me-1"></i> Create & Select
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -326,6 +355,74 @@ $(document).ready(function() {
             $siteSelect.html(opts);
         }).fail(function() {
             $siteSelect.html('<option value="">-- Failed to load --</option>');
+        });
+    });
+
+    $('#quickAddSiteBtn').on('click', function() {
+        var customerId = $('#customer_id').val();
+        if (!customerId) {
+            alert('Pehle Customer select karein.');
+            $('#customer_id').focus();
+            return;
+        }
+        $('#quick_site_name').val('').removeClass('is-invalid');
+        $('#quick_site_name_error').text('Site name required.');
+        var modal = new bootstrap.Modal(document.getElementById('quickAddSiteModal'));
+        modal.show();
+        setTimeout(function() { $('#quick_site_name').focus(); }, 300);
+    });
+
+    $('#quickAddSiteSubmit').on('click', function() {
+        submitQuickSite();
+    });
+    $('#quick_site_name').on('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); submitQuickSite(); }
+    });
+    function submitQuickSite() {
+        var siteName = $.trim($('#quick_site_name').val());
+        if (!siteName) {
+            $('#quick_site_name').addClass('is-invalid').focus();
+            return;
+        }
+        $('#quick_site_name').removeClass('is-invalid');
+        var customerId = $('#customer_id').val();
+        var url = "{{ url('customers') }}/" + customerId + "/sites";
+        var $btn = $('#quickAddSiteSubmit');
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Creating...');
+        $.ajax({
+            url: url,
+            method: 'POST',
+            data: {
+                _token: "{{ csrf_token() }}",
+                site_name: siteName,
+                address: '',
+                contact_person: '',
+                contact_phone: '',
+                notes: ''
+            },
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        }).done(function(res) {
+            var $siteSelect = $('#site_id');
+            var url = "{{ route('api.customer.sites', ':id') }}".replace(':id', $('#customer_id').val());
+            $.get(url, function(data) {
+                var opts = '<option value="">-- Select Site --</option>';
+                $.each(data, function(i, site) {
+                    opts += '<option value="' + site.id + '"' + (site.id == res.id ? ' selected' : '') + '>' + (site.site_name || site.name) + '</option>';
+                });
+                $siteSelect.html(opts);
+            });
+            bootstrap.Modal.getInstance(document.getElementById('quickAddSiteModal')).hide();
+        }).fail(function(xhr) {
+            var msg = 'Site create nahi ho paya.';
+            if (xhr.responseJSON && xhr.responseJSON.errors && xhr.responseJSON.errors.site_name) {
+                msg = xhr.responseJSON.errors.site_name[0];
+            } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                msg = xhr.responseJSON.message;
+            }
+            $('#quick_site_name_error').text(msg);
+            $('#quick_site_name').addClass('is-invalid');
+        }).always(function() {
+            $btn.prop('disabled', false).html('<i class="bi bi-plus-lg me-1"></i> Create & Select');
         });
     });
 

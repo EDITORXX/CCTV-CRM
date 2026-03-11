@@ -30,9 +30,13 @@ class SiteController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        $customer->sites()->create(array_merge($validated, [
+        $site = $customer->sites()->create(array_merge($validated, [
             'company_id' => session('current_company_id'),
         ]));
+
+        if ($request->wantsJson()) {
+            return response()->json(['id' => $site->id, 'site_name' => $site->site_name]);
+        }
 
         return redirect()->route('customers.sites.index', $customer)->with('success', 'Site added successfully.');
     }
