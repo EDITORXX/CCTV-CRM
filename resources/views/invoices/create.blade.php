@@ -281,9 +281,13 @@
         'oldCustomerId' => old('customer_id', ''),
     ];
 @endphp
+<script type="application/json" id="invoice-create-config">{{ json_encode($invoiceCreateConfig) }}</script>
 <script>
-window.INVOICE_CREATE_CONFIG = @json($invoiceCreateConfig);
-$(document).ready(function() {
+(function() {
+    var configEl = document.getElementById('invoice-create-config');
+    window.INVOICE_CREATE_CONFIG = configEl ? JSON.parse(configEl.textContent) : { urls: {}, csrf: '', oldCustomerId: '' };
+
+    $(document).ready(function() {
     var rowIndex = 0;
     var expenseRowIndex = 0;
     var products = [];
@@ -292,12 +296,16 @@ $(document).ready(function() {
     function populateModalProducts() {
         var $select = $('#modalProductId');
         $select.html('<option value="">-- Loading... --</option>');
+        if (!C.urls || !C.urls.productsList) {
+            $select.html('<option value="">-- Select Product --</option><option value="" disabled>Config error. Refresh page.</option>');
+            return;
+        }
         $.ajax({
             url: C.urls.productsList,
             method: 'GET',
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
         }).done(function(data) {
-            products = Array.isArray(data) ? data : [];
+            products = Array.isArray(data) ? data : (data && data.data ? data.data : []);
             $select.empty();
             $select.append($('<option value="">-- Select Product --</option>'));
             if (products.length > 0) {
@@ -311,8 +319,11 @@ $(document).ready(function() {
             } else {
                 $select.append($('<option value="" disabled>No products found. Add products first.</option>'));
             }
-        }).fail(function() {
-            $select.html('<option value="">-- Select Product --</option><option value="" disabled>Failed to load. Retry or add products first.</option>');
+        }).fail(function(xhr) {
+            var msg = 'Failed to load. Retry or add products first.';
+            if (xhr.status === 403) msg = 'Access denied.';
+            if (xhr.status === 500) msg = 'Server error. Try again.';
+            $select.html('<option value="">-- Select Product --</option><option value="" disabled>' + msg + '</option>');
         });
     }
 
@@ -578,6 +589,7 @@ $(document).ready(function() {
     if (oldCustomerId) {
         $('#customer_id').trigger('change');
     }
-});
+    });
+})();
 </script>
 @endsection
