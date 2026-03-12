@@ -265,18 +265,35 @@
 @endsection
 
 @section('scripts')
+@php
+    $customerSitesRoute = route('api.customer.sites', ['customer' => 1]);
+    $customerSitesUrl = preg_replace('#(/api/customers/)1(/sites)#', '$1:id$2', $customerSitesRoute);
+    $productSerialsRoute = route('api.product.serials', ['product' => 1]);
+    $productSerialsUrl = preg_replace('#(/api/products/)1(/serials)#', '$1:id$2', $productSerialsRoute);
+    $invoiceCreateConfig = [
+        'urls' => [
+            'productsList' => route('api.products.list'),
+            'customerSites' => $customerSitesUrl,
+            'customersBase' => url('customers'),
+            'productSerials' => $productSerialsUrl,
+        ],
+        'csrf' => csrf_token(),
+        'oldCustomerId' => old('customer_id', ''),
+    ];
+@endphp
 <script>
+window.INVOICE_CREATE_CONFIG = @json($invoiceCreateConfig);
 $(document).ready(function() {
     var rowIndex = 0;
     var expenseRowIndex = 0;
     var products = [];
+    var C = window.INVOICE_CREATE_CONFIG;
 
     function populateModalProducts() {
         var $select = $('#modalProductId');
         $select.html('<option value="">-- Loading... --</option>');
-        var url = {!! json_encode(route('api.products.list')) !!};
         $.ajax({
-            url: url,
+            url: C.urls.productsList,
             method: 'GET',
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
         }).done(function(data) {
@@ -376,7 +393,7 @@ $(document).ready(function() {
         var $siteSelect = $('#site_id');
         $siteSelect.html('<option value="">-- Loading... --</option>');
         if (!customerId) { $siteSelect.html('<option value="">-- Select Customer First --</option>'); return; }
-        var url = {!! json_encode(route('api.customer.sites', ['customer' => ':id'])) !!}.replace(':id', customerId);
+        var url = C.urls.customerSites.replace(':id', customerId);
         $.get(url, function(data) {
             var opts = '<option value="">-- None --</option>';
             $.each(data, function(i, site) { opts += '<option value="' + site.id + '">' + (site.site_name || site.name) + '</option>'; });
@@ -414,14 +431,14 @@ $(document).ready(function() {
         }
         $('#quick_site_name').removeClass('is-invalid');
         var customerId = $('#customer_id').val();
-        var url = {!! json_encode(url('customers')) !!} + '/' + customerId + '/sites';
+        var url = C.urls.customersBase + '/' + customerId + '/sites';
         var $btn = $('#quickAddSiteSubmit');
         $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Creating...');
         $.ajax({
             url: url,
             method: 'POST',
             data: {
-                _token: {!! json_encode(csrf_token()) !!},
+                _token: C.csrf,
                 site_name: siteName,
                 address: '',
                 contact_person: '',
@@ -431,7 +448,7 @@ $(document).ready(function() {
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
         }).done(function(res) {
             var $siteSelect = $('#site_id');
-            var url = {!! json_encode(route('api.customer.sites', ['customer' => ':id'])) !!}.replace(':id', $('#customer_id').val());
+            var url = C.urls.customerSites.replace(':id', $('#customer_id').val());
             $.get(url, function(data) {
                 var opts = '<option value="">-- Select Site --</option>';
                 $.each(data, function(i, site) {
@@ -469,7 +486,7 @@ $(document).ready(function() {
         if (isSerialized && $(this).val()) {
             $('#modalSerialsGroup').show();
             $('#modalSerialsHint').text('Loading available serials...');
-            var url = {!! json_encode(route('api.product.serials', ['product' => ':id'])) !!}.replace(':id', $(this).val());
+            var url = C.urls.productSerials.replace(':id', $(this).val());
             $.get(url, function(data) {
                 if (data.length) {
                     var hint = 'Available: ' + data.map(function(s) { return s.serial_number; }).join(', ');
@@ -557,7 +574,7 @@ $(document).ready(function() {
         reindexExpenseRows();
     });
 
-    var oldCustomerId = {!! json_encode(old('customer_id', '')) !!};
+    var oldCustomerId = C.oldCustomerId;
     if (oldCustomerId) {
         $('#customer_id').trigger('change');
     }
