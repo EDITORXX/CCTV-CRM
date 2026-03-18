@@ -131,6 +131,7 @@ class CompanyController extends Controller
             'gst_enabled' => 'boolean',
             'invoice_prefix' => 'nullable|string|max:20',
             'warranty_default_months' => 'nullable|integer|min:0',
+            'invoice_terms' => 'nullable|string',
             'logo' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
             'payment_qr' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
             'signature' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',

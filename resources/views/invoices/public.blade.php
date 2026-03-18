@@ -171,6 +171,25 @@
             @endif
         </div>
 
+        <div class="border-top pt-3 mt-3">
+            <div class="small text-muted">
+                <strong>Terms &amp; Conditions:</strong>
+                @if($company->invoice_terms)
+                    <ol class="mb-1 ps-3" style="font-size:.78rem;">
+                        @foreach(array_filter(array_map('trim', explode("\n", $company->invoice_terms))) as $line)
+                            <li>{{ $line }}</li>
+                        @endforeach
+                    </ol>
+                @else
+                    <ol class="mb-1 ps-3" style="font-size:.78rem;">
+                        <li>Goods once sold will not be taken back.</li>
+                        <li>Warranty is subject to the terms mentioned in the warranty card.</li>
+                        <li>Payment is due within 15 days from the date of invoice.</li>
+                        <li>All disputes are subject to local jurisdiction.</li>
+                    </ol>
+                @endif
+            </div>
+        </div>
         <div class="text-center text-muted mt-3" style="font-size:.75rem;">
             This is a digitally generated document. For queries contact {{ $company->phone ?? $company->email ?? '' }}.
         </div>

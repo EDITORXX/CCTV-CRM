@@ -179,6 +179,17 @@
                         <span class="text-danger small">{{ $message }}</span>
                     @enderror
                 </div>
+
+                <div class="col-12">
+                    <label for="invoice_terms" class="form-label">Terms &amp; Conditions <span class="text-muted small">(Invoice / Bill of Supply)</span></label>
+                    <textarea class="form-control @error('invoice_terms') is-invalid @enderror"
+                              id="invoice_terms" name="invoice_terms" rows="5"
+                              placeholder="1. Goods once sold will not be taken back.&#10;2. Warranty as per warranty card.&#10;3. Payment due within 15 days.">{{ old('invoice_terms', $company->invoice_terms) }}</textarea>
+                    <small class="text-muted">Each line will appear as a separate point on the invoice PDF. Leave blank to use default terms.</small>
+                    @error('invoice_terms')
+                        <span class="text-danger small">{{ $message }}</span>
+                    @enderror
+                </div>
             </div>
         </div>
     </div>

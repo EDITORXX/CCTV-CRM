@@ -249,10 +249,16 @@
         <div class="footer">
             <div class="terms">
                 <strong>Terms & Conditions:</strong><br>
-                1. Goods once sold will not be taken back.<br>
-                2. Warranty is subject to the terms mentioned in the warranty card.<br>
-                3. Payment is due within 15 days from the date of invoice.<br>
-                4. All disputes are subject to local jurisdiction.
+                @if($company->invoice_terms)
+                    @foreach(array_filter(array_map('trim', explode("\n", $company->invoice_terms))) as $idx => $line)
+                        {{ $idx + 1 }}. {{ $line }}<br>
+                    @endforeach
+                @else
+                    1. Goods once sold will not be taken back.<br>
+                    2. Warranty is subject to the terms mentioned in the warranty card.<br>
+                    3. Payment is due within 15 days from the date of invoice.<br>
+                    4. All disputes are subject to local jurisdiction.
+                @endif
             </div>
         </div>
     </div>
