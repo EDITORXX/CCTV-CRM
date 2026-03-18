@@ -140,56 +140,25 @@
             <div class="alert alert-light border mt-3 mb-0 small"><strong>Notes:</strong> {{ $invoice->notes }}</div>
         @endif
 
-        {{-- Digital Signature Section --}}
-        <div class="mt-4 border rounded-3 p-3" id="sig-section">
-            <div class="fw-semibold mb-1"><i class="bi bi-pen me-1"></i> Digital Signature</div>
-
+        {{-- Terms & Conditions + Signature link --}}
+        <div class="mt-4 border rounded-3 p-3 text-center">
             @if($invoice->customer_signed_at)
-                {{-- Already signed --}}
-                <div class="signed-box">
-                    <div class="mb-2"><i class="bi bi-check-circle-fill text-success me-1"></i> <strong>Digitally Signed</strong></div>
-                    <img src="{{ $invoice->customer_signature }}" alt="Customer Signature" style="max-height:80px;border:1px solid #ccc;border-radius:6px;background:#fff;padding:4px;">
-                    <div class="mt-2 small text-muted">
-                        <i class="bi bi-clock me-1"></i> {{ $invoice->customer_signed_at->format('d M Y, h:i A') }}
-                        &nbsp;|&nbsp;
-                        <i class="bi bi-globe me-1"></i> IP: {{ $invoice->customer_ip }}
+                <div class="d-inline-flex align-items-center gap-2 text-success">
+                    <i class="bi bi-check-circle-fill fs-4"></i>
+                    <div class="text-start">
+                        <div class="fw-semibold">Terms & Conditions Signed</div>
+                        <div class="small text-muted">{{ $invoice->customer_signed_at->format('d M Y, h:i A') }} | IP: {{ $invoice->customer_ip }}</div>
                     </div>
                 </div>
             @else
-                {{-- Signature pad --}}
-                <p class="small text-muted mb-2">Neeche sign karein (mouse ya touch se) aur "Sign & Accept" dabayein.</p>
-                <canvas id="sig-canvas" width="680" height="150" style="width:100%;max-width:680px;height:150px;"></canvas>
-                <div class="d-flex gap-2 mt-2 flex-wrap">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" id="sig-clear">
-                        <i class="bi bi-eraser me-1"></i> Clear
-                    </button>
-                    <button type="button" class="btn btn-success btn-sm" id="sig-submit">
-                        <i class="bi bi-pen me-1"></i> Sign & Accept
-                    </button>
-                </div>
-                <div id="sig-result" class="mt-2"></div>
+                <i class="bi bi-file-text fs-2 text-primary d-block mb-2"></i>
+                <p class="mb-3 small text-muted">Invoice accept karne ke liye Terms &amp; Conditions padhein aur digitally sign karein.</p>
+                <a href="{{ route('invoice.public.terms', $token) }}" class="btn btn-primary">
+                    <i class="bi bi-pen me-1"></i> Read &amp; Sign Terms &amp; Conditions
+                </a>
             @endif
         </div>
 
-        <div class="border-top pt-3 mt-3">
-            <div class="small text-muted">
-                <strong>Terms &amp; Conditions:</strong>
-                @if($company->invoice_terms)
-                    <ol class="mb-1 ps-3" style="font-size:.78rem;">
-                        @foreach(array_filter(array_map('trim', explode("\n", $company->invoice_terms))) as $line)
-                            <li>{{ $line }}</li>
-                        @endforeach
-                    </ol>
-                @else
-                    <ol class="mb-1 ps-3" style="font-size:.78rem;">
-                        <li>Goods once sold will not be taken back.</li>
-                        <li>Warranty is subject to the terms mentioned in the warranty card.</li>
-                        <li>Payment is due within 15 days from the date of invoice.</li>
-                        <li>All disputes are subject to local jurisdiction.</li>
-                    </ol>
-                @endif
-            </div>
-        </div>
         <div class="text-center text-muted mt-3" style="font-size:.75rem;">
             This is a digitally generated document. For queries contact {{ $company->phone ?? $company->email ?? '' }}.
         </div>
@@ -200,78 +169,5 @@
 <div class="watermark-signed">SIGNED</div>
 @endif
 
-<script>
-(function() {
-    var canvas = document.getElementById('sig-canvas');
-    if (!canvas) return;
-    var ctx = canvas.getContext('2d');
-    var drawing = false;
-    var hasDrawn = false;
-
-    function getPos(e) {
-        var rect = canvas.getBoundingClientRect();
-        var scaleX = canvas.width / rect.width;
-        var scaleY = canvas.height / rect.height;
-        var clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        var clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
-    }
-
-    ctx.strokeStyle = '#1a1c2e';
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    canvas.addEventListener('mousedown', function(e) { drawing = true; var p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
-    canvas.addEventListener('mousemove', function(e) { if (!drawing) return; var p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); hasDrawn = true; });
-    canvas.addEventListener('mouseup', function() { drawing = false; });
-    canvas.addEventListener('mouseleave', function() { drawing = false; });
-    canvas.addEventListener('touchstart', function(e) { e.preventDefault(); drawing = true; var p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }, {passive:false});
-    canvas.addEventListener('touchmove', function(e) { e.preventDefault(); if (!drawing) return; var p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); hasDrawn = true; }, {passive:false});
-    canvas.addEventListener('touchend', function() { drawing = false; });
-
-    document.getElementById('sig-clear').addEventListener('click', function() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        hasDrawn = false;
-        document.getElementById('sig-result').innerHTML = '';
-    });
-
-    document.getElementById('sig-submit').addEventListener('click', function() {
-        if (!hasDrawn) {
-            document.getElementById('sig-result').innerHTML = '<div class="alert alert-warning py-1 small">Pehle sign karein.</div>';
-            return;
-        }
-        var btn = this;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
-
-        fetch('{{ route("invoice.public.sign", $token) }}', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-            body: JSON.stringify({ signature: canvas.toDataURL('image/png') })
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            if (data.success) {
-                document.getElementById('sig-section').innerHTML =
-                    '<div class="signed-box">' +
-                    '<div class="mb-2"><i class="bi bi-check-circle-fill text-success me-1"></i> <strong>Digitally Signed — Shukriya!</strong></div>' +
-                    '<div class="small text-muted mt-1"><i class="bi bi-clock me-1"></i> ' + data.signed_at +
-                    ' &nbsp;|&nbsp; <i class="bi bi-globe me-1"></i> IP: ' + data.ip + '</div>' +
-                    '</div>';
-            } else {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-pen me-1"></i> Sign & Accept';
-                document.getElementById('sig-result').innerHTML = '<div class="alert alert-danger py-1 small">Error. Try again.</div>';
-            }
-        })
-        .catch(function() {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-pen me-1"></i> Sign & Accept';
-            document.getElementById('sig-result').innerHTML = '<div class="alert alert-danger py-1 small">Network error. Try again.</div>';
-        });
-    });
-})();
-</script>
 </body>
 </html>

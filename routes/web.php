@@ -206,6 +206,10 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::middleware(['role:company_admin,manager'])->group(function () {
         Route::get('/company/settings', [App\Http\Controllers\CompanyController::class, 'settings'])->name('company.settings');
         Route::put('/company/settings', [App\Http\Controllers\CompanyController::class, 'updateSettings'])->name('company.settings.update');
+
+        // Terms & Conditions management
+        Route::get('/settings/terms', [App\Http\Controllers\TermsController::class, 'index'])->name('terms.index');
+        Route::put('/settings/terms', [App\Http\Controllers\TermsController::class, 'update'])->name('terms.update');
     });
 
     // API-like routes for AJAX
@@ -239,6 +243,7 @@ Route::middleware(['auth', 'company'])->group(function () {
 // Public Bill of Supply — shareable link (no auth required)
 Route::get('/bill/{token}', [App\Http\Controllers\PublicInvoiceController::class, 'show'])->name('invoice.public.show');
 Route::post('/bill/{token}/sign', [App\Http\Controllers\PublicInvoiceController::class, 'sign'])->name('invoice.public.sign');
+Route::get('/bill/{token}/terms', [App\Http\Controllers\PublicInvoiceController::class, 'terms'])->name('invoice.public.terms');
 
 // Live Stream public viewer (no auth required)
 Route::get('/live/{token}', [App\Http\Controllers\LiveStreamController::class, 'viewer'])->name('livestream.viewer');

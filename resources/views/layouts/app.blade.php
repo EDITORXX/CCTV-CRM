@@ -569,6 +569,11 @@
                     </a>
                 </li>
                 <li>
+                    <a href="{{ route('terms.index') }}" class="{{ request()->routeIs('terms.*') ? 'active' : '' }}">
+                        <i class="bi bi-file-text"></i> Terms &amp; Conditions
+                    </a>
+                </li>
+                <li>
                     <a href="{{ route('fcm-test.index') }}" class="{{ request()->routeIs('fcm-test.*') ? 'active' : '' }}">
                         <i class="bi bi-broadcast"></i> FCM Test
                     </a>

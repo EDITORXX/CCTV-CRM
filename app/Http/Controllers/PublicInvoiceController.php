@@ -47,6 +47,18 @@ class PublicInvoiceController extends Controller
         ]);
     }
 
+    // Public Terms & Conditions page with language toggle + signature
+    public function terms(string $token)
+    {
+        $invoice = Invoice::where('share_token', $token)
+            ->with(['customer', 'site', 'payments'])
+            ->firstOrFail();
+
+        $company = \App\Models\Company::find($invoice->company_id);
+
+        return view('terms.public', compact('invoice', 'company', 'token'));
+    }
+
     // Generate / return share token (called from invoice show page)
     public function generateToken(Invoice $invoice)
     {
