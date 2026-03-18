@@ -18,7 +18,7 @@ class InvoiceController extends Controller
 {
     public function index()
     {
-        $invoices = Invoice::with(['customer', 'site'])
+        $invoices = Invoice::with(['customer', 'site', 'invoiceExpenses'])
             ->orderBy('invoice_date', 'desc')
             ->paginate(20);
         return view('invoices.index', compact('invoices'));
