@@ -60,6 +60,19 @@
             <i class="bi bi-usb-plug me-1"></i> Checking for video devices...
         </div>
 
+        {{-- Permission banner (shown when camera blocked/not granted) --}}
+        <div id="permission-banner" class="alert alert-warning d-none mb-3" role="alert">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <div class="flex-grow-1">
+                    <strong><i class="bi bi-camera-video-off me-1"></i> Camera Permission Required</strong>
+                    <div class="small mt-1">USB/external camera dikhane ke liye browser ko camera access dena hoga. Neeche button click karein aur <strong>Allow</strong> karein.</div>
+                </div>
+                <button type="button" id="grant-permission-btn" class="btn btn-warning btn-sm flex-shrink-0">
+                    <i class="bi bi-shield-check me-1"></i> Allow Camera Access
+                </button>
+            </div>
+        </div>
+
         <div class="card mb-4">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center mb-2">
@@ -78,7 +91,7 @@
                         <i class="bi bi-arrow-repeat"></i>
                     </button>
                 </div>
-                <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>USB/External camera connect karein aur Refresh dabayein. Allow camera access when prompted.</small>
+                <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>USB camera connect karein → <strong>Allow Camera Access</strong> ya Refresh dabayein.</small>
             </div>
             <div class="card-body p-0">
                 <div class="preview-container position-relative" id="preview-wrap">
@@ -179,13 +192,46 @@
         }
     });
 
-    async function requestAllCameraPermissions() {
+    var permissionBanner = document.getElementById('permission-banner');
+    var grantPermBtn = document.getElementById('grant-permission-btn');
+
+    // Show/hide permission banner
+    function showPermissionBanner(show) {
+        if (show) permissionBanner.classList.remove('d-none');
+        else permissionBanner.classList.add('d-none');
+    }
+
+    // Step 1: Ask permission for ALL cameras including USB
+    // Key fix: getUserMedia without deviceId lets browser show ALL cameras
+    // After one permission, enumerateDevices returns ALL devices with their IDs
+    async function requestPermissionAndEnumerate() {
+        var stream = null;
+        try {
+            // video:true without deviceId = browser shows picker with ALL cameras (including USB)
+            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        } catch (e) {
+            if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+                showPermissionBanner(true);
+                return null;
+            }
+            return null;
+        }
+        if (stream) {
+            stream.getTracks().forEach(function(t) { t.stop(); });
+        }
+        showPermissionBanner(false);
+
+        // After permission granted, enumerate all devices
+        await new Promise(function(r) { setTimeout(r, 400); });
         var devices = await navigator.mediaDevices.enumerateDevices();
         var videoDevices = devices.filter(function(d) { return d.kind === 'videoinput'; });
 
+        // Step 2: For any device that still has no label (USB not yet accessed),
+        // request its stream specifically using its deviceId
         for (var i = 0; i < videoDevices.length; i++) {
             var d = videoDevices[i];
-            if (d.deviceId && d.label) continue;
+            // Only try devices that have a valid deviceId but no label yet
+            if (!d.deviceId || d.label) continue;
             try {
                 var s = await navigator.mediaDevices.getUserMedia({
                     video: { deviceId: { exact: d.deviceId } },
@@ -194,30 +240,27 @@
                 s.getTracks().forEach(function(t) { t.stop(); });
             } catch(e) {}
         }
+
+        // Re-enumerate after accessing individual devices
+        await new Promise(function(r) { setTimeout(r, 300); });
+        devices = await navigator.mediaDevices.enumerateDevices();
+        return devices.filter(function(d) { return d.kind === 'videoinput'; });
     }
 
     async function loadDevices(keepSelection) {
         var prevMain = keepSelection ? deviceSelect.value : null;
         var prevSecond = keepSelection ? deviceSelect2.value : null;
-        var permStream = null;
 
-        try {
-            permStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        } catch (e) {
-            try { permStream = await navigator.mediaDevices.getUserMedia({ video: true }); } catch(e2) {}
+        var videoDevices = await requestPermissionAndEnumerate();
+
+        if (!videoDevices) {
+            // Permission denied - banner already shown
+            deviceSelect.innerHTML = '<option>Camera access denied</option>';
+            statusEl.className = 'device-status bg-danger bg-opacity-10 text-danger';
+            statusEl.innerHTML = '<i class="bi bi-shield-x me-1"></i> Camera access blocked. "Allow Camera Access" button click karein.';
+            statusEl.classList.remove('d-none');
+            return;
         }
-        if (permStream) {
-            permStream.getTracks().forEach(function(t) { t.stop(); });
-            permStream = null;
-        }
-
-        await new Promise(function(r) { setTimeout(r, 400); });
-
-        await requestAllCameraPermissions();
-        await new Promise(function(r) { setTimeout(r, 300); });
-
-        var devices = await navigator.mediaDevices.enumerateDevices();
-        var videoDevices = devices.filter(function(d) { return d.kind === 'videoinput'; });
 
         deviceSelect.innerHTML = '';
         deviceSelect2.innerHTML = '<option value="">None</option>';
@@ -225,16 +268,18 @@
         if (videoDevices.length === 0) {
             deviceSelect.innerHTML = '<option>No video device found</option>';
             statusEl.className = 'device-status bg-danger bg-opacity-10 text-danger';
-            statusEl.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i> No video device detected. Connect a USB/external camera and tap <strong>Refresh</strong>.';
+            statusEl.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i> No camera detected. USB camera connect karein aur Refresh dabayein.';
             statusEl.classList.remove('d-none');
             return;
         }
 
+        // Check if any device has no label (permission not fully granted for that device)
+        var hasUnknown = videoDevices.some(function(d) { return !d.label; });
+        if (hasUnknown) showPermissionBanner(true);
+        else showPermissionBanner(false);
+
         videoDevices.forEach(function(d, i) {
-            var label = d.label || ('Camera ' + (i + 1));
-            if (!d.label && d.deviceId) {
-                label = 'External Camera ' + (i + 1);
-            }
+            var label = d.label || ('Unknown Camera ' + (i + 1) + ' — Allow permission to identify');
             var opt = document.createElement('option');
             opt.value = d.deviceId;
             opt.textContent = label;
@@ -255,11 +300,12 @@
             deviceSelect2.value = prevSecond;
         }
 
+        var knownCount = videoDevices.filter(function(d) { return !!d.label; }).length;
         statusEl.className = 'device-status bg-success bg-opacity-10 text-success';
-        statusEl.innerHTML = '<i class="bi bi-check-circle me-1"></i> ' + videoDevices.length + ' video device(s) found. Select and preview.';
+        statusEl.innerHTML = '<i class="bi bi-check-circle me-1"></i> ' + videoDevices.length + ' camera(s) found (' + knownCount + ' identified). Select karein aur preview dekhen.';
         statusEl.classList.remove('d-none');
 
-        if (!keepSelection) {
+        if (!keepSelection && videoDevices[0].deviceId) {
             startPreview(videoDevices[0].deviceId);
             document.getElementById('device-id-1').value = videoDevices[0].deviceId;
         }
@@ -338,6 +384,22 @@
     deviceSelect2.addEventListener('change', function() {
         startPreview2(this.value || null);
         document.getElementById('device-id-2').value = this.value || '';
+    });
+
+    // Grant permission button — stops current stream then re-requests permission
+    grantPermBtn.addEventListener('click', function() {
+        var btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Requesting...';
+        // Stop existing streams so browser re-shows the camera picker
+        if (currentStream) { currentStream.getTracks().forEach(function(t) { t.stop(); }); currentStream = null; }
+        if (currentStream2) { currentStream2.getTracks().forEach(function(t) { t.stop(); }); currentStream2 = null; }
+        previewVideo.srcObject = null;
+        previewVideo2.srcObject = null;
+        loadDevices(false).finally(function() {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-shield-check me-1"></i> Allow Camera Access';
+        });
     });
 
     document.getElementById('refresh-devices-btn').addEventListener('click', function() {
