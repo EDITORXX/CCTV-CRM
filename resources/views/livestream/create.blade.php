@@ -320,8 +320,9 @@
         await new Promise(function(r) { setTimeout(r, 200); });
 
         try {
+            // exact: force karta hai sirf yahi camera use ho — koi fallback nahi
             currentStream = await navigator.mediaDevices.getUserMedia({
-                video: { deviceId: { ideal: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                video: { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } },
                 audio: true
             });
             previewVideo.srcObject = currentStream;
@@ -330,9 +331,10 @@
             fullscreenBtn.classList.remove('d-none');
             goLiveBtn.disabled = false;
         } catch (err) {
+            // Width/height constraint fail ho sakta hai — retry without resolution
             try {
                 currentStream = await navigator.mediaDevices.getUserMedia({
-                    video: { deviceId: deviceId },
+                    video: { deviceId: { exact: deviceId } },
                     audio: true
                 });
                 previewVideo.srcObject = currentStream;
@@ -341,7 +343,7 @@
                 fullscreenBtn.classList.remove('d-none');
                 goLiveBtn.disabled = false;
             } catch (err2) {
-                placeholder.innerHTML = '<i class="bi bi-exclamation-triangle"></i><p class="mt-2 mb-0">Could not access camera: ' + err2.message + '</p>';
+                placeholder.innerHTML = '<i class="bi bi-exclamation-triangle"></i><p class="mt-2 mb-0">Camera access failed: ' + err2.message + '<br><small>Camera kisi aur app mein use ho rahi hai ya permission nahi hai.</small></p>';
                 placeholder.style.display = '';
                 previewVideo.style.display = 'none';
                 fullscreenBtn.classList.add('d-none');
@@ -357,7 +359,7 @@
         await new Promise(function(r) { setTimeout(r, 200); });
         try {
             currentStream2 = await navigator.mediaDevices.getUserMedia({
-                video: { deviceId: { ideal: deviceId }, width: { ideal: 640 }, height: { ideal: 360 } },
+                video: { deviceId: { exact: deviceId }, width: { ideal: 640 }, height: { ideal: 360 } },
                 audio: false
             });
             previewVideo2.srcObject = currentStream2;
@@ -365,7 +367,7 @@
         } catch (e) {
             try {
                 currentStream2 = await navigator.mediaDevices.getUserMedia({
-                    video: { deviceId: deviceId },
+                    video: { deviceId: { exact: deviceId } },
                     audio: false
                 });
                 previewVideo2.srcObject = currentStream2;
