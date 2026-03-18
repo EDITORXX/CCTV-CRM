@@ -507,7 +507,7 @@
         }).always(function() {
             $btn.prop('disabled', false).html('<i class="bi bi-plus-lg me-1"></i> Create & Select');
         });
-    });
+    }
 
     $('#addItemModal').on('show.bs.modal', function() { resetModal(); });
 
