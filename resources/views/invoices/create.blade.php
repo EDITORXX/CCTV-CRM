@@ -175,7 +175,13 @@
                             <label class="form-label fw-semibold">Qty <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" id="modalQty" min="1" value="1">
                         </div>
-                        <div class="col-6 modal-gst-field">
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="modalGstToggle">
+                                <label class="form-check-label fw-semibold" for="modalGstToggle">GST Apply Karen</label>
+                            </div>
+                        </div>
+                        <div class="col-6 modal-gst-field" style="display:none;">
                             <label class="form-label fw-semibold">GST %</label>
                             <input type="number" class="form-control" id="modalGst" min="0" max="100" step="0.01" value="18">
                         </div>
@@ -358,6 +364,8 @@
         $('#modalProductId').val('').removeClass('is-invalid');
         $('#modalPrice').val(0);
         $('#modalQty').val(1);
+        $('#modalGstToggle').prop('checked', false);
+        $('.modal-gst-field').hide();
         $('#modalGst').val(18);
         $('#modalDiscount').val(0);
         $('#modalWarranty').val(12);
@@ -365,13 +373,11 @@
         $('#modalSerialsGroup').hide();
         $('#modalSerialsHint').text('');
         populateModalProducts();
-        if ($('#is_gst').is(':checked')) { $('.modal-gst-field').show(); }
-        else { $('.modal-gst-field').hide(); }
     }
 
     function addItemCard(data) {
-        var isGst = $('#is_gst').is(':checked');
-        var gstPct = isGst ? (data.gst_percent || 0) : 0;
+        var isGst = data.gst_percent > 0;
+        var gstPct = data.gst_percent || 0;
         var base = data.qty * data.unit_price;
         var gstAmt = base * (gstPct / 100);
         var lineTotal = base + gstAmt - (data.discount || 0);
@@ -549,18 +555,24 @@
         var qty = parseInt($('#modalQty').val()) || 1;
         if (qty < 1) qty = 1;
 
+        var gstOn = $('#modalGstToggle').is(':checked');
         addItemCard({
             product_id: productId,
             product_name: productName,
             unit_price: price,
             qty: qty,
-            gst_percent: parseFloat($('#modalGst').val()) || 0,
+            gst_percent: gstOn ? (parseFloat($('#modalGst').val()) || 0) : 0,
             discount: parseFloat($('#modalDiscount').val()) || 0,
             warranty_months: parseInt($('#modalWarranty').val()) || 12,
             serial_ids: $.trim($('#modalSerials').val())
         });
 
         bootstrap.Modal.getInstance(document.getElementById('addItemModal')).hide();
+    });
+
+    $('#modalGstToggle').on('change', function() {
+        if ($(this).is(':checked')) { $('.modal-gst-field').show(); }
+        else { $('.modal-gst-field').hide(); }
     });
 
     $(document).on('click', '.remove-item', function() {
