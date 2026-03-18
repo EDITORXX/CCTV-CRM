@@ -72,8 +72,9 @@
                 <tbody>
                     @foreach($invoices as $invoice)
                     @php
-                        $expenseTotal = $invoice->invoiceExpenses->sum('amount');
-                        $profit = $invoice->subtotal - $expenseTotal;
+                        $p        = $profits[$invoice->id] ?? ['profit'=>0,'cogs'=>0,'expenses'=>0];
+                        $profit   = $p['profit'];
+                        $hasCost  = $p['cogs'] > 0 || $p['expenses'] > 0;
                     @endphp
                     <tr>
                         <td class="ps-3 text-muted">{{ $loop->iteration }}</td>
@@ -94,13 +95,14 @@
                         <td class="text-muted small">{{ \Carbon\Carbon::parse($invoice->invoice_date)->format('d M Y') }}</td>
                         <td class="text-end fw-semibold">₹{{ number_format($invoice->total, 2) }}</td>
                         <td class="text-end">
-                            @if($invoice->subtotal > 0)
+                            @if($hasCost)
                                 <span class="{{ $profit >= 0 ? 'profit-positive' : 'profit-negative' }}">
                                     {{ $profit >= 0 ? '' : '-' }}₹{{ number_format(abs($profit), 2) }}
                                 </span>
-                                @if($expenseTotal > 0)
-                                    <div class="small text-muted" style="font-size:.68rem;">exp: ₹{{ number_format($expenseTotal, 2) }}</div>
-                                @endif
+                                <div class="small text-muted" style="font-size:.68rem;">
+                                    cost ₹{{ number_format($p['cogs'], 2) }}
+                                    @if($p['expenses'] > 0) · exp ₹{{ number_format($p['expenses'], 2) }} @endif
+                                </div>
                             @else
                                 <span class="profit-zero">—</span>
                             @endif
@@ -153,8 +155,9 @@
 <div class="d-md-none">
     @forelse($invoices as $invoice)
     @php
-        $expenseTotal = $invoice->invoiceExpenses->sum('amount');
-        $profit = $invoice->subtotal - $expenseTotal;
+        $p       = $profits[$invoice->id] ?? ['profit'=>0,'cogs'=>0,'expenses'=>0];
+        $profit  = $p['profit'];
+        $hasCost = $p['cogs'] > 0 || $p['expenses'] > 0;
     @endphp
     <div class="card border-0 shadow-sm mb-2">
         <div class="card-body p-3">
@@ -172,7 +175,7 @@
                 </div>
                 <div class="text-end ms-2 flex-shrink-0">
                     <div class="fw-bold">₹{{ number_format($invoice->total, 2) }}</div>
-                    @if($invoice->subtotal > 0)
+                    @if($hasCost)
                         <div class="small {{ $profit >= 0 ? 'profit-positive' : 'profit-negative' }}">
                             P: {{ $profit >= 0 ? '' : '-' }}₹{{ number_format(abs($profit), 2) }}
                         </div>

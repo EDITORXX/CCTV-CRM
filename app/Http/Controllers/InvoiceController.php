@@ -18,10 +18,38 @@ class InvoiceController extends Controller
 {
     public function index()
     {
-        $invoices = Invoice::with(['customer', 'site', 'invoiceExpenses'])
+        $invoices = Invoice::with(['customer', 'site', 'items', 'invoiceExpenses'])
             ->orderBy('invoice_date', 'desc')
             ->paginate(20);
-        return view('invoices.index', compact('invoices'));
+
+        // Get avg purchase price for all products in these invoices (single query)
+        $productIds = $invoices->pluck('items')->flatten()->pluck('product_id')->unique()->filter();
+        $avgPurchasePrices = collect();
+        if ($productIds->isNotEmpty()) {
+            $avgPurchasePrices = DB::table('purchase_items')
+                ->whereIn('product_id', $productIds)
+                ->groupBy('product_id')
+                ->selectRaw('product_id, AVG(unit_price) as avg_price')
+                ->pluck('avg_price', 'product_id');
+        }
+
+        // Calculate profit per invoice: subtotal - COGS - internal expenses
+        $profits = [];
+        foreach ($invoices as $invoice) {
+            $cogs = 0;
+            foreach ($invoice->items as $item) {
+                $avgBuy = $avgPurchasePrices->get($item->product_id, 0);
+                $cogs += $item->qty * $avgBuy;
+            }
+            $expenses = $invoice->invoiceExpenses->sum('amount');
+            $profits[$invoice->id] = [
+                'profit'   => round($invoice->subtotal - $cogs - $expenses, 2),
+                'cogs'     => round($cogs, 2),
+                'expenses' => round($expenses, 2),
+            ];
+        }
+
+        return view('invoices.index', compact('invoices', 'profits'));
     }
 
     public function create()

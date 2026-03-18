@@ -442,13 +442,13 @@
                 '<div class="fw-semibold mb-1" style="padding-right:5rem;">' + $('<span>').text(displayName).html() + '</div>' +
                 '<div class="d-flex flex-wrap gap-2 small">' +
                     '<span class="badge bg-light text-dark border">Qty: ' + data.qty + '</span>' +
-                    '<span class="badge bg-light text-dark border">&#x20B9;' + parseFloat(data.unit_price).toFixed(2) + '</span>' +
+                    '<span class="badge bg-light text-dark border">₹' + parseFloat(data.unit_price).toFixed(2) + '</span>' +
                     (isGst ? '<span class="badge bg-warning bg-opacity-25 text-dark border">' + gstPct + '% GST</span>' : '<span class="badge bg-light text-muted border">No GST</span>') +
-                    (data.discount > 0 ? '<span class="badge bg-danger bg-opacity-10 text-danger border">-&#x20B9;' + parseFloat(data.discount).toFixed(2) + '</span>' : '') +
+                    (data.discount > 0 ? '<span class="badge bg-danger bg-opacity-10 text-danger border">-₹' + parseFloat(data.discount).toFixed(2) + '</span>' : '') +
                     '<span class="badge bg-light text-dark border"><i class="bi bi-shield-check"></i> ' + (data.warranty_months || 0) + ' Mo</span>' +
                     serialsDisplay +
                 '</div>' +
-                '<div class="text-end fw-bold text-success mt-1">&#x20B9;' + lineTotal.toFixed(2) + '</div>' +
+                '<div class="text-end fw-bold text-success mt-1">₹' + lineTotal.toFixed(2) + '</div>' +
             '</div>';
         }
 
@@ -473,10 +473,10 @@
             });
             var overallDisc  = parseFloat($('#discount').val()) || 0;
             var grandTotal   = subtotal + gstTotal - overallDisc;
-            $('#summarySubtotal').text('&#x20B9;' + subtotal.toFixed(2));
-            $('#summaryGst').text('&#x20B9;' + gstTotal.toFixed(2));
-            $('#summaryDiscount').text('-&#x20B9;' + overallDisc.toFixed(2));
-            $('#summaryGrandTotal').text('&#x20B9;' + grandTotal.toFixed(2));
+            $('#summarySubtotal').text('₹' + subtotal.toFixed(2));
+            $('#summaryGst').text('₹' + gstTotal.toFixed(2));
+            $('#summaryDiscount').text('-₹' + overallDisc.toFixed(2));
+            $('#summaryGrandTotal').text('₹' + grandTotal.toFixed(2));
         }
 
         function loadCustomerSites(customerId, selectedSiteId) {
@@ -501,7 +501,7 @@
             var html = '<div class="row g-2 mb-2 expense-row align-items-end" data-expense-index="' + idx + '">' +
                 '<div class="col-md-7"><label class="form-label small">Description</label>' +
                 '<input type="text" class="form-control form-control-sm" name="expenses[' + idx + '][description]" placeholder="e.g. Labour, material" value="' + escAttr(desc || '') + '">' +
-                '</div><div class="col-md-3"><label class="form-label small">Amount (&#x20B9;)</label>' +
+                '</div><div class="col-md-3"><label class="form-label small">Amount (₹)</label>' +
                 '<input type="number" class="form-control form-control-sm" name="expenses[' + idx + '][amount]" min="0" step="0.01" value="' + parseFloat(amt || 0).toFixed(2) + '">' +
                 '</div><div class="col-md-2"><label class="form-label small d-none d-md-block">&nbsp;</label>' +
                 '<button type="button" class="btn btn-sm btn-outline-danger w-100 remove-expense-row"><i class="bi bi-dash-lg"></i></button></div></div>';
