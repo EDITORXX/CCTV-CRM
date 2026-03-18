@@ -299,6 +299,7 @@
     var expenseRowIndex = 0;
     var products = [];
     var C = window.INVOICE_CREATE_CONFIG;
+    var editingRow = null; // null = add mode, number = edit mode (row index)
 
     function initSelect2() {
         if ($.fn.select2) {
@@ -357,11 +358,15 @@
     }
 
     function resetModal() {
+        editingRow = null;
+        $('#addItemModalLabel').html('<i class="bi bi-plus-circle me-1"></i> Add Item');
+        $('#modalAddBtn').html('<i class="bi bi-plus-lg me-1"></i> Add to Invoice');
         // Destroy Select2 before resetting
         if ($.fn.select2 && $('#modalProductId').hasClass('select2-hidden-accessible')) {
             $('#modalProductId').select2('destroy');
         }
         $('#modalProductId').val('').removeClass('is-invalid');
+        $('#modalProductId').prop('disabled', false);
         $('#modalPrice').val(0);
         $('#modalQty').val(1);
         $('#modalGstToggle').prop('checked', false);
@@ -375,8 +380,8 @@
         populateModalProducts();
     }
 
-    function addItemCard(data) {
-        var isGst = data.gst_percent > 0;
+    function buildItemCardHtml(idx, data) {
+        var isGst = (data.gst_percent || 0) > 0;
         var gstPct = data.gst_percent || 0;
         var base = data.qty * data.unit_price;
         var gstAmt = base * (gstPct / 100);
@@ -384,28 +389,33 @@
         var displayName = data.product_name || '--';
         var serialsDisplay = data.serial_ids ? '<span class="badge bg-info bg-opacity-10 text-info border"><i class="bi bi-upc-scan"></i> Serials</span>' : '';
 
-        var html = '<div class="item-card border rounded-3 p-3 mb-2 position-relative" data-row="' + rowIndex + '">' +
-            '<input type="hidden" name="items[' + rowIndex + '][product_id]" value="' + (data.product_id || '') + '">' +
-            '<input type="hidden" name="items[' + rowIndex + '][qty]" value="' + data.qty + '">' +
-            '<input type="hidden" name="items[' + rowIndex + '][unit_price]" value="' + data.unit_price + '">' +
-            '<input type="hidden" name="items[' + rowIndex + '][gst_percent]" value="' + gstPct + '">' +
-            '<input type="hidden" name="items[' + rowIndex + '][discount]" value="' + (data.discount || 0) + '">' +
-            '<input type="hidden" name="items[' + rowIndex + '][warranty_months]" value="' + (data.warranty_months || 0) + '">' +
-            '<input type="hidden" name="items[' + rowIndex + '][serial_ids]" value="' + (data.serial_ids || '') + '">' +
-            '<button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 remove-item" style="z-index:1;"><i class="bi bi-x-lg"></i></button>' +
-            '<div class="fw-semibold mb-1" style="padding-right:2rem;">' + $('<span>').text(displayName).html() + '</div>' +
+        return '<div class="item-card border rounded-3 p-3 mb-2 position-relative" data-row="' + idx + '" data-name="' + $('<span>').text(displayName).html() + '">' +
+            '<input type="hidden" name="items[' + idx + '][product_id]" value="' + (data.product_id || '') + '">' +
+            '<input type="hidden" name="items[' + idx + '][qty]" value="' + data.qty + '">' +
+            '<input type="hidden" name="items[' + idx + '][unit_price]" value="' + data.unit_price + '">' +
+            '<input type="hidden" name="items[' + idx + '][gst_percent]" value="' + gstPct + '">' +
+            '<input type="hidden" name="items[' + idx + '][discount]" value="' + (data.discount || 0) + '">' +
+            '<input type="hidden" name="items[' + idx + '][warranty_months]" value="' + (data.warranty_months || 0) + '">' +
+            '<input type="hidden" name="items[' + idx + '][serial_ids]" value="' + (data.serial_ids || '') + '">' +
+            '<div class="position-absolute top-0 end-0 m-2 d-flex gap-1" style="z-index:1;">' +
+                '<button type="button" class="btn btn-sm btn-outline-primary edit-item" title="Edit"><i class="bi bi-pencil"></i></button>' +
+                '<button type="button" class="btn btn-sm btn-outline-danger remove-item" title="Remove"><i class="bi bi-x-lg"></i></button>' +
+            '</div>' +
+            '<div class="fw-semibold mb-1" style="padding-right:5rem;">' + $('<span>').text(displayName).html() + '</div>' +
             '<div class="d-flex flex-wrap gap-2 small">' +
                 '<span class="badge bg-light text-dark border">Qty: ' + data.qty + '</span>' +
-                '<span class="badge bg-light text-dark border">₹' + parseFloat(data.unit_price).toFixed(0) + '</span>' +
-                (isGst ? '<span class="badge bg-light text-dark border">' + gstPct + '% GST</span>' : '') +
-                (data.discount > 0 ? '<span class="badge bg-danger bg-opacity-10 text-danger border">-₹' + parseFloat(data.discount).toFixed(0) + '</span>' : '') +
+                '<span class="badge bg-light text-dark border">₹' + parseFloat(data.unit_price).toFixed(2) + '</span>' +
+                (isGst ? '<span class="badge bg-warning bg-opacity-25 text-dark border">' + gstPct + '% GST</span>' : '<span class="badge bg-light text-muted border">No GST</span>') +
+                (data.discount > 0 ? '<span class="badge bg-danger bg-opacity-10 text-danger border">-₹' + parseFloat(data.discount).toFixed(2) + '</span>' : '') +
                 '<span class="badge bg-light text-dark border"><i class="bi bi-shield-check"></i> ' + (data.warranty_months || 0) + ' Mo</span>' +
                 serialsDisplay +
             '</div>' +
             '<div class="text-end fw-bold text-success mt-1">₹' + lineTotal.toFixed(2) + '</div>' +
         '</div>';
+    }
 
-        $('#itemsList').append(html);
+    function addItemCard(data) {
+        $('#itemsList').append(buildItemCardHtml(rowIndex, data));
         $('#noItemsMsg').hide();
         rowIndex++;
         calculateTotals();
@@ -554,9 +564,8 @@
         var price = parseFloat($('#modalPrice').val()) || 0;
         var qty = parseInt($('#modalQty').val()) || 1;
         if (qty < 1) qty = 1;
-
         var gstOn = $('#modalGstToggle').is(':checked');
-        addItemCard({
+        var data = {
             product_id: productId,
             product_name: productName,
             unit_price: price,
@@ -565,7 +574,17 @@
             discount: parseFloat($('#modalDiscount').val()) || 0,
             warranty_months: parseInt($('#modalWarranty').val()) || 12,
             serial_ids: $.trim($('#modalSerials').val())
-        });
+        };
+
+        if (editingRow !== null) {
+            // Edit mode: update existing card
+            var $card = $('#itemsList .item-card[data-row="' + editingRow + '"]');
+            $card.replaceWith(buildItemCardHtml(editingRow, data));
+            calculateTotals();
+        } else {
+            // Add mode: append new card
+            addItemCard(data);
+        }
 
         bootstrap.Modal.getInstance(document.getElementById('addItemModal')).hide();
     });
@@ -573,6 +592,56 @@
     $('#modalGstToggle').on('change', function() {
         if ($(this).is(':checked')) { $('.modal-gst-field').show(); }
         else { $('.modal-gst-field').hide(); }
+    });
+
+    $(document).on('click', '.edit-item', function() {
+        var $card = $(this).closest('.item-card');
+        var idx = $card.data('row');
+        editingRow = idx;
+
+        // Read values from hidden inputs
+        var productId   = $card.find('[name*="[product_id]"]').val();
+        var qty         = $card.find('[name*="[qty]"]').val();
+        var price       = $card.find('[name*="[unit_price]"]').val();
+        var gstPct      = parseFloat($card.find('[name*="[gst_percent]"]').val()) || 0;
+        var discount    = $card.find('[name*="[discount]"]').val();
+        var warranty    = $card.find('[name*="[warranty_months]"]').val();
+        var serials     = $card.find('[name*="[serial_ids]"]').val();
+        var productName = $card.data('name') || '';
+
+        // Open modal in edit mode — reset first then fill
+        resetModal();
+        editingRow = idx; // resetModal clears it, restore
+        $('#addItemModalLabel').html('<i class="bi bi-pencil me-1"></i> Edit Item');
+        $('#modalAddBtn').html('<i class="bi bi-check-lg me-1"></i> Update Item');
+
+        // Populate modal fields (product select disabled in edit mode — product change allowed if needed)
+        $('#modalPrice').val(price);
+        $('#modalQty').val(qty);
+        $('#modalDiscount').val(discount);
+        $('#modalWarranty').val(warranty);
+        $('#modalSerials').val(serials);
+
+        if (gstPct > 0) {
+            $('#modalGstToggle').prop('checked', true);
+            $('.modal-gst-field').show();
+            $('#modalGst').val(gstPct);
+        }
+
+        // Wait for Select2 to init (populateModalProducts is async), then set value
+        var checkReady = setInterval(function() {
+            if (!$('#modalProductId').hasClass('select2-hidden-accessible')) return;
+            clearInterval(checkReady);
+            if (productId) {
+                // If product option exists, select it; else add it temporarily
+                if ($('#modalProductId option[value="' + productId + '"]').length === 0) {
+                    $('#modalProductId').append('<option value="' + productId + '">' + productName + '</option>');
+                }
+                $('#modalProductId').val(productId).trigger('change.select2');
+            }
+        }, 100);
+
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('addItemModal')).show();
     });
 
     $(document).on('click', '.remove-item', function() {
