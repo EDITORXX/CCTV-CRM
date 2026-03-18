@@ -121,8 +121,14 @@
                             <input type="number" class="form-control" id="modalQty" min="1" value="1">
                         </div>
                         <div class="col-6">
-                            <label class="form-label fw-semibold">Unit Price (₹) <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">Purchase Price (₹) <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" id="modalPrice" min="0" step="0.01" value="0">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Sale Price (₹)</label>
+                            <input type="number" class="form-control" id="modalSalePrice" min="0" step="0.01" value="0"
+                                   placeholder="Product ka selling price">
+                            <div class="form-text text-success small">Save hone par product ka sale price update ho jayega</div>
                         </div>
                         <div class="col-6" id="modalGstWrapper">
                             <label class="form-label fw-semibold">GST %</label>
@@ -235,6 +241,7 @@
             'name' => $p->name,
             'category' => $p->category,
             'purchase_price' => $p->purchaseItems()->avg('unit_price'),
+            'sale_price' => $p->sale_price ? (float) $p->sale_price : null,
         ];
     })->values();
     $productNameMap = $products->pluck('name', 'id');
@@ -244,6 +251,7 @@
             'product_name' => $productNameMap[(int) ($item['product_id'] ?? 0)] ?? 'Product',
             'qty' => (int) ($item['qty'] ?? 1),
             'unit_price' => (float) ($item['unit_price'] ?? 0),
+            'sale_price' => (float) ($item['sale_price'] ?? 0),
             'gst_percent' => (float) ($item['gst_percent'] ?? 0),
             'serials' => (string) ($item['serials'] ?? ''),
         ];
@@ -272,7 +280,7 @@ $(document).ready(function() {
         var opts = '<option value="">-- Select Product --</option>';
         products.forEach(function(p) {
             if (selectedCategory && p.category !== selectedCategory) return;
-            opts += '<option value="' + p.id + '" data-price="' + (p.purchase_price || 0) + '">' + p.name + '</option>';
+            opts += '<option value="' + p.id + '" data-price="' + (p.purchase_price || 0) + '" data-sale-price="' + (p.sale_price || 0) + '">' + p.name + '</option>';
         });
         $('#modalProductId').html(opts).trigger('change.select2');
     }
@@ -282,6 +290,7 @@ $(document).ready(function() {
         $('#modalProductId').val(null).trigger('change.select2');
         $('#modalQty').val(1);
         $('#modalPrice').val(0);
+        $('#modalSalePrice').val(0);
         $('#modalGstType').val('with_gst');
         $('#modalGst').val(18).prop('disabled', false);
         $('#modalGstWrapper').show();
@@ -297,18 +306,21 @@ $(document).ready(function() {
         var lineGst = lineBase * ((data.gst_percent || 0) / 100);
         var lineTotal = lineBase + lineGst;
         var serialText = data.serials ? data.serials : '—';
+        var salePrice = parseFloat(data.sale_price || 0);
 
         var html = '<div class="item-card border rounded-3 p-3 mb-2 position-relative" data-row="' + rowIndex + '">' +
             '<input type="hidden" name="items[' + rowIndex + '][product_id]" value="' + data.product_id + '">' +
             '<input type="hidden" name="items[' + rowIndex + '][qty]" value="' + data.qty + '">' +
             '<input type="hidden" name="items[' + rowIndex + '][unit_price]" value="' + data.unit_price + '">' +
+            '<input type="hidden" name="items[' + rowIndex + '][sale_price]" value="' + salePrice + '">' +
             '<input type="hidden" name="items[' + rowIndex + '][gst_percent]" value="' + (data.gst_percent || 0) + '">' +
             '<input type="hidden" name="items[' + rowIndex + '][serials]" value="' + $('<span>').text(data.serials || '').html() + '">' +
             '<button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 remove-item" style="z-index:1;"><i class="bi bi-x-lg"></i></button>' +
             '<div class="fw-semibold mb-1" style="padding-right:2rem;">' + $('<span>').text(data.product_name).html() + '</div>' +
             '<div class="d-flex flex-wrap gap-2 small mb-2">' +
                 '<span class="badge bg-light text-dark border">Qty: ' + data.qty + '</span>' +
-                '<span class="badge bg-light text-dark border">₹' + parseFloat(data.unit_price).toFixed(2) + '</span>' +
+                '<span class="badge bg-light text-dark border">Buy: ₹' + parseFloat(data.unit_price).toFixed(2) + '</span>' +
+                (salePrice > 0 ? '<span class="badge bg-info-subtle text-info border">Sale: ₹' + salePrice.toFixed(2) + '</span>' : '') +
                 (data.gst_percent > 0
                     ? '<span class="badge bg-success-subtle text-success border">With GST (' + data.gst_percent + '%)</span>'
                     : '<span class="badge bg-warning-subtle text-warning border">Without GST</span>') +
@@ -353,6 +365,7 @@ $(document).ready(function() {
     $('#modalProductId').on('change', function() {
         var $opt = $(this).find(':selected');
         $('#modalPrice').val($opt.data('price') || 0);
+        $('#modalSalePrice').val($opt.data('sale-price') || 0);
     });
 
     $('#modalGstType').on('change', function() {
@@ -397,6 +410,7 @@ $(document).ready(function() {
         var productName = $('#modalProductId option:selected').text();
         var qty = parseInt($('#modalQty').val(), 10) || 1;
         var unitPrice = parseFloat($('#modalPrice').val()) || 0;
+        var salePrice = parseFloat($('#modalSalePrice').val()) || 0;
         var gstPercent = ($('#modalGstType').val() === 'without_gst') ? 0 : (parseFloat($('#modalGst').val()) || 0);
         var serials = $.trim($('#modalSerials').val());
         if (qty < 1) qty = 1;
@@ -406,6 +420,7 @@ $(document).ready(function() {
             product_name: productName,
             qty: qty,
             unit_price: unitPrice,
+            sale_price: salePrice,
             gst_percent: gstPercent,
             serials: serials
         });
@@ -498,6 +513,7 @@ $(document).ready(function() {
             product_name: oldItem.product_name,
             qty: oldItem.qty,
             unit_price: oldItem.unit_price,
+            sale_price: oldItem.sale_price,
             gst_percent: oldItem.gst_percent,
             serials: oldItem.serials
         });

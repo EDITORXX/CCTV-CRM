@@ -36,6 +36,7 @@ class PurchaseController extends Controller
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.qty' => 'required|integer|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.sale_price' => 'nullable|numeric|min:0',
             'items.*.gst_percent' => 'nullable|numeric|min:0|max:100',
             'items.*.serials' => 'nullable|string',
         ]);
@@ -70,6 +71,10 @@ class PurchaseController extends Controller
                     'gst_percent' => $gstPercent,
                     'total' => $lineGrandTotal,
                 ]);
+
+                if (!empty($item['sale_price']) && (float) $item['sale_price'] > 0) {
+                    Product::where('id', $item['product_id'])->update(['sale_price' => $item['sale_price']]);
+                }
 
                 if (!empty($item['serials'])) {
                     $serials = array_filter(array_map('trim', explode(',', $item['serials'])));
@@ -119,6 +124,7 @@ class PurchaseController extends Controller
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.qty' => 'required|integer|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.sale_price' => 'nullable|numeric|min:0',
             'items.*.gst_percent' => 'nullable|numeric|min:0|max:100',
             'items.*.serials' => 'nullable|string',
         ]);
@@ -151,6 +157,10 @@ class PurchaseController extends Controller
                     'gst_percent' => $gstPercent,
                     'total' => $lineGrandTotal,
                 ]);
+
+                if (!empty($item['sale_price']) && (float) $item['sale_price'] > 0) {
+                    Product::where('id', $item['product_id'])->update(['sale_price' => $item['sale_price']]);
+                }
 
                 if (!empty($item['serials'])) {
                     $serials = array_filter(array_map('trim', explode(',', $item['serials'])));

@@ -90,9 +90,22 @@
                 </div>
 
                 <div class="col-md-4">
+                    <label for="purchase_price" class="form-label">Purchase Price (Cost)</label>
+                    <div class="input-group">
+                        <span class="input-group-text">₹</span>
+                        <input type="number" step="0.01" class="form-control @error('purchase_price') is-invalid @enderror"
+                               id="purchase_price" name="purchase_price" value="{{ old('purchase_price', $product->purchase_price) }}" min="0"
+                               placeholder="Standard purchase cost">
+                    </div>
+                    @error('purchase_price')
+                        <span class="text-danger small">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="col-md-4">
                     <label for="sale_price" class="form-label">Sale Price</label>
                     <div class="input-group">
-                        <span class="input-group-text">&#8377;</span>
+                        <span class="input-group-text">₹</span>
                         <input type="number" step="0.01" class="form-control @error('sale_price') is-invalid @enderror"
                                id="sale_price" name="sale_price" value="{{ old('sale_price', $product->sale_price) }}" min="0">
                     </div>

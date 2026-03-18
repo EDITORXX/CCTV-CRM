@@ -10,12 +10,13 @@ class Product extends Model
 
     protected $fillable = [
         'company_id', 'name', 'category', 'brand', 'model_number',
-        'hsn_sac', 'unit', 'warranty_months', 'track_serial', 'sale_price', 'created_by',
+        'hsn_sac', 'unit', 'warranty_months', 'track_serial', 'sale_price', 'purchase_price', 'created_by',
     ];
 
     protected $casts = [
-        'track_serial' => 'boolean',
-        'sale_price' => 'decimal:2',
+        'track_serial'   => 'boolean',
+        'sale_price'     => 'decimal:2',
+        'purchase_price' => 'decimal:2',
     ];
 
     public function purchaseItems()

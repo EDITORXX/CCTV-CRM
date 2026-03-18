@@ -22,7 +22,8 @@ class StoreProductRequest extends FormRequest
             'unit' => 'required|string|in:pcs,meter',
             'warranty_months' => 'nullable|integer|min:0',
             'track_serial' => 'boolean',
-            'sale_price' => 'nullable|numeric|min:0',
+            'sale_price'     => 'nullable|numeric|min:0',
+            'purchase_price' => 'nullable|numeric|min:0',
         ];
     }
 }
