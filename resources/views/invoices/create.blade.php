@@ -282,7 +282,7 @@
         'oldCustomerId' => old('customer_id', ''),
     ];
 @endphp
-<script type="application/json" id="invoice-create-config">{{ json_encode($invoiceCreateConfig) }}</script>
+<script type="application/json" id="invoice-create-config">{!! json_encode($invoiceCreateConfig, JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
 <script>
 (function() {
     var configEl = document.getElementById('invoice-create-config');
