@@ -49,9 +49,7 @@
                     <tr>
                         <th width="40">#</th>
                         <th>Name</th>
-                        <th>Category</th>
-                        <th>Brand</th>
-                        <th>Model</th>
+                        <th class="text-end">Purchase Price</th>
                         <th class="text-end">Sale Price</th>
                         <th class="text-center">Stock</th>
                         <th width="130">Actions</th>
@@ -65,6 +63,7 @@
                         } else {
                             $stockQty = $product->purchaseItems()->sum('qty') - $product->invoiceItems()->sum('qty');
                         }
+                        $avgPurchasePrice = $product->purchaseItems()->avg('unit_price') ?? 0;
                     @endphp
                     <tr>
                         <td>{{ $loop->iteration + ($products->currentPage() - 1) * $products->perPage() }}</td>
@@ -72,10 +71,9 @@
                             <a href="{{ route('products.show', $product) }}" class="fw-semibold text-decoration-none">
                                 {{ $product->name }}
                             </a>
+                            <div class="small text-muted">{{ str_replace('_', '/', $product->category) }}{{ $product->brand ? ' · '.$product->brand : '' }}</div>
                         </td>
-                        <td><span class="badge bg-secondary">{{ str_replace('_', '/', $product->category) }}</span></td>
-                        <td>{{ $product->brand ?? '—' }}</td>
-                        <td>{{ $product->model_number ?? '—' }}</td>
+                        <td class="text-end fw-semibold text-secondary">{{ $avgPurchasePrice > 0 ? '₹'.number_format($avgPurchasePrice, 2) : '—' }}</td>
                         <td class="text-end fw-semibold">₹{{ number_format($product->sale_price, 2) }}</td>
                         <td class="text-center">
                             <span class="badge {{ $stockQty > 0 ? 'bg-success' : 'bg-danger' }}">{{ $stockQty }}</span>
@@ -191,7 +189,7 @@
                 info: false,
                 order: [[1, 'asc']],
                 columnDefs: [
-                    { orderable: false, targets: [7] }
+                    { orderable: false, targets: [5] }
                 ],
                 language: {
                     emptyTable: '<div class="text-center py-4 text-muted"><i class="bi bi-box-seam fs-1 d-block mb-2"></i>No products found. <a href="{{ route('products.create') }}">Add your first product</a>.</div>'
