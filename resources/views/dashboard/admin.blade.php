@@ -32,8 +32,8 @@
     }
 
     @media (min-width: 768px) {
-        .dash-blur-wrapper .dash-blur-overlay,
-        .dash-blur-content.blurred { display: none !important; filter: none !important; pointer-events: auto; user-select: auto; }
+        .dash-blur-wrapper .dash-blur-overlay { display: none !important; }
+        .dash-blur-content.blurred { filter: none !important; pointer-events: auto !important; user-select: auto !important; }
         .dash-blur-content { filter: none !important; }
     }
 </style>

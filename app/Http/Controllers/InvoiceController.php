@@ -186,7 +186,7 @@ class InvoiceController extends Controller
 
     public function edit(Invoice $invoice)
     {
-        $invoice->load(['items.product']);
+        $invoice->load(['items.product', 'items.serialNumbers', 'invoiceExpenses']);
         $customers = Customer::orderBy('name')->get();
         $products = Product::orderBy('name')->get();
         return view('invoices.edit', compact('invoice', 'customers', 'products'));
@@ -195,16 +195,156 @@ class InvoiceController extends Controller
     public function update(Request $request, Invoice $invoice)
     {
         $request->validate([
-            'status' => 'required|in:draft,sent,partial,paid,cancelled',
+            'customer_id'        => 'required|exists:customers,id',
+            'site_id'            => 'nullable|exists:sites,id',
+            'invoice_number'     => 'required|string',
+            'invoice_date'       => 'required|date',
             'remaining_due_date' => 'nullable|date',
-            'notes' => 'nullable|string',
+            'status'             => 'required|in:draft,sent,partial,paid,cancelled',
+            'is_gst'             => 'boolean',
+            'discount'           => 'nullable|numeric|min:0',
+            'notes'              => 'nullable|string',
+            'items'              => 'required|array|min:1',
+            'items.*.product_id'     => 'required|exists:products,id',
+            'items.*.qty'            => 'required|integer|min:1',
+            'items.*.unit_price'     => 'required|numeric|min:0',
+            'items.*.gst_percent'    => 'nullable|numeric|min:0|max:100',
+            'items.*.discount'       => 'nullable|numeric|min:0',
+            'items.*.warranty_months'=> 'nullable|integer|min:0',
+            'items.*.serial_ids'     => 'nullable|string',
+            'expenses'               => 'nullable|array',
+            'expenses.*.description' => 'nullable|string|max:255',
+            'expenses.*.amount'      => 'nullable|numeric|min:0',
         ]);
-        $updateData = $request->only(['status', 'remaining_due_date', 'notes']);
-        if ($request->input('remaining_due_date') !== optional($invoice->remaining_due_date)->format('Y-m-d')) {
-            $updateData['due_reminder_sent_at'] = null;
-        }
-        $invoice->update($updateData);
-        return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice updated.');
+
+        DB::transaction(function () use ($request, $invoice) {
+            $isGst        = $request->boolean('is_gst');
+            $totalDiscount= $request->discount ?? 0;
+            $subtotal     = 0;
+            $gstAmount    = 0;
+
+            // Release old serial numbers
+            foreach ($invoice->items as $item) {
+                SerialNumber::where('invoice_item_id', $item->id)->update([
+                    'status'           => 'in_stock',
+                    'invoice_item_id'  => null,
+                    'installed_site_id'=> null,
+                ]);
+            }
+
+            // Delete old warranties and items
+            Warranty::whereIn('invoice_item_id', $invoice->items->pluck('id'))->delete();
+            $invoice->items()->delete();
+            $invoice->invoiceExpenses()->delete();
+
+            // Update invoice header
+            $oldDueDate = optional($invoice->remaining_due_date)->format('Y-m-d');
+            $updateData = [
+                'customer_id'        => $request->customer_id,
+                'site_id'            => $request->site_id,
+                'invoice_number'     => $request->invoice_number,
+                'invoice_date'       => $request->invoice_date,
+                'remaining_due_date' => $request->remaining_due_date,
+                'is_gst'             => $isGst,
+                'discount'           => $totalDiscount,
+                'notes'              => $request->notes,
+                'status'             => $request->status,
+            ];
+            if ($request->input('remaining_due_date') !== $oldDueDate) {
+                $updateData['due_reminder_sent_at'] = null;
+            }
+            $invoice->update($updateData);
+
+            // Create new items
+            foreach ($request->items as $item) {
+                $gstPercent  = $isGst ? ($item['gst_percent'] ?? 0) : 0;
+                $itemDiscount= $item['discount'] ?? 0;
+                $lineSubtotal= ($item['qty'] * $item['unit_price']) - $itemDiscount;
+                $lineGst     = $lineSubtotal * ($gstPercent / 100);
+                $lineTotal   = $lineSubtotal + $lineGst;
+
+                $subtotal  += $lineSubtotal;
+                $gstAmount += $lineGst;
+
+                $product        = Product::find($item['product_id']);
+                $warrantyMonths = $item['warranty_months'] ?? $product->warranty_months;
+
+                $invoiceItem = InvoiceItem::create([
+                    'invoice_id'     => $invoice->id,
+                    'product_id'     => $item['product_id'],
+                    'qty'            => $item['qty'],
+                    'unit_price'     => $item['unit_price'],
+                    'gst_percent'    => $gstPercent,
+                    'discount'       => $itemDiscount,
+                    'total'          => $lineTotal,
+                    'warranty_months'=> $warrantyMonths,
+                ]);
+
+                if (!empty($item['serial_ids'])) {
+                    $serialIds = array_filter(explode(',', $item['serial_ids']));
+                    SerialNumber::whereIn('id', $serialIds)->update([
+                        'status'           => 'sold',
+                        'invoice_item_id'  => $invoiceItem->id,
+                        'installed_site_id'=> $request->site_id,
+                    ]);
+                }
+
+                if ($warrantyMonths && $warrantyMonths > 0) {
+                    $startDate = $request->invoice_date;
+                    $endDate   = date('Y-m-d', strtotime($startDate . " + {$warrantyMonths} months"));
+
+                    if ($product->track_serial && !empty($item['serial_ids'])) {
+                        $serialIds = array_filter(explode(',', $item['serial_ids']));
+                        foreach ($serialIds as $serialId) {
+                            Warranty::create([
+                                'company_id'      => $invoice->company_id,
+                                'invoice_item_id' => $invoiceItem->id,
+                                'serial_number_id'=> $serialId,
+                                'product_id'      => $item['product_id'],
+                                'customer_id'     => $request->customer_id,
+                                'start_date'      => $startDate,
+                                'end_date'        => $endDate,
+                                'status'          => 'active',
+                            ]);
+                        }
+                    } else {
+                        Warranty::create([
+                            'company_id'      => $invoice->company_id,
+                            'invoice_item_id' => $invoiceItem->id,
+                            'product_id'      => $item['product_id'],
+                            'customer_id'     => $request->customer_id,
+                            'start_date'      => $startDate,
+                            'end_date'        => $endDate,
+                            'status'          => 'active',
+                        ]);
+                    }
+                }
+            }
+
+            $grandTotal = ($subtotal + $gstAmount) - $totalDiscount;
+            $invoice->update([
+                'subtotal'   => $subtotal,
+                'gst_amount' => $gstAmount,
+                'total'      => $grandTotal,
+            ]);
+
+            // Create new expenses
+            if ($request->filled('expenses')) {
+                foreach ($request->expenses as $exp) {
+                    $desc = trim($exp['description'] ?? '');
+                    $amt  = isset($exp['amount']) ? (float) $exp['amount'] : 0;
+                    if ($desc !== '' || $amt > 0) {
+                        InvoiceExpense::create([
+                            'invoice_id'  => $invoice->id,
+                            'description' => $desc ?: 'Expense',
+                            'amount'      => $amt,
+                        ]);
+                    }
+                }
+            }
+        });
+
+        return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice updated successfully.');
     }
 
     public function destroy(Invoice $invoice)
