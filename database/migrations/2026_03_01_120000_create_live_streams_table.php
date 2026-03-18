@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('company_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('token', 64)->unique();
-            $table->string('password');
+            $table->string('password')->nullable();
             $table->string('title')->nullable();
             $table->enum('status', ['active', 'ended'])->default('active');
             $table->timestamp('started_at')->useCurrent();
