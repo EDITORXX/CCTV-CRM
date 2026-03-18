@@ -25,27 +25,37 @@ class InvoiceController extends Controller
         // Get avg purchase price for all products in these invoices (single query)
         $productIds = $invoices->pluck('items')->flatten()->pluck('product_id')->unique()->filter();
         $avgPurchasePrices = collect();
+        $productTypes = collect();
         if ($productIds->isNotEmpty()) {
             $avgPurchasePrices = DB::table('purchase_items')
                 ->whereIn('product_id', $productIds)
                 ->groupBy('product_id')
                 ->selectRaw('product_id, AVG(unit_price) as avg_price')
                 ->pluck('avg_price', 'product_id');
+            $productTypes = Product::whereIn('id', $productIds)->pluck('type', 'id');
         }
 
-        // Calculate profit per invoice: subtotal - COGS - internal expenses
+        // Calculate profit per invoice: product_subtotal - COGS - service_charges - internal expenses
         $profits = [];
         foreach ($invoices as $invoice) {
             $cogs = 0;
+            $serviceTotal = 0;
             foreach ($invoice->items as $item) {
-                $avgBuy = $avgPurchasePrices->get($item->product_id, 0);
-                $cogs += $item->qty * $avgBuy;
+                $itemType = $productTypes->get($item->product_id, 'product');
+                $lineSubtotal = $item->qty * $item->unit_price - ($item->discount ?? 0);
+                if ($itemType === 'service') {
+                    $serviceTotal += $lineSubtotal;
+                } else {
+                    $avgBuy = $avgPurchasePrices->get($item->product_id, 0);
+                    $cogs += $item->qty * $avgBuy;
+                }
             }
             $expenses = $invoice->invoiceExpenses->sum('amount');
             $profits[$invoice->id] = [
-                'profit'   => round($invoice->subtotal - $cogs - $expenses, 2),
-                'cogs'     => round($cogs, 2),
-                'expenses' => round($expenses, 2),
+                'profit'       => round($invoice->subtotal - $cogs - $serviceTotal - $expenses, 2),
+                'cogs'         => round($cogs, 2),
+                'service'      => round($serviceTotal, 2),
+                'expenses'     => round($expenses, 2),
             ];
         }
 

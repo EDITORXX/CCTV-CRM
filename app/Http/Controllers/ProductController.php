@@ -14,7 +14,11 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::where('company_id', session('current_company_id'));
+        $tab = $request->input('tab', 'products'); // 'products' or 'services'
+        $type = ($tab === 'services') ? 'service' : 'product';
+
+        $query = Product::where('company_id', session('current_company_id'))
+            ->where('type', $type);
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -30,7 +34,7 @@ class ProductController extends Controller
 
         $products = $query->latest()->paginate(20)->withQueryString();
 
-        return view('products.index', compact('products'));
+        return view('products.index', compact('products', 'tab'));
     }
 
     public function create()
@@ -78,7 +82,8 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'category' => 'required|string|in:Camera,DVR_NVR,HDD,Cable,SMPS,Accessories,IP,Analog,Other',
+            'category' => 'required|string|in:Camera,DVR_NVR,HDD,Cable,SMPS,Accessories,IP,Analog,Other,Installation,Repair,Cabling,AMC,Other_Service',
+            'type' => 'nullable|in:product,service',
             'brand' => 'nullable|string|max:255',
             'sale_price' => 'nullable|numeric|min:0',
             'warranty_months' => 'nullable|integer|min:0',
@@ -87,6 +92,7 @@ class ProductController extends Controller
         $product = Product::create([
             'company_id' => session('current_company_id'),
             'created_by' => auth()->id(),
+            'type' => $validated['type'] ?? 'product',
             'name' => $validated['name'],
             'category' => $validated['category'],
             'brand' => $validated['brand'] ?? null,
@@ -102,6 +108,8 @@ class ProductController extends Controller
                 'id' => $product->id,
                 'name' => $product->name,
                 'category' => $product->category,
+                'type' => $product->type,
+                'sale_price' => $product->sale_price,
                 'purchase_price' => 0,
             ],
         ]);
@@ -138,11 +146,13 @@ class ProductController extends Controller
     public function getList(Request $request)
     {
         $products = Product::where('company_id', session('current_company_id'))
-            ->orderBy('name')->get(['id', 'name', 'sale_price', 'warranty_months', 'track_serial']);
+            ->orderBy('name')->get(['id', 'name', 'type', 'category', 'sale_price', 'warranty_months', 'track_serial']);
         return response()->json($products->map(function ($p) {
             return [
                 'id' => $p->id,
                 'name' => $p->name,
+                'type' => $p->type ?? 'product',
+                'category' => $p->category,
                 'sale_price' => $p->sale_price,
                 'warranty_months' => $p->warranty_months,
                 'track_serial' => (bool) $p->track_serial,

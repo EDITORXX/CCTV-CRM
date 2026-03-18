@@ -335,15 +335,34 @@
         }).done(function(data) {
             products = Array.isArray(data) ? data : (data && data.data ? data.data : []);
             $select.empty();
-            $select.append($('<option value="">-- Product search karein --</option>'));
+            $select.append($('<option value="">-- Product / Service search karein --</option>'));
             if (products.length > 0) {
-                products.forEach(function(p) {
-                    var opt = $('<option></option>').val(p.id).text(p.name || ('Product #' + p.id));
-                    opt.attr('data-price', (p.sale_price || 0));
-                    opt.attr('data-warranty', (p.warranty_months || 0));
-                    opt.attr('data-serial', (p.track_serial ? '1' : '0'));
-                    $select.append(opt);
-                });
+                var productsList = products.filter(function(p) { return (p.type || 'product') === 'product'; });
+                var servicesList = products.filter(function(p) { return p.type === 'service'; });
+                if (productsList.length > 0) {
+                    var $pg = $('<optgroup label="--- Products ---"></optgroup>');
+                    productsList.forEach(function(p) {
+                        var opt = $('<option></option>').val(p.id).text(p.name || ('Product #' + p.id));
+                        opt.attr('data-price', (p.sale_price || 0));
+                        opt.attr('data-warranty', (p.warranty_months || 0));
+                        opt.attr('data-serial', (p.track_serial ? '1' : '0'));
+                        opt.attr('data-type', 'product');
+                        $pg.append(opt);
+                    });
+                    $select.append($pg);
+                }
+                if (servicesList.length > 0) {
+                    var $sg = $('<optgroup label="--- Services ---"></optgroup>');
+                    servicesList.forEach(function(p) {
+                        var opt = $('<option></option>').val(p.id).text(p.name || ('Service #' + p.id));
+                        opt.attr('data-price', (p.sale_price || 0));
+                        opt.attr('data-warranty', 0);
+                        opt.attr('data-serial', '0');
+                        opt.attr('data-type', 'service');
+                        $sg.append(opt);
+                    });
+                    $select.append($sg);
+                }
             } else {
                 $select.append($('<option value="" disabled>No products found. Pehle products add karein.</option>'));
             }
@@ -387,7 +406,9 @@
         var gstAmt = base * (gstPct / 100);
         var lineTotal = base + gstAmt - (data.discount || 0);
         var displayName = data.product_name || '--';
+        var isService = (data.item_type === 'service');
         var serialsDisplay = data.serial_ids ? '<span class="badge bg-info bg-opacity-10 text-info border"><i class="bi bi-upc-scan"></i> Serials</span>' : '';
+        var serviceBadge = isService ? '<span class="badge bg-success-subtle text-success border"><i class="bi bi-tools me-1"></i>Service</span>' : '';
 
         return '<div class="item-card border rounded-3 p-3 mb-2 position-relative" data-row="' + idx + '" data-name="' + $('<span>').text(displayName).html() + '">' +
             '<input type="hidden" name="items[' + idx + '][product_id]" value="' + (data.product_id || '') + '">' +
@@ -403,14 +424,15 @@
             '</div>' +
             '<div class="fw-semibold mb-1" style="padding-right:5rem;">' + $('<span>').text(displayName).html() + '</div>' +
             '<div class="d-flex flex-wrap gap-2 small">' +
+                serviceBadge +
                 '<span class="badge bg-light text-dark border">Qty: ' + data.qty + '</span>' +
                 '<span class="badge bg-light text-dark border">₹' + parseFloat(data.unit_price).toFixed(2) + '</span>' +
                 (isGst ? '<span class="badge bg-warning bg-opacity-25 text-dark border">' + gstPct + '% GST</span>' : '<span class="badge bg-light text-muted border">No GST</span>') +
                 (data.discount > 0 ? '<span class="badge bg-danger bg-opacity-10 text-danger border">-₹' + parseFloat(data.discount).toFixed(2) + '</span>' : '') +
-                '<span class="badge bg-light text-dark border"><i class="bi bi-shield-check"></i> ' + (data.warranty_months || 0) + ' Mo</span>' +
+                (!isService ? '<span class="badge bg-light text-dark border"><i class="bi bi-shield-check"></i> ' + (data.warranty_months || 0) + ' Mo</span>' : '') +
                 serialsDisplay +
             '</div>' +
-            '<div class="text-end fw-bold text-success mt-1">₹' + lineTotal.toFixed(2) + '</div>' +
+            '<div class="text-end fw-bold ' + (isService ? 'text-warning' : 'text-success') + ' mt-1">₹' + lineTotal.toFixed(2) + '</div>' +
         '</div>';
     }
 
@@ -534,24 +556,33 @@
         var price = $opt.data('price') || 0;
         var warranty = $opt.data('warranty') || 12;
         var isSerialized = $opt.data('serial') == '1';
+        var itemType = $opt.data('type') || 'product';
         $('#modalPrice').val(price);
         $('#modalWarranty').val(warranty);
 
-        if (isSerialized && $(this).val()) {
-            $('#modalSerialsGroup').show();
-            $('#modalSerialsHint').text('Loading available serials...');
-            var url = C.urls.productSerials.replace(':id', $(this).val());
-            $.get(url, function(data) {
-                if (data.length) {
-                    var hint = 'Available: ' + data.map(function(s) { return s.serial_number; }).join(', ');
-                    $('#modalSerialsHint').text(hint);
-                } else {
-                    $('#modalSerialsHint').text('No serials in stock');
-                }
-            });
-        } else {
+        // Hide warranty/serial fields for service items
+        if (itemType === 'service') {
             $('#modalSerialsGroup').hide();
             $('#modalSerials').val('');
+            $('[for="modalWarranty"]').closest('.col-6').hide();
+        } else {
+            $('[for="modalWarranty"]').closest('.col-6').show();
+            if (isSerialized && $(this).val()) {
+                $('#modalSerialsGroup').show();
+                $('#modalSerialsHint').text('Loading available serials...');
+                var url = C.urls.productSerials.replace(':id', $(this).val());
+                $.get(url, function(data) {
+                    if (data.length) {
+                        var hint = 'Available: ' + data.map(function(s) { return s.serial_number; }).join(', ');
+                        $('#modalSerialsHint').text(hint);
+                    } else {
+                        $('#modalSerialsHint').text('No serials in stock');
+                    }
+                });
+            } else {
+                $('#modalSerialsGroup').hide();
+                $('#modalSerials').val('');
+            }
         }
     });
 
@@ -560,7 +591,9 @@
         if (!productId) { $('#modalProductId').addClass('is-invalid').focus(); return; }
         $('#modalProductId').removeClass('is-invalid');
 
-        var productName = $('#modalProductId option:selected').text();
+        var $selectedOpt = $('#modalProductId option:selected');
+        var productName = $selectedOpt.text();
+        var itemType = $selectedOpt.data('type') || 'product';
         var price = parseFloat($('#modalPrice').val()) || 0;
         var qty = parseInt($('#modalQty').val()) || 1;
         if (qty < 1) qty = 1;
@@ -568,12 +601,13 @@
         var data = {
             product_id: productId,
             product_name: productName,
+            item_type: itemType,
             unit_price: price,
             qty: qty,
             gst_percent: gstOn ? (parseFloat($('#modalGst').val()) || 0) : 0,
             discount: parseFloat($('#modalDiscount').val()) || 0,
-            warranty_months: parseInt($('#modalWarranty').val()) || 12,
-            serial_ids: $.trim($('#modalSerials').val())
+            warranty_months: itemType === 'service' ? 0 : (parseInt($('#modalWarranty').val()) || 12),
+            serial_ids: itemType === 'service' ? '' : $.trim($('#modalSerials').val())
         };
 
         if (editingRow !== null) {

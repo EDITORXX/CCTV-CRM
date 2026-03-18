@@ -9,7 +9,7 @@ class Product extends Model
     use \App\Traits\BelongsToCompany;
 
     protected $fillable = [
-        'company_id', 'name', 'category', 'brand', 'model_number',
+        'company_id', 'type', 'name', 'category', 'brand', 'model_number',
         'hsn_sac', 'unit', 'warranty_months', 'track_serial', 'sale_price', 'purchase_price', 'created_by',
     ];
 
