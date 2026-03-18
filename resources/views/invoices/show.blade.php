@@ -5,7 +5,7 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="mb-1">Invoice {{ $invoice->invoice_number }}</h4>
+        <h4 class="mb-1">{{ $invoice->is_gst ? 'Tax Invoice' : 'Bill of Supply' }} — {{ $invoice->invoice_number }}</h4>
         <p class="text-muted mb-0">{{ $invoice->customer->name ?? 'Unknown' }} — {{ \Carbon\Carbon::parse($invoice->invoice_date)->format('d M Y') }}</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
@@ -19,6 +19,14 @@
                 </button>
             </form>
         @endif
+        {{-- Share Link Button --}}
+        <button type="button" class="btn btn-outline-success btn-sm" id="shareBtn"
+            data-invoice-id="{{ $invoice->id }}"
+            data-token="{{ $invoice->share_token }}"
+            data-token-url="{{ route('invoices.share-token', $invoice) }}"
+            data-csrf="{{ csrf_token() }}">
+            <i class="bi bi-share me-1"></i> Share Link
+        </button>
         <a href="{{ route('invoices.pdf', $invoice) }}" class="btn btn-outline-dark btn-sm" target="_blank">
             <i class="bi bi-printer me-1"></i> Print PDF
         </a>
@@ -410,4 +418,85 @@
         </div>
     </div>
 </div>
+{{-- Share Link Modal --}}
+<div class="modal fade" id="shareLinkModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-share me-1"></i> Share Bill of Supply</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-muted mb-3">Customer ko ye link bhejein. Woh bina login ke bill dekh sakte hain aur digitally sign bhi kar sakte hain.</p>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control form-control-sm" id="shareLinkInput" readonly>
+                    <button class="btn btn-outline-secondary btn-sm" id="copyLinkBtn" type="button">
+                        <i class="bi bi-clipboard me-1"></i> Copy
+                    </button>
+                </div>
+                <div id="copyMsg" class="d-none text-success small"><i class="bi bi-check-circle me-1"></i> Link copied!</div>
+                @if($invoice->customer_signed_at)
+                <div class="alert alert-success py-2 small mt-2 mb-0">
+                    <i class="bi bi-pen me-1"></i>
+                    Customer ne <strong>{{ $invoice->customer_signed_at->format('d M Y, h:i A') }}</strong> ko digitally sign kiya hai.
+                    <br><span class="text-muted">IP: {{ $invoice->customer_ip }}</span>
+                </div>
+                @else
+                <div class="alert alert-warning py-2 small mt-2 mb-0">
+                    <i class="bi bi-hourglass me-1"></i> Customer ne abhi sign nahi kiya hai.
+                </div>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+
+@section('scripts')
+<script>
+document.getElementById('shareBtn').addEventListener('click', function() {
+    var btn = this;
+    var existingToken = btn.dataset.token;
+    var tokenUrl = btn.dataset.tokenUrl;
+    var csrf = btn.dataset.csrf;
+
+    function showModal(url) {
+        document.getElementById('shareLinkInput').value = url;
+        new bootstrap.Modal(document.getElementById('shareLinkModal')).show();
+    }
+
+    if (existingToken) {
+        showModal(window.location.origin + '/bill/' + existingToken);
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>';
+    fetch(tokenUrl, {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.dataset.token = data.token;
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-share me-1"></i> Share Link';
+        showModal(data.url);
+    })
+    .catch(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-share me-1"></i> Share Link';
+    });
+});
+
+document.getElementById('copyLinkBtn').addEventListener('click', function() {
+    var input = document.getElementById('shareLinkInput');
+    navigator.clipboard.writeText(input.value).then(function() {
+        var msg = document.getElementById('copyMsg');
+        msg.classList.remove('d-none');
+        setTimeout(function() { msg.classList.add('d-none'); }, 2000);
+    });
+});
+</script>
+@endsection
+
 @endsection

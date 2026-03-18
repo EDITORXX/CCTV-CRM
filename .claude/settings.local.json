@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \":*)",
+      "Bash(node --check test_js_temp.js)",
+      "Bash(rm -f test_js_temp.js)"
+    ]
+  }
+}

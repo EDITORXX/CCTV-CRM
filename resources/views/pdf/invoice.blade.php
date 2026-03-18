@@ -108,7 +108,7 @@
 
         <!-- Invoice Title -->
         <div class="invoice-title">
-            <h2>{{ $invoice->is_gst ? 'TAX INVOICE' : 'INVOICE' }}</h2>
+            <h2>{{ $invoice->is_gst ? 'TAX INVOICE' : 'BILL OF SUPPLY' }}</h2>
             @if(!$invoice->is_gst)
                 <div class="gst-label">(Without GST)</div>
             @endif
@@ -220,8 +220,14 @@
         <!-- Signature & Footer -->
         <div class="signature-section">
             <div class="sig-left">
-                <div class="sig-line"></div>
-                <div class="sig-label">Customer Signature</div>
+                @if($invoice->customer_signature)
+                    <img src="{{ $invoice->customer_signature }}" alt="Customer Signature" style="max-height:55px;max-width:160px;border:1px solid #ccc;padding:3px;background:#fff;">
+                    <div class="sig-label">Customer Signature (Digital)</div>
+                    <div class="sig-label">{{ $invoice->customer_signed_at?->format('d M Y, h:i A') }} | IP: {{ $invoice->customer_ip }}</div>
+                @else
+                    <div class="sig-line"></div>
+                    <div class="sig-label">Customer Signature</div>
+                @endif
             </div>
             <div class="sig-right">
                 <div class="sig-line"></div>

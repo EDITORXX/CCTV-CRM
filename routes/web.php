@@ -86,6 +86,7 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::resource('invoices', App\Http\Controllers\InvoiceController::class);
     Route::get('/invoices/{invoice}/pdf', [App\Http\Controllers\InvoiceController::class, 'pdf'])->name('invoices.pdf');
     Route::get('/invoices/{invoice}/download', [App\Http\Controllers\InvoiceController::class, 'download'])->name('invoices.download');
+    Route::post('/invoices/{invoice}/share-token', [App\Http\Controllers\PublicInvoiceController::class, 'generateToken'])->name('invoices.share-token');
 
     // Payments
     Route::post('/invoices/{invoice}/payments', [App\Http\Controllers\PaymentController::class, 'store'])->name('payments.store');
@@ -234,6 +235,10 @@ Route::middleware(['auth', 'company'])->group(function () {
         Route::get('/troubleshoot/{code}/signals', [App\Http\Controllers\TroubleshootController::class, 'technicianGetSignals'])->name('troubleshoot.tech.signals');
     });
 });
+
+// Public Bill of Supply — shareable link (no auth required)
+Route::get('/bill/{token}', [App\Http\Controllers\PublicInvoiceController::class, 'show'])->name('invoice.public.show');
+Route::post('/bill/{token}/sign', [App\Http\Controllers\PublicInvoiceController::class, 'sign'])->name('invoice.public.sign');
 
 // Live Stream public viewer (no auth required)
 Route::get('/live/{token}', [App\Http\Controllers\LiveStreamController::class, 'viewer'])->name('livestream.viewer');
