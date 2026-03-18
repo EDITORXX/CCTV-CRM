@@ -73,6 +73,12 @@
                                 <a href="{{ route('invoices.pdf', $invoice) }}" class="btn btn-outline-dark" title="PDF" target="_blank">
                                     <i class="bi bi-file-earmark-pdf"></i>
                                 </a>
+                                <button type="button" class="btn btn-outline-success share-btn" title="Share Link"
+                                    data-token="{{ $invoice->share_token }}"
+                                    data-token-url="{{ route('invoices.share-token', $invoice) }}"
+                                    data-csrf="{{ csrf_token() }}">
+                                    <i class="bi bi-share"></i>
+                                </button>
                                 <form action="{{ route('invoices.destroy', $invoice) }}" method="POST"
                                       onsubmit="return confirm('Delete this invoice?')" class="d-inline">
                                     @csrf
@@ -132,6 +138,12 @@
                 <div class="btn-group btn-group-sm">
                     <a href="{{ route('invoices.show', $invoice) }}" class="btn btn-outline-info btn-sm"><i class="bi bi-eye"></i></a>
                     <a href="{{ route('invoices.pdf', $invoice) }}" class="btn btn-outline-dark btn-sm" target="_blank"><i class="bi bi-file-earmark-pdf"></i></a>
+                    <button type="button" class="btn btn-outline-success btn-sm share-btn" title="Share Link"
+                        data-token="{{ $invoice->share_token }}"
+                        data-token-url="{{ route('invoices.share-token', $invoice) }}"
+                        data-csrf="{{ csrf_token() }}">
+                        <i class="bi bi-share"></i>
+                    </button>
                     <form action="{{ route('invoices.destroy', $invoice) }}" method="POST"
                           onsubmit="return confirm('Delete this invoice?')" class="d-inline">
                         @csrf @method('DELETE')
@@ -150,8 +162,75 @@
 </div>
 @endsection
 
+{{-- Share Link Modal --}}
+<div class="modal fade" id="shareLinkModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title"><i class="bi bi-share me-1"></i> Share Bill of Supply</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-muted mb-2">Customer ko ye link bhejein — bina login ke bill dekh aur sign kar sakte hain.</p>
+                <div class="input-group">
+                    <input type="text" class="form-control form-control-sm" id="shareLinkInput" readonly>
+                    <button class="btn btn-outline-secondary btn-sm" id="copyLinkBtn" type="button">
+                        <i class="bi bi-clipboard"></i> Copy
+                    </button>
+                </div>
+                <div id="copyMsg" class="d-none text-success small mt-1"><i class="bi bi-check-circle me-1"></i> Copied!</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section('scripts')
 <script>
+    // Share link handler
+    document.querySelectorAll('.share-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var existingToken = this.dataset.token;
+            var tokenUrl = this.dataset.tokenUrl;
+            var csrf = this.dataset.csrf;
+            var self = this;
+
+            function showModal(token) {
+                document.getElementById('shareLinkInput').value = window.location.origin + '/bill/' + token;
+                document.getElementById('copyMsg').classList.add('d-none');
+                new bootstrap.Modal(document.getElementById('shareLinkModal')).show();
+            }
+
+            if (existingToken) { showModal(existingToken); return; }
+
+            self.disabled = true;
+            self.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            fetch(tokenUrl, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
+            })
+            .then(r => r.json())
+            .then(data => {
+                self.dataset.token = data.token;
+                self.disabled = false;
+                self.innerHTML = '<i class="bi bi-share"></i>';
+                showModal(data.token);
+            })
+            .catch(() => {
+                self.disabled = false;
+                self.innerHTML = '<i class="bi bi-share"></i>';
+            });
+        });
+    });
+
+    document.getElementById('copyLinkBtn').addEventListener('click', function() {
+        var val = document.getElementById('shareLinkInput').value;
+        navigator.clipboard.writeText(val).then(function() {
+            var msg = document.getElementById('copyMsg');
+            msg.classList.remove('d-none');
+            setTimeout(function() { msg.classList.add('d-none'); }, 2000);
+        });
+    });
+
     $(document).ready(function() {
         $('#invoicesTable').DataTable({
             paging: true,
