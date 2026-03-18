@@ -160,9 +160,10 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Product <span class="text-danger">*</span></label>
-                        <select class="form-select" id="modalProductId">
+                        <select class="form-select" id="modalProductId" style="width:100%">
                             <option value="">-- Select Product --</option>
                         </select>
+                        <div class="form-text text-muted"><i class="bi bi-search me-1"></i>Product name type karke search kar sakte hain</div>
                     </div>
 
                     <div class="row g-3">
@@ -293,11 +294,31 @@
     var products = [];
     var C = window.INVOICE_CREATE_CONFIG;
 
+    function initSelect2() {
+        if ($.fn.select2) {
+            $('#modalProductId').select2({
+                theme: 'bootstrap-5',
+                dropdownParent: $('#addItemModal'),
+                placeholder: '-- Product search karein --',
+                allowClear: true,
+                width: '100%',
+            });
+        }
+    }
+
     function populateModalProducts() {
         var $select = $('#modalProductId');
+
+        // Destroy existing Select2 before changing options
+        if ($.fn.select2 && $select.hasClass('select2-hidden-accessible')) {
+            $select.select2('destroy');
+        }
+
         $select.html('<option value="">-- Loading... --</option>');
+
         if (!C.urls || !C.urls.productsList) {
             $select.html('<option value="">-- Select Product --</option><option value="" disabled>Config error. Refresh page.</option>');
+            initSelect2();
             return;
         }
         $.ajax({
@@ -307,7 +328,7 @@
         }).done(function(data) {
             products = Array.isArray(data) ? data : (data && data.data ? data.data : []);
             $select.empty();
-            $select.append($('<option value="">-- Select Product --</option>'));
+            $select.append($('<option value="">-- Product search karein --</option>'));
             if (products.length > 0) {
                 products.forEach(function(p) {
                     var opt = $('<option></option>').val(p.id).text(p.name || ('Product #' + p.id));
@@ -317,17 +338,23 @@
                     $select.append(opt);
                 });
             } else {
-                $select.append($('<option value="" disabled>No products found. Add products first.</option>'));
+                $select.append($('<option value="" disabled>No products found. Pehle products add karein.</option>'));
             }
+            initSelect2();
         }).fail(function(xhr) {
             var msg = 'Failed to load. Retry or add products first.';
             if (xhr.status === 403) msg = 'Access denied.';
             if (xhr.status === 500) msg = 'Server error. Try again.';
             $select.html('<option value="">-- Select Product --</option><option value="" disabled>' + msg + '</option>');
+            initSelect2();
         });
     }
 
     function resetModal() {
+        // Destroy Select2 before resetting
+        if ($.fn.select2 && $('#modalProductId').hasClass('select2-hidden-accessible')) {
+            $('#modalProductId').select2('destroy');
+        }
         $('#modalProductId').val('').removeClass('is-invalid');
         $('#modalPrice').val(0);
         $('#modalQty').val(1);

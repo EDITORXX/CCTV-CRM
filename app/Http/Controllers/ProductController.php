@@ -137,7 +137,8 @@ class ProductController extends Controller
 
     public function getList(Request $request)
     {
-        $products = Product::orderBy('name')->get(['id', 'name', 'sale_price', 'warranty_months', 'track_serial']);
+        $products = Product::where('company_id', session('current_company_id'))
+            ->orderBy('name')->get(['id', 'name', 'sale_price', 'warranty_months', 'track_serial']);
         return response()->json($products->map(function ($p) {
             return [
                 'id' => $p->id,
