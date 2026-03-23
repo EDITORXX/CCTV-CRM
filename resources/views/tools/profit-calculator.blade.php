@@ -278,14 +278,7 @@ var rowCounter = 1;
 var expCounter = 1;
 var currentMode = 'product'; // 'product' or 'custom'
 
-var PRODUCTS_OPTIONS = @json($products->map(function($p) {
-    return [
-        'id' => $p->id,
-        'name' => $p->name,
-        'purchase' => $p->purchase_price ?? 0,
-        'sale' => $p->sale_price ?? 0,
-    ];
-}));
+var PRODUCTS_OPTIONS = {!! $productsJson !!};
 
 function getProductOptionsHtml(selectedId) {
     var html = '<option value="">— Select —</option>';
