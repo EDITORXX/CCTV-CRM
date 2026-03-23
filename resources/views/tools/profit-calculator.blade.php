@@ -43,11 +43,20 @@
     {{-- Line Items --}}
     <div class="col-lg-7">
         <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+            <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <span><i class="bi bi-list-ul me-1"></i> Items</span>
-                <button type="button" class="btn btn-sm btn-success" onclick="addRow()">
-                    <i class="bi bi-plus-lg me-1"></i> Add Item
-                </button>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="small text-muted">Product:</span>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <input type="radio" class="btn-check" name="productMode" id="mode-product" value="product" checked onchange="setProductMode('product')">
+                        <label class="btn btn-outline-primary btn-sm" for="mode-product">Product List</label>
+                        <input type="radio" class="btn-check" name="productMode" id="mode-custom" value="custom" onchange="setProductMode('custom')">
+                        <label class="btn btn-outline-primary btn-sm" for="mode-custom">Custom</label>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-success" onclick="addRow()">
+                        <i class="bi bi-plus-lg me-1"></i> Add Item
+                    </button>
+                </div>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -64,7 +73,7 @@
                         </thead>
                         <tbody id="items-body">
                             <tr class="item-row" data-index="0">
-                                <td>
+                                <td class="product-cell" data-mode="product">
                                     <select class="form-select form-select-sm product-select" onchange="onProductChange(this)">
                                         <option value="">— Select —</option>
                                         @foreach($products as $p)
@@ -267,19 +276,42 @@ var PRESETS = {
 
 var rowCounter = 1;
 var expCounter = 1;
+var currentMode = 'product'; // 'product' or 'custom'
 
-function addRow(productId, purchase, sale, qty, name) {
+var PRODUCTS_OPTIONS = @json($products->map(function($p) {
+    return [
+        'id' => $p->id,
+        'name' => $p->name,
+        'purchase' => $p->purchase_price ?? 0,
+        'sale' => $p->sale_price ?? 0,
+    ];
+}));
+
+function getProductOptionsHtml(selectedId) {
+    var html = '<option value="">— Select —</option>';
+    PRODUCTS_OPTIONS.forEach(function(p) {
+        var sel = (p.id == selectedId) ? ' selected' : '';
+        html += '<option value="' + p.id + '" data-purchase="' + p.purchase + '" data-sale="' + p.sale + '" data-name="' + p.name + '">' + p.name + '</option>';
+    });
+    return html;
+}
+
+function buildProductCellHtml(mode, selectedId) {
+    if (mode === 'custom') {
+        return '<input type="text" class="form-control form-control-sm custom-name" placeholder="e.g. Camera, DVR, Labour" maxlength="100" oninput="calculate()">';
+    } else {
+        return '<select class="form-select form-select-sm product-select" onchange="onProductChange(this)">' +
+               getProductOptionsHtml(selectedId) +
+               '</select>';
+    }
+}
+
+function addRow(productId, purchase, sale, qty, customName) {
     var tbody = document.getElementById('items-body');
+    var productCellHtml = buildProductCellHtml(currentMode, productId);
+
     var html = '<tr class="item-row" data-index="' + rowCounter + '">' +
-        '<td>' +
-            '<select class="form-select form-select-sm product-select" onchange="onProductChange(this)">' +
-            '<option value="">— Select —</option>' +
-            @foreach($products as $p)
-                '<option value="{{ $p->id }}" data-purchase="{{ $p->purchase_price ?? 0 }}" data-sale="{{ $p->sale_price ?? 0 }}" data-name="{{ addslashes($p->name) }}"' +
-                (productId == {{ $p->id }} ? ' selected' : '') + '>{{ addslashes($p->name) }}</option>' +
-            @endforeach
-            '</select>' +
-        '</td>' +
+        '<td class="product-cell">' + productCellHtml + '</td>' +
         '<td><input type="number" class="form-control form-control-sm text-end purchase-input" min="0" step="0.01" value="' + (purchase || 0) + '" placeholder="0.00" oninput="calculate()"></td>' +
         '<td><input type="number" class="form-control form-control-sm text-end sale-input" min="0" step="0.01" value="' + (sale || 0) + '" placeholder="0.00" oninput="calculate()"></td>' +
         '<td><input type="number" class="form-control form-control-sm text-center qty-input" min="1" value="' + (qty || 1) + '" oninput="calculate()"></td>' +
@@ -298,7 +330,58 @@ function removeRow(btn) {
     if (tbody.rows.length > 1) {
         btn.closest('tr').remove();
         calculate();
+    } else {
+        // Clear the only row instead of removing
+        var row = tbody.rows[0];
+        var productCell = row.querySelector('.product-cell');
+        productCell.innerHTML = buildProductCellHtml(currentMode, null);
+        row.querySelector('.purchase-input').value = 0;
+        row.querySelector('.sale-input').value = 0;
+        row.querySelector('.qty-input').value = 1;
+        calculate();
     }
+}
+
+function setProductMode(mode) {
+    currentMode = mode;
+    // Convert all existing rows
+    var rows = document.querySelectorAll('.item-row');
+    rows.forEach(function(row) {
+        var productCell = row.querySelector('.product-cell');
+        var selectedId = '';
+        var purchaseVal = row.querySelector('.purchase-input').value;
+        var saleVal = row.querySelector('.sale-input').value;
+        var qtyVal = row.querySelector('.qty-input').value;
+
+        if (mode === 'product') {
+            // Get currently selected text from custom input
+            var customInput = productCell.querySelector('.custom-name');
+            if (customInput && customInput.value) {
+                // Try to match by name
+                var searchText = customInput.value.toLowerCase();
+                PRODUCTS_OPTIONS.forEach(function(p) {
+                    if (p.name.toLowerCase().indexOf(searchText) !== -1) {
+                        selectedId = p.id;
+                    }
+                });
+            }
+        } else {
+            // Going to custom - try to preserve custom name from product select
+            var select = productCell.querySelector('.product-select');
+            if (select && select.value) {
+                var opt = select.querySelector('option[value="' + select.value + '"]');
+                if (opt) {
+                    // We'll set custom name to product name
+                }
+            }
+        }
+
+        productCell.innerHTML = buildProductCellHtml(mode, mode === 'product' ? selectedId : '');
+        row.querySelector('.purchase-input').value = purchaseVal || 0;
+        row.querySelector('.sale-input').value = saleVal || 0;
+        row.querySelector('.qty-input').value = qtyVal || 1;
+    });
+    calculate();
 }
 
 function onProductChange(select) {
@@ -323,18 +406,16 @@ function applyPreset(camCount) {
     rowCounter = 0;
 
     preset.forEach(function(item) {
-        // Try to find a matching product by name
-        var productSelect = document.querySelector('.product-select');
-        var options = productSelect ? productSelect.querySelectorAll('option') : [];
         var matchedId = '';
-        var purchaseVal = item.purchase;
-        var saleVal = item.sale;
+        var purchaseVal = 0;
+        var saleVal = 0;
 
-        options.forEach(function(opt) {
-            if (opt.dataset.name && item.name.toLowerCase().indexOf(opt.dataset.name.toLowerCase()) !== -1) {
-                matchedId = opt.value;
-                purchaseVal = parseFloat(opt.dataset.purchase || 0);
-                saleVal = parseFloat(opt.dataset.sale || 0);
+        PRODUCTS_OPTIONS.forEach(function(p) {
+            if (p.name.toLowerCase().indexOf(item.name.toLowerCase()) !== -1 ||
+                item.name.toLowerCase().indexOf(p.name.toLowerCase()) !== -1) {
+                matchedId = p.id;
+                purchaseVal = p.purchase;
+                saleVal = p.sale;
             }
         });
 
@@ -512,7 +593,13 @@ function resetAll() {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
-    addRow();
+    // Ensure initial row uses product mode
+    var tbody = document.getElementById('items-body');
+    var firstRow = tbody.querySelector('.item-row');
+    if (firstRow) {
+        var productCell = firstRow.querySelector('.product-cell');
+        productCell.innerHTML = buildProductCellHtml('product', null);
+    }
     addExpense();
     calculate();
 });
