@@ -8,110 +8,170 @@
         <h4 class="mb-1"><i class="bi bi-calculator me-2 text-primary"></i>Profit Calculator</h4>
         <p class="text-muted mb-0">Estimate profit before creating an invoice or quotation</p>
     </div>
+    <div>
+        <button type="button" onclick="resetAll()" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-clockwise me-1"></i> Reset All
+        </button>
+    </div>
+</div>
+
+{{-- 1-Click Setup Presets --}}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-lightning me-1"></i> 1-Click Setup
+        <span class="small text-muted fw-normal ms-2">— Click to auto-add a typical CCTV installation setup</span>
+    </div>
+    <div class="card-body">
+        <div class="row g-2">
+            @foreach([2, 3, 4, 5, 6] as $cam)
+                <div class="col-auto">
+                    <button type="button" class="btn btn-outline-primary" onclick="applyPreset({{ $cam }})">
+                        <i class="bi bi-camera-video me-1"></i> {{ $cam }}-Cam Setup
+                    </button>
+                </div>
+            @endforeach
+            <div class="col-auto">
+                <button type="button" class="btn btn-outline-danger" onclick="clearRows()">
+                    <i class="bi bi-trash me-1"></i> Clear Items
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="row g-4">
-    {{-- Calculator Form --}}
-    <div class="col-lg-5">
+    {{-- Line Items --}}
+    <div class="col-lg-7">
         <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-list-ul me-1"></i> Items</span>
+                <button type="button" class="btn btn-sm btn-success" onclick="addRow()">
+                    <i class="bi bi-plus-lg me-1"></i> Add Item
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="items-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:35%">Product</th>
+                                <th style="width:18%" class="text-end">Purchase (₹)</th>
+                                <th style="width:18%" class="text-end">Sale (₹)</th>
+                                <th style="width:8%" class="text-center">Qty</th>
+                                <th style="width:16%" class="text-end">Total</th>
+                                <th style="width:5%"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="items-body">
+                            <tr class="item-row" data-index="0">
+                                <td>
+                                    <select class="form-select form-select-sm product-select" onchange="onProductChange(this)">
+                                        <option value="">— Select —</option>
+                                        @foreach($products as $p)
+                                            <option value="{{ $p->id }}"
+                                                    data-purchase="{{ $p->purchase_price ?? 0 }}"
+                                                    data-sale="{{ $p->sale_price ?? 0 }}"
+                                                    data-name="{{ $p->name }}">
+                                                {{ $p->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm text-end purchase-input"
+                                           min="0" step="0.01" value="0" placeholder="0.00" oninput="calculate()">
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm text-end sale-input"
+                                           min="0" step="0.01" value="0" placeholder="0.00" oninput="calculate()">
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm text-center qty-input"
+                                           min="1" value="1" oninput="calculate()">
+                                </td>
+                                <td class="text-end fw-semibold text-muted">₹0.00</td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)" title="Remove">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="p-3 border-top">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addRow()">
+                        <i class="bi bi-plus-lg me-1"></i> Add Row
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {{-- Extra Expenses --}}
+        <div class="card border-0 shadow-sm mt-3">
             <div class="card-header bg-white fw-semibold">
-                <i class="bi bi-sliders me-1"></i> Enter Details
+                <i class="bi bi-plus-circle me-1"></i> Extra Expenses (Labour, Travel, etc.)
             </div>
             <div class="card-body">
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Product <span class="text-danger">*</span></label>
-                    <select id="product-select" class="form-select">
-                        <option value="">— Select existing product (optional) —</option>
-                        @foreach($products as $p)
-                            <option value="{{ $p->id }}"
-                                    data-purchase="{{ $p->purchase_price ?? 0 }}"
-                                    data-sale="{{ $p->sale_price ?? 0 }}">
-                                {{ $p->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <small class="text-muted">Select to auto-fill purchase & sale price</small>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Product Name <span class="text-danger">*</span></label>
-                    <input type="text" id="product-name" class="form-control" placeholder="e.g. CP Plus 2MP Camera" maxlength="255">
-                </div>
-
-                <div class="row g-3 mb-3">
-                    <div class="col-6">
-                        <label class="form-label fw-semibold">Purchase Price (₹) <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text">₹</span>
-                            <input type="number" id="purchase-price" class="form-control" placeholder="0.00" min="0" step="0.01" value="0">
+                <div id="expense-rows">
+                    <div class="row g-2 mb-2 expense-row" data-exp-index="0">
+                        <div class="col-7">
+                            <input type="text" class="form-control form-control-sm exp-desc" placeholder="Description e.g. Labour charge" maxlength="100">
                         </div>
-                        <small class="text-muted">Cost / Buying price</small>
-                    </div>
-                    <div class="col-6">
-                        <label class="form-label fw-semibold">Sale Price (₹) <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text">₹</span>
-                            <input type="number" id="sale-price" class="form-control" placeholder="0.00" min="0" step="0.01" value="0">
+                        <div class="col-4">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" class="form-control form-control-sm exp-amount" min="0" step="0.01" value="0" placeholder="0.00" oninput="calculate()">
+                            </div>
                         </div>
-                        <small class="text-muted">Selling price</small>
+                        <div class="col-1">
+                            <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeExpense(this)" title="Remove"><i class="bi bi-x"></i></button>
+                        </div>
                     </div>
                 </div>
-
-                {{-- Expense fields --}}
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Extra Expenses (₹)</label>
-                    <div class="input-group">
-                        <span class="input-group-text">₹</span>
-                        <input type="number" id="expenses" class="form-control" placeholder="0.00" min="0" step="0.01" value="0">
-                    </div>
-                    <small class="text-muted">Labour, travel, material, etc.</small>
-                </div>
-
-                <button type="button" onclick="resetForm()" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-clockwise me-1"></i> Reset
+                <button type="button" class="btn btn-sm btn-outline-primary mt-1" onclick="addExpense()">
+                    <i class="bi bi-plus-lg me-1"></i> Add Expense
                 </button>
             </div>
         </div>
     </div>
 
     {{-- Profit Display --}}
-    <div class="col-lg-7">
-        <div class="card border-0 shadow-sm h-100">
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm sticky-top" style="top:20px;">
             <div class="card-header bg-white fw-semibold">
                 <i class="bi bi-graph-up me-1"></i> Estimate Result
             </div>
-            <div class="card-body d-flex flex-column justify-content-center">
+            <div class="card-body">
 
-                {{-- Profit/Loss Big Number --}}
-                <div id="profit-box" class="text-center py-5" style="border-radius:16px; background:#f8f9fa;">
+                {{-- Big Profit/Loss --}}
+                <div id="profit-box" class="text-center py-4 mb-3" style="border-radius:16px; background:#f8f9fa;">
                     <div class="text-muted small text-uppercase fw-semibold mb-2">Estimated Profit</div>
-                    <div id="profit-value" style="font-size:3rem;font-weight:800;line-height:1;" class="mb-2">—</div>
-                    <div id="profit-label" class="small text-muted">Enter values to see profit</div>
+                    <div id="profit-value" style="font-size:2.8rem;font-weight:800;line-height:1;" class="mb-2">₹0.00</div>
+                    <div id="profit-label" class="small text-muted">Add items to see profit</div>
                 </div>
 
-                {{-- Breakdown --}}
-                <div class="row g-3 mt-3">
-                    <div class="col-4">
-                        <div class="card bg-light border-0 text-center py-3">
-                            <div class="text-muted small">Sale Price</div>
-                            <div id="display-sale" class="fw-bold fs-5">₹0.00</div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="card bg-light border-0 text-center py-3">
-                            <div class="text-muted small">Purchase Cost</div>
-                            <div id="display-purchase" class="fw-bold fs-5 text-danger">₹0.00</div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="card bg-light border-0 text-center py-3">
-                            <div class="text-muted small">Expenses</div>
-                            <div id="display-expenses" class="fw-bold fs-5 text-warning">₹0.00</div>
-                        </div>
-                    </div>
-                </div>
+                {{-- Summary Table --}}
+                <table class="table table-sm table-borderless mb-0">
+                    <tr>
+                        <td class="text-muted">Total Sale</td>
+                        <td class="text-end fw-semibold" id="total-sale">₹0.00</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Total Purchase</td>
+                        <td class="text-end fw-semibold text-danger" id="total-purchase">₹0.00</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Extra Expenses</td>
+                        <td class="text-end fw-semibold text-warning" id="total-expenses">₹0.00</td>
+                    </tr>
+                    <tr class="border-top">
+                        <td class="fw-bold">Net Profit</td>
+                        <td class="text-end fw-bold fs-5" id="net-profit">₹0.00</td>
+                    </tr>
+                </table>
 
-                {{-- Profit Margin --}}
+                {{-- Margin --}}
                 <div class="mt-3">
                     <div class="d-flex justify-content-between small mb-1">
                         <span class="text-muted">Profit Margin</span>
@@ -122,11 +182,25 @@
                     </div>
                 </div>
 
-                {{-- Notes --}}
+                {{-- Items count --}}
+                <div class="mt-3 d-flex gap-3">
+                    <div class="flex-fill text-center border rounded-3 py-2">
+                        <div class="small text-muted">Items</div>
+                        <div class="fw-bold" id="item-count">0</div>
+                    </div>
+                    <div class="flex-fill text-center border rounded-3 py-2">
+                        <div class="small text-muted">Products</div>
+                        <div class="fw-bold" id="product-count">0</div>
+                    </div>
+                    <div class="flex-fill text-center border rounded-3 py-2">
+                        <div class="small text-muted">Avg. Margin</div>
+                        <div class="fw-bold" id="avg-margin">—</div>
+                    </div>
+                </div>
+
                 <div class="mt-3 alert alert-info py-2 small mb-0">
                     <i class="bi bi-info-circle me-1"></i>
-                    Profit = Sale Price − Purchase Price − Expenses.
-                    Select a product above to auto-fill prices from your product list.
+                    Select a product to auto-fill prices, or enter manually.
                 </div>
             </div>
         </div>
@@ -136,63 +210,251 @@
 
 @section('scripts')
 <script>
-(function() {
-    var productSelect = document.getElementById('product-select');
-    var productName = document.getElementById('product-name');
-    var purchaseInput = document.getElementById('purchase-price');
-    var saleInput = document.getElementById('sale-price');
-    var expensesInput = document.getElementById('expenses');
+// Preset data: each camera count adds typical CCTV setup items
+// Format: { name, purchase, sale, qty }
+var PRESETS = {
+    2: [
+        { name: 'CCTV Camera (Dome/Bullet)', purchase: 0, sale: 0, qty: 2 },
+        { name: 'DVR 4-Channel', purchase: 0, sale: 0, qty: 1 },
+        { name: 'HDD 1TB', purchase: 0, sale: 0, qty: 1 },
+        { name: 'Cable (2 Core) - 45mtr', purchase: 0, sale: 0, qty: 1 },
+        { name: 'BNC Connector', purchase: 0, sale: 0, qty: 4 },
+        { name: 'Power Adapter 12V', purchase: 0, sale: 0, qty: 2 },
+        { name: 'SMPS 12V 5A', purchase: 0, sale: 0, qty: 1 },
+        { name: 'Installation/Service Charge', purchase: 0, sale: 0, qty: 1 },
+    ],
+    3: [
+        { name: 'CCTV Camera (Dome/Bullet)', purchase: 0, sale: 0, qty: 3 },
+        { name: 'DVR 4-Channel', purchase: 0, sale: 0, qty: 1 },
+        { name: 'HDD 1TB', purchase: 0, sale: 0, qty: 1 },
+        { name: 'Cable (2 Core) - 60mtr', purchase: 0, sale: 0, qty: 1 },
+        { name: 'BNC Connector', purchase: 0, sale: 0, qty: 6 },
+        { name: 'Power Adapter 12V', purchase: 0, sale: 0, qty: 3 },
+        { name: 'SMPS 12V 5A', purchase: 0, sale: 0, qty: 1 },
+        { name: 'Installation/Service Charge', purchase: 0, sale: 0, qty: 1 },
+    ],
+    4: [
+        { name: 'CCTV Camera (Dome/Bullet)', purchase: 0, sale: 0, qty: 4 },
+        { name: 'DVR 4-Channel', purchase: 0, sale: 0, qty: 1 },
+        { name: 'HDD 1TB', purchase: 0, sale: 0, qty: 1 },
+        { name: 'Cable (2 Core) - 90mtr', purchase: 0, sale: 0, qty: 1 },
+        { name: 'BNC Connector', purchase: 0, sale: 0, qty: 8 },
+        { name: 'Power Adapter 12V', purchase: 0, sale: 0, qty: 4 },
+        { name: 'SMPS 12V 5A', purchase: 0, sale: 0, qty: 1 },
+        { name: 'Installation/Service Charge', purchase: 0, sale: 0, qty: 1 },
+    ],
+    5: [
+        { name: 'CCTV Camera (Dome/Bullet)', purchase: 0, sale: 0, qty: 5 },
+        { name: 'DVR 8-Channel', purchase: 0, sale: 0, qty: 1 },
+        { name: 'HDD 2TB', purchase: 0, sale: 0, qty: 1 },
+        { name: 'Cable (2 Core) - 110mtr', purchase: 0, sale: 0, qty: 1 },
+        { name: 'BNC Connector', purchase: 0, sale: 0, qty: 10 },
+        { name: 'Power Adapter 12V', purchase: 0, sale: 0, qty: 5 },
+        { name: 'SMPS 12V 10A', purchase: 0, sale: 0, qty: 1 },
+        { name: 'Installation/Service Charge', purchase: 0, sale: 0, qty: 1 },
+    ],
+    6: [
+        { name: 'CCTV Camera (Dome/Bullet)', purchase: 0, sale: 0, qty: 6 },
+        { name: 'DVR 8-Channel', purchase: 0, sale: 0, qty: 1 },
+        { name: 'HDD 2TB', purchase: 0, sale: 0, qty: 1 },
+        { name: 'Cable (2 Core) - 130mtr', purchase: 0, sale: 0, qty: 1 },
+        { name: 'BNC Connector', purchase: 0, sale: 0, qty: 12 },
+        { name: 'Power Adapter 12V', purchase: 0, sale: 0, qty: 6 },
+        { name: 'SMPS 12V 10A', purchase: 0, sale: 0, qty: 1 },
+        { name: 'Installation/Service Charge', purchase: 0, sale: 0, qty: 1 },
+    ],
+};
 
-    // Auto-fill on product select
-    productSelect.addEventListener('change', function() {
-        var opt = this.options[this.selectedIndex];
-        if (this.value) {
-            purchaseInput.value = parseFloat(opt.dataset.purchase).toFixed(2);
-            saleInput.value = parseFloat(opt.dataset.sale).toFixed(2);
-            if (!productName.value) {
-                productName.value = opt.text;
+var rowCounter = 1;
+var expCounter = 1;
+
+function addRow(productId, purchase, sale, qty, name) {
+    var tbody = document.getElementById('items-body');
+    var html = '<tr class="item-row" data-index="' + rowCounter + '">' +
+        '<td>' +
+            '<select class="form-select form-select-sm product-select" onchange="onProductChange(this)">' +
+            '<option value="">— Select —</option>' +
+            @foreach($products as $p)
+                '<option value="{{ $p->id }}" data-purchase="{{ $p->purchase_price ?? 0 }}" data-sale="{{ $p->sale_price ?? 0 }}" data-name="{{ addslashes($p->name) }}"' +
+                (productId == {{ $p->id }} ? ' selected' : '') + '>{{ addslashes($p->name) }}</option>' +
+            @endforeach
+            '</select>' +
+        '</td>' +
+        '<td><input type="number" class="form-control form-control-sm text-end purchase-input" min="0" step="0.01" value="' + (purchase || 0) + '" placeholder="0.00" oninput="calculate()"></td>' +
+        '<td><input type="number" class="form-control form-control-sm text-end sale-input" min="0" step="0.01" value="' + (sale || 0) + '" placeholder="0.00" oninput="calculate()"></td>' +
+        '<td><input type="number" class="form-control form-control-sm text-center qty-input" min="1" value="' + (qty || 1) + '" oninput="calculate()"></td>' +
+        '<td class="text-end fw-semibold text-muted">₹0.00</td>' +
+        '<td class="text-center">' +
+            '<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)" title="Remove"><i class="bi bi-x"></i></button>' +
+        '</td>' +
+    '</tr>';
+    tbody.insertRow().innerHTML = html;
+    rowCounter++;
+    calculate();
+}
+
+function removeRow(btn) {
+    var tbody = document.getElementById('items-body');
+    if (tbody.rows.length > 1) {
+        btn.closest('tr').remove();
+        calculate();
+    }
+}
+
+function onProductChange(select) {
+    var opt = select.options[select.selectedIndex];
+    var row = select.closest('tr');
+    var purchaseInput = row.querySelector('.purchase-input');
+    var saleInput = row.querySelector('.sale-input');
+    if (opt.value) {
+        purchaseInput.value = parseFloat(opt.dataset.purchase || 0).toFixed(2);
+        saleInput.value = parseFloat(opt.dataset.sale || 0).toFixed(2);
+    }
+    calculate();
+}
+
+function applyPreset(camCount) {
+    var preset = PRESETS[camCount];
+    if (!preset) return;
+
+    // Clear existing rows first
+    var tbody = document.getElementById('items-body');
+    tbody.innerHTML = '';
+    rowCounter = 0;
+
+    preset.forEach(function(item) {
+        // Try to find a matching product by name
+        var productSelect = document.querySelector('.product-select');
+        var options = productSelect ? productSelect.querySelectorAll('option') : [];
+        var matchedId = '';
+        var purchaseVal = item.purchase;
+        var saleVal = item.sale;
+
+        options.forEach(function(opt) {
+            if (opt.dataset.name && item.name.toLowerCase().indexOf(opt.dataset.name.toLowerCase()) !== -1) {
+                matchedId = opt.value;
+                purchaseVal = parseFloat(opt.dataset.purchase || 0);
+                saleVal = parseFloat(opt.dataset.sale || 0);
             }
-            calculate();
-        }
+        });
+
+        addRow(matchedId, purchaseVal, saleVal, item.qty);
     });
 
-    // Recalculate on any input change
-    [purchaseInput, saleInput, expensesInput].forEach(function(el) {
-        el.addEventListener('input', calculate);
-    });
+    calculate();
+}
 
-    // Manual product name override (don't override when product is auto-selected)
-    productName.addEventListener('input', function() {
-        // nothing special, just for reference
-    });
+function clearRows() {
+    var tbody = document.getElementById('items-body');
+    tbody.innerHTML = '';
+    rowCounter = 0;
+    addRow();
+    calculate();
+}
 
-    function calculate() {
+function addExpense(desc, amount) {
+    var container = document.getElementById('expense-rows');
+    var html = '<div class="row g-2 mb-2 expense-row" data-exp-index="' + expCounter + '">' +
+        '<div class="col-7">' +
+            '<input type="text" class="form-control form-control-sm exp-desc" placeholder="Description e.g. Labour charge" maxlength="100" value="' + (desc || '') + '">' +
+        '</div>' +
+        '<div class="col-4">' +
+            '<div class="input-group input-group-sm">' +
+                '<span class="input-group-text">₹</span>' +
+                '<input type="number" class="form-control form-control-sm exp-amount" min="0" step="0.01" value="' + (amount || 0) + '" placeholder="0.00" oninput="calculate()">' +
+            '</div>' +
+        '</div>' +
+        '<div class="col-1">' +
+            '<button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeExpense(this)" title="Remove"><i class="bi bi-x"></i></button>' +
+        '</div>' +
+    '</div>';
+    container.insertAdjacentHTML('beforeend', html);
+    expCounter++;
+    calculate();
+}
+
+function removeExpense(btn) {
+    var container = document.getElementById('expense-rows');
+    if (container.querySelectorAll('.expense-row').length > 1) {
+        btn.closest('.expense-row').remove();
+        calculate();
+    }
+}
+
+function calculate() {
+    var rows = document.querySelectorAll('.item-row');
+    var totalSale = 0;
+    var totalPurchase = 0;
+    var itemCount = 0;
+    var productCount = 0;
+    var marginSum = 0;
+    var marginCount = 0;
+
+    rows.forEach(function(row) {
+        var saleInput = row.querySelector('.sale-input');
+        var purchaseInput = row.querySelector('.purchase-input');
+        var qtyInput = row.querySelector('.qty-input');
+        var totalCell = row.querySelector('td:nth-child(5)');
+
         var sale = parseFloat(saleInput.value) || 0;
         var purchase = parseFloat(purchaseInput.value) || 0;
-        var expenses = parseFloat(expensesInput.value) || 0;
+        var qty = parseInt(qtyInput.value) || 1;
 
-        var profit = sale - purchase - expenses;
-        var profitBox = document.getElementById('profit-box');
-        var profitValue = document.getElementById('profit-value');
-        var profitLabel = document.getElementById('profit-label');
-        var marginPct = document.getElementById('margin-pct');
-        var marginBar = document.getElementById('margin-bar');
+        var lineTotalSale = sale * qty;
+        var lineTotalPurchase = purchase * qty;
 
-        document.getElementById('display-sale').textContent = '₹' + sale.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        document.getElementById('display-purchase').textContent = '₹' + purchase.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        document.getElementById('display-expenses').textContent = '₹' + expenses.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        totalSale += lineTotalSale;
+        totalPurchase += lineTotalPurchase;
 
-        if (purchase === 0 && sale === 0 && expenses === 0) {
-            profitValue.textContent = '—';
-            profitLabel.textContent = 'Enter values to see profit';
-            profitValue.style.color = '#888';
-            profitBox.style.background = '#f8f9fa';
-            marginPct.textContent = '—';
-            marginBar.style.width = '0%';
-            marginBar.className = 'progress-bar';
-            return;
+        totalCell.textContent = '₹' + lineTotalSale.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+        if (sale > 0 || purchase > 0) {
+            itemCount++;
         }
+        if (saleInput.value && saleInput.value !== '0') {
+            productCount++;
+            if (sale > 0) {
+                marginSum += ((sale - purchase) / sale) * 100;
+                marginCount++;
+            }
+        }
+    });
 
+    // Expenses
+    var expRows = document.querySelectorAll('.expense-row');
+    var totalExpenses = 0;
+    expRows.forEach(function(row) {
+        var amount = parseFloat(row.querySelector('.exp-amount').value) || 0;
+        totalExpenses += amount;
+    });
+
+    var profit = totalSale - totalPurchase - totalExpenses;
+
+    // Update summary
+    document.getElementById('total-sale').textContent = '₹' + totalSale.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    document.getElementById('total-purchase').textContent = '₹' + totalPurchase.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    document.getElementById('total-expenses').textContent = '₹' + totalExpenses.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    document.getElementById('net-profit').textContent = '₹' + profit.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    document.getElementById('item-count').textContent = itemCount;
+    document.getElementById('product-count').textContent = productCount;
+
+    // Big profit box
+    var profitBox = document.getElementById('profit-box');
+    var profitValue = document.getElementById('profit-value');
+    var profitLabel = document.getElementById('profit-label');
+    var marginPct = document.getElementById('margin-pct');
+    var marginBar = document.getElementById('margin-bar');
+
+    if (totalSale === 0 && totalPurchase === 0 && totalExpenses === 0) {
+        profitValue.textContent = '₹0.00';
+        profitLabel.textContent = 'Add items to see profit';
+        profitValue.style.color = '#888';
+        profitBox.style.background = '#f8f9fa';
+        marginPct.textContent = '—';
+        marginBar.style.width = '0%';
+        marginBar.className = 'progress-bar';
+        document.getElementById('avg-margin').textContent = '—';
+    } else {
         var absProfit = Math.abs(profit);
         var formatted = '₹' + absProfit.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
@@ -216,29 +478,43 @@
             marginBar.className = 'progress-bar bg-warning';
         }
 
-        // Margin %
-        if (sale > 0) {
-            var margin = (profit / sale) * 100;
+        if (totalSale > 0) {
+            var margin = (profit / totalSale) * 100;
             marginPct.textContent = margin.toFixed(1) + '%';
-            var barWidth = Math.min(Math.max(margin + 50, 5), 100);
+            var barWidth = Math.min(Math.max((margin + 50), 5), 100);
             marginBar.style.width = barWidth + '%';
         } else {
             marginPct.textContent = '—';
             marginBar.style.width = '0%';
         }
+
+        if (marginCount > 0) {
+            document.getElementById('avg-margin').textContent = (marginSum / marginCount).toFixed(1) + '%';
+        } else {
+            document.getElementById('avg-margin').textContent = '—';
+        }
     }
+}
 
-    window.resetForm = function() {
-        productSelect.value = '';
-        productName.value = '';
-        purchaseInput.value = '0';
-        saleInput.value = '0';
-        expensesInput.value = '0';
-        calculate();
-    };
+function resetAll() {
+    var tbody = document.getElementById('items-body');
+    tbody.innerHTML = '';
+    rowCounter = 0;
+    addRow();
 
-    // Initial state
+    var expContainer = document.getElementById('expense-rows');
+    expContainer.innerHTML = '';
+    expCounter = 1;
+    addExpense();
+
     calculate();
-})();
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    addRow();
+    addExpense();
+    calculate();
+});
 </script>
 @endsection
