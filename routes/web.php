@@ -57,6 +57,9 @@ Route::middleware(['auth', 'company'])->group(function () {
 
     Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
 
+    // Profit Calculator
+    Route::get('/profit-calculator', [App\Http\Controllers\ProfitCalculatorController::class, 'index'])->name('profit-calculator');
+
     // Profile (all roles)
     Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
     Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');

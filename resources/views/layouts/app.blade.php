@@ -491,29 +491,10 @@
                 @endif
 
                 <li class="nav-label">Quick Tools</li>
-                <li class="px-2 py-2">
-                    <div style="background:#252740;border-radius:8px;padding:12px;">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span style="font-size:11px;font-weight:600;color:#a0a0c0;text-transform:uppercase;letter-spacing:0.5px;">
-                                <i class="bi bi-calculator me-1"></i> Profit Calculator
-                            </span>
-                        </div>
-                        <div class="mb-2">
-                            <input type="text" id="calc-name" class="form-control form-control-sm" placeholder="Product name" style="background:#1a1c2e;border:1px solid #3a3a5a;color:#e0e0f0;font-size:12px;" maxlength="100">
-                        </div>
-                        <div class="input-group input-group-sm mb-2">
-                            <span class="input-group-text" style="background:#1a1c2e;border:1px solid #3a3a5a;color:#a0a0c0;font-size:12px;">₹</span>
-                            <input type="number" id="calc-purchase" class="form-control" placeholder="Purchase price" min="0" step="0.01" style="background:#1a1c2e;border:1px solid #3a3a5a;color:#e0e0f0;font-size:12px;">
-                        </div>
-                        <div class="input-group input-group-sm mb-2">
-                            <span class="input-group-text" style="background:#1a1c2e;border:1px solid #3a3a5a;color:#a0a0c0;font-size:12px;">₹</span>
-                            <input type="number" id="calc-sale" class="form-control" placeholder="Sale price" min="0" step="0.01" style="background:#1a1c2e;border:1px solid #3a3a5a;color:#e0e0f0;font-size:12px;">
-                        </div>
-                        <div id="calc-profit" style="text-align:center;font-size:16px;font-weight:700;padding:6px;border-radius:6px;background:#1a1c2e;color:#888;margin-bottom:8px;">
-                            —
-                        </div>
-                        <button type="button" onclick="resetCalculator()" class="btn btn-sm w-100" style="background:#3a3a5a;color:#e0e0f0;border:none;font-size:12px;">Reset</button>
-                    </div>
+                <li>
+                    <a href="{{ route('profit-calculator') }}" class="{{ request()->routeIs('profit-calculator') ? 'active' : '' }}">
+                        <i class="bi bi-calculator"></i> Profit Calculator
+                    </a>
                 </li>
 
                 <li class="nav-label">Billing</li>
@@ -800,52 +781,6 @@
     @endif
 
     @stack('scripts')
-    <script>
-    // Profit Calculator
-    (function() {
-        var purchaseInput = document.getElementById('calc-purchase');
-        var saleInput = document.getElementById('calc-sale');
-        var profitDiv = document.getElementById('calc-profit');
-
-        function calcProfit() {
-            var p = parseFloat(purchaseInput.value) || 0;
-            var s = parseFloat(saleInput.value) || 0;
-            var profit = s - p;
-            if (purchaseInput.value === '' && saleInput.value === '') {
-                profitDiv.innerHTML = '—';
-                profitDiv.style.color = '#888';
-                profitDiv.style.background = '#1a1c2e';
-            } else if (profit > 0) {
-                profitDiv.innerHTML = '+₹' + profit.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                profitDiv.style.color = '#4ade80';
-                profitDiv.style.background = 'rgba(74,222,128,0.1)';
-            } else if (profit < 0) {
-                profitDiv.innerHTML = '-₹' + Math.abs(profit).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                profitDiv.style.color = '#f87171';
-                profitDiv.style.background = 'rgba(248,113,113,0.1)';
-            } else {
-                profitDiv.innerHTML = '₹0.00';
-                profitDiv.style.color = '#fbbf24';
-                profitDiv.style.background = 'rgba(251,191,36,0.1)';
-            }
-        }
-
-        if (purchaseInput && saleInput) {
-            purchaseInput.addEventListener('input', calcProfit);
-            saleInput.addEventListener('input', calcProfit);
-        }
-    })();
-
-    function resetCalculator() {
-        document.getElementById('calc-name').value = '';
-        document.getElementById('calc-purchase').value = '';
-        document.getElementById('calc-sale').value = '';
-        var profitDiv = document.getElementById('calc-profit');
-        profitDiv.innerHTML = '—';
-        profitDiv.style.color = '#888';
-        profitDiv.style.background = '#1a1c2e';
-    }
-    </script>
     <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('{{ asset("sw.js") }}').catch(function() {}); }</script>
 </body>
 </html>
