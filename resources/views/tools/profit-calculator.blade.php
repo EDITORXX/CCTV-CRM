@@ -8,9 +8,12 @@
         <h4 class="mb-1"><i class="bi bi-calculator me-2 text-primary"></i>Profit Calculator</h4>
         <p class="text-muted mb-0">Estimate profit before creating an invoice or quotation</p>
     </div>
-    <div>
+    <div class="d-flex gap-2">
+        <button type="button" onclick="calculate()" class="btn btn-primary">
+            <i class="bi bi-arrow-repeat me-1"></i> Calculate
+        </button>
         <button type="button" onclick="resetAll()" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-clockwise me-1"></i> Reset All
+            <i class="bi bi-arrow-clockwise me-1"></i> Reset
         </button>
     </div>
 </div>
@@ -19,7 +22,7 @@
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white fw-semibold">
         <i class="bi bi-lightning me-1"></i> 1-Click Setup
-        <span class="small text-muted fw-normal ms-2">— Click to auto-add a typical CCTV installation setup</span>
+        <span class="small text-muted fw-normal ms-2">— Click to auto-add typical CCTV installation items</span>
     </div>
     <div class="card-body">
         <div class="row g-2">
@@ -63,48 +66,16 @@
                     <table class="table table-hover align-middle mb-0" id="items-table">
                         <thead class="table-light">
                             <tr>
-                                <th style="width:35%">Product</th>
+                                <th style="width:32%">Product</th>
+                                <th style="width:10%" class="text-center">Qty</th>
                                 <th style="width:18%" class="text-end">Purchase (₹)</th>
                                 <th style="width:18%" class="text-end">Sale (₹)</th>
-                                <th style="width:8%" class="text-center">Qty</th>
-                                <th style="width:16%" class="text-end">Total</th>
+                                <th style="width:17%" class="text-end">Total (₹)</th>
                                 <th style="width:5%"></th>
                             </tr>
                         </thead>
                         <tbody id="items-body">
-                            <tr class="item-row" data-index="0">
-                                <td class="product-cell" data-mode="product">
-                                    <select class="form-select form-select-sm product-select" onchange="onProductChange(this)">
-                                        <option value="">— Select —</option>
-                                        @foreach($products as $p)
-                                            <option value="{{ $p->id }}"
-                                                    data-purchase="{{ $p->purchase_price ?? 0 }}"
-                                                    data-sale="{{ $p->sale_price ?? 0 }}"
-                                                    data-name="{{ $p->name }}">
-                                                {{ $p->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </td>
-                                <td>
-                                    <input type="number" class="form-control form-control-sm text-end purchase-input"
-                                           min="0" step="0.01" value="0" placeholder="0.00" oninput="calculate()">
-                                </td>
-                                <td>
-                                    <input type="number" class="form-control form-control-sm text-end sale-input"
-                                           min="0" step="0.01" value="0" placeholder="0.00" oninput="calculate()">
-                                </td>
-                                <td>
-                                    <input type="number" class="form-control form-control-sm text-center qty-input"
-                                           min="1" value="1" oninput="calculate()">
-                                </td>
-                                <td class="text-end fw-semibold text-muted">₹0.00</td>
-                                <td class="text-center">
-                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)" title="Remove">
-                                        <i class="bi bi-x"></i>
-                                    </button>
-                                </td>
-                            </tr>
+                            {{-- Rows added by JS --}}
                         </tbody>
                     </table>
                 </div>
@@ -123,7 +94,7 @@
             </div>
             <div class="card-body">
                 <div id="expense-rows">
-                    <div class="row g-2 mb-2 expense-row" data-exp-index="0">
+                    <div class="row g-2 mb-2 expense-row">
                         <div class="col-7">
                             <input type="text" class="form-control form-control-sm exp-desc" placeholder="Description e.g. Labour charge" maxlength="100">
                         </div>
@@ -134,7 +105,7 @@
                             </div>
                         </div>
                         <div class="col-1">
-                            <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeExpense(this)" title="Remove"><i class="bi bi-x"></i></button>
+                            <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeExpense(this)"><i class="bi bi-x"></i></button>
                         </div>
                     </div>
                 </div>
@@ -157,7 +128,7 @@
                 <div id="profit-box" class="text-center py-4 mb-3" style="border-radius:16px; background:#f8f9fa;">
                     <div class="text-muted small text-uppercase fw-semibold mb-2">Estimated Profit</div>
                     <div id="profit-value" style="font-size:2.8rem;font-weight:800;line-height:1;" class="mb-2">₹0.00</div>
-                    <div id="profit-label" class="small text-muted">Add items to see profit</div>
+                    <div id="profit-label" class="small text-muted">Click "Calculate" to see profit</div>
                 </div>
 
                 {{-- Summary Table --}}
@@ -209,7 +180,7 @@
 
                 <div class="mt-3 alert alert-info py-2 small mb-0">
                     <i class="bi bi-info-circle me-1"></i>
-                    Select a product to auto-fill prices, or enter manually.
+                    Click "Calculate" after entering values. In Total column: if Sale=0, Total shows Purchase amount.
                 </div>
             </div>
         </div>
@@ -219,8 +190,7 @@
 
 @section('scripts')
 <script>
-// Preset data: each camera count adds typical CCTV setup items
-// Format: { name, purchase, sale, qty }
+// Preset data
 var PRESETS = {
     2: [
         { name: 'CCTV Camera (Dome/Bullet)', purchase: 0, sale: 0, qty: 2 },
@@ -274,148 +244,129 @@ var PRESETS = {
     ],
 };
 
-var rowCounter = 1;
+var rowCounter = 0;
 var expCounter = 1;
-var currentMode = 'product'; // 'product' or 'custom'
-
+var currentMode = 'product';
 var PRODUCTS_OPTIONS = {!! $productsJson !!};
 
 function getProductOptionsHtml(selectedId) {
     var html = '<option value="">— Select —</option>';
     PRODUCTS_OPTIONS.forEach(function(p) {
         var sel = (p.id == selectedId) ? ' selected' : '';
-        html += '<option value="' + p.id + '" data-purchase="' + p.purchase + '" data-sale="' + p.sale + '" data-name="' + p.name + '">' + p.name + '</option>';
+        html += '<option value="' + p.id + '" data-purchase="' + p.purchase + '" data-sale="' + p.sale + '" data-name="' + p.name.replace(/"/g, '&quot;') + '">' + p.name + '</option>';
     });
     return html;
 }
 
 function buildProductCellHtml(mode, selectedId) {
     if (mode === 'custom') {
-        return '<input type="text" class="form-control form-control-sm custom-name" placeholder="e.g. Camera, DVR, Labour" maxlength="100" oninput="calculate()">';
+        return '<input type="text" class="form-control form-control-sm custom-name" placeholder="e.g. Camera, DVR, Labour" maxlength="100">';
     } else {
         return '<select class="form-select form-select-sm product-select" onchange="onProductChange(this)">' +
-               getProductOptionsHtml(selectedId) +
-               '</select>';
+               getProductOptionsHtml(selectedId) + '</select>';
     }
 }
 
-function addRow(productId, purchase, sale, qty, customName) {
+function addRow(productId, purchase, sale, qty) {
     var tbody = document.getElementById('items-body');
-    var productCellHtml = buildProductCellHtml(currentMode, productId);
+    var productCellHtml = buildProductCellHtml(currentMode, productId || '');
 
-    var html = '<tr class="item-row" data-index="' + rowCounter + '">' +
+    var html = '<tr class="item-row">' +
         '<td class="product-cell">' + productCellHtml + '</td>' +
-        '<td><input type="number" class="form-control form-control-sm text-end purchase-input" min="0" step="0.01" value="' + (purchase || 0) + '" placeholder="0.00" oninput="calculate()"></td>' +
-        '<td><input type="number" class="form-control form-control-sm text-end sale-input" min="0" step="0.01" value="' + (sale || 0) + '" placeholder="0.00" oninput="calculate()"></td>' +
-        '<td><input type="number" class="form-control form-control-sm text-center qty-input" min="1" value="' + (qty || 1) + '" oninput="calculate()"></td>' +
-        '<td class="text-end fw-semibold text-muted">₹0.00</td>' +
+        '<td><input type="number" class="form-control form-control-sm text-center qty-input" min="1" value="' + (qty || 1) + '"></td>' +
+        '<td><input type="number" class="form-control form-control-sm text-end purchase-input" min="0" step="0.01" value="' + (purchase || 0) + '"></td>' +
+        '<td><input type="number" class="form-control form-control-sm text-end sale-input" min="0" step="0.01" value="' + (sale || 0) + '"></td>' +
+        '<td class="text-end fw-semibold text-muted total-cell">₹0.00</td>' +
         '<td class="text-center">' +
-            '<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)" title="Remove"><i class="bi bi-x"></i></button>' +
+            '<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)"><i class="bi bi-x"></i></button>' +
         '</td>' +
     '</tr>';
     tbody.insertRow().innerHTML = html;
     rowCounter++;
-    calculate();
 }
 
 function removeRow(btn) {
     var tbody = document.getElementById('items-body');
     if (tbody.rows.length > 1) {
         btn.closest('tr').remove();
-        calculate();
     } else {
-        // Clear the only row instead of removing
+        // Clear instead of removing last row
         var row = tbody.rows[0];
-        var productCell = row.querySelector('.product-cell');
-        productCell.innerHTML = buildProductCellHtml(currentMode, null);
+        row.querySelector('.product-cell').innerHTML = buildProductCellHtml(currentMode, '');
         row.querySelector('.purchase-input').value = 0;
         row.querySelector('.sale-input').value = 0;
         row.querySelector('.qty-input').value = 1;
-        calculate();
+        row.querySelector('.total-cell').textContent = '₹0.00';
     }
 }
 
 function setProductMode(mode) {
     currentMode = mode;
-    // Convert all existing rows
+    // Update all existing rows (including the first one)
     var rows = document.querySelectorAll('.item-row');
     rows.forEach(function(row) {
         var productCell = row.querySelector('.product-cell');
-        var selectedId = '';
         var purchaseVal = row.querySelector('.purchase-input').value;
         var saleVal = row.querySelector('.sale-input').value;
         var qtyVal = row.querySelector('.qty-input').value;
 
+        var selectedId = '';
         if (mode === 'product') {
-            // Get currently selected text from custom input
+            // Try to match current custom name to a product
             var customInput = productCell.querySelector('.custom-name');
-            if (customInput && customInput.value) {
-                // Try to match by name
+            if (customInput && customInput.value.trim()) {
                 var searchText = customInput.value.toLowerCase();
                 PRODUCTS_OPTIONS.forEach(function(p) {
-                    if (p.name.toLowerCase().indexOf(searchText) !== -1) {
+                    if (selectedId === '' && (
+                        p.name.toLowerCase().indexOf(searchText) !== -1 ||
+                        searchText.indexOf(p.name.toLowerCase()) !== -1
+                    )) {
                         selectedId = p.id;
+                        purchaseVal = p.purchase || purchaseVal;
+                        saleVal = p.sale || saleVal;
                     }
                 });
             }
-        } else {
-            // Going to custom - try to preserve custom name from product select
-            var select = productCell.querySelector('.product-select');
-            if (select && select.value) {
-                var opt = select.querySelector('option[value="' + select.value + '"]');
-                if (opt) {
-                    // We'll set custom name to product name
-                }
-            }
         }
 
-        productCell.innerHTML = buildProductCellHtml(mode, mode === 'product' ? selectedId : '');
+        productCell.innerHTML = buildProductCellHtml(mode, selectedId);
         row.querySelector('.purchase-input').value = purchaseVal || 0;
         row.querySelector('.sale-input').value = saleVal || 0;
         row.querySelector('.qty-input').value = qtyVal || 1;
     });
-    calculate();
 }
 
 function onProductChange(select) {
     var opt = select.options[select.selectedIndex];
     var row = select.closest('tr');
-    var purchaseInput = row.querySelector('.purchase-input');
-    var saleInput = row.querySelector('.sale-input');
-    if (opt.value) {
-        purchaseInput.value = parseFloat(opt.dataset.purchase || 0).toFixed(2);
-        saleInput.value = parseFloat(opt.dataset.sale || 0).toFixed(2);
+    if (opt && opt.value) {
+        row.querySelector('.purchase-input').value = parseFloat(opt.dataset.purchase || 0).toFixed(2);
+        row.querySelector('.sale-input').value = parseFloat(opt.dataset.sale || 0).toFixed(2);
     }
-    calculate();
 }
 
 function applyPreset(camCount) {
     var preset = PRESETS[camCount];
     if (!preset) return;
-
-    // Clear existing rows first
     var tbody = document.getElementById('items-body');
     tbody.innerHTML = '';
     rowCounter = 0;
-
     preset.forEach(function(item) {
         var matchedId = '';
         var purchaseVal = 0;
         var saleVal = 0;
-
         PRODUCTS_OPTIONS.forEach(function(p) {
-            if (p.name.toLowerCase().indexOf(item.name.toLowerCase()) !== -1 ||
-                item.name.toLowerCase().indexOf(p.name.toLowerCase()) !== -1) {
+            if (
+                p.name.toLowerCase().indexOf(item.name.toLowerCase()) !== -1 ||
+                item.name.toLowerCase().indexOf(p.name.toLowerCase()) !== -1
+            ) {
                 matchedId = p.id;
-                purchaseVal = p.purchase;
-                saleVal = p.sale;
+                purchaseVal = p.purchase || 0;
+                saleVal = p.sale || 0;
             }
         });
-
         addRow(matchedId, purchaseVal, saleVal, item.qty);
     });
-
-    calculate();
 }
 
 function clearRows() {
@@ -423,35 +374,32 @@ function clearRows() {
     tbody.innerHTML = '';
     rowCounter = 0;
     addRow();
-    calculate();
 }
 
 function addExpense(desc, amount) {
     var container = document.getElementById('expense-rows');
-    var html = '<div class="row g-2 mb-2 expense-row" data-exp-index="' + expCounter + '">' +
+    var html = '<div class="row g-2 mb-2 expense-row">' +
         '<div class="col-7">' +
-            '<input type="text" class="form-control form-control-sm exp-desc" placeholder="Description e.g. Labour charge" maxlength="100" value="' + (desc || '') + '">' +
+            '<input type="text" class="form-control form-control-sm exp-desc" placeholder="Description e.g. Labour charge" maxlength="100" value="' + (desc || '').replace(/"/g, '&quot;') + '">' +
         '</div>' +
         '<div class="col-4">' +
             '<div class="input-group input-group-sm">' +
                 '<span class="input-group-text">₹</span>' +
-                '<input type="number" class="form-control form-control-sm exp-amount" min="0" step="0.01" value="' + (amount || 0) + '" placeholder="0.00" oninput="calculate()">' +
+                '<input type="number" class="form-control form-control-sm exp-amount" min="0" step="0.01" value="' + (amount || 0) + '" oninput="calculate()">' +
             '</div>' +
         '</div>' +
         '<div class="col-1">' +
-            '<button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeExpense(this)" title="Remove"><i class="bi bi-x"></i></button>' +
+            '<button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeExpense(this)"><i class="bi bi-x"></i></button>' +
         '</div>' +
     '</div>';
     container.insertAdjacentHTML('beforeend', html);
     expCounter++;
-    calculate();
 }
 
 function removeExpense(btn) {
     var container = document.getElementById('expense-rows');
     if (container.querySelectorAll('.expense-row').length > 1) {
         btn.closest('.expense-row').remove();
-        calculate();
     }
 }
 
@@ -460,7 +408,6 @@ function calculate() {
     var totalSale = 0;
     var totalPurchase = 0;
     var itemCount = 0;
-    var productCount = 0;
     var marginSum = 0;
     var marginCount = 0;
 
@@ -468,29 +415,35 @@ function calculate() {
         var saleInput = row.querySelector('.sale-input');
         var purchaseInput = row.querySelector('.purchase-input');
         var qtyInput = row.querySelector('.qty-input');
-        var totalCell = row.querySelector('td:nth-child(5)');
+        var totalCell = row.querySelector('.total-cell');
 
         var sale = parseFloat(saleInput.value) || 0;
         var purchase = parseFloat(purchaseInput.value) || 0;
         var qty = parseInt(qtyInput.value) || 1;
 
-        var lineTotalSale = sale * qty;
-        var lineTotalPurchase = purchase * qty;
+        // If sale is 0, show purchase total; otherwise show sale total
+        var lineTotal = (sale > 0) ? sale * qty : purchase * qty;
+        var linePurchaseTotal = purchase * qty;
 
-        totalSale += lineTotalSale;
-        totalPurchase += lineTotalPurchase;
+        totalSale += lineTotal;
+        totalPurchase += linePurchaseTotal;
 
-        totalCell.textContent = '₹' + lineTotalSale.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-
-        if (sale > 0 || purchase > 0) {
-            itemCount++;
+        // Color coding for total cell
+        if (sale > 0) {
+            totalCell.textContent = '₹' + lineTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            totalCell.className = 'text-end fw-semibold text-success total-cell';
+        } else if (purchase > 0) {
+            totalCell.textContent = '₹' + lineTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            totalCell.className = 'text-end fw-semibold text-muted total-cell';
+        } else {
+            totalCell.textContent = '₹0.00';
+            totalCell.className = 'text-end fw-semibold text-muted total-cell';
         }
-        if (saleInput.value && saleInput.value !== '0') {
-            productCount++;
-            if (sale > 0) {
-                marginSum += ((sale - purchase) / sale) * 100;
-                marginCount++;
-            }
+
+        if (sale > 0 || purchase > 0) itemCount++;
+        if (sale > 0) {
+            marginSum += ((sale - purchase) / sale) * 100;
+            marginCount++;
         }
     });
 
@@ -510,7 +463,7 @@ function calculate() {
     document.getElementById('total-expenses').textContent = '₹' + totalExpenses.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     document.getElementById('net-profit').textContent = '₹' + profit.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     document.getElementById('item-count').textContent = itemCount;
-    document.getElementById('product-count').textContent = productCount;
+    document.getElementById('product-count').textContent = itemCount;
 
     // Big profit box
     var profitBox = document.getElementById('profit-box');
@@ -519,9 +472,9 @@ function calculate() {
     var marginPct = document.getElementById('margin-pct');
     var marginBar = document.getElementById('margin-bar');
 
-    if (totalSale === 0 && totalPurchase === 0 && totalExpenses === 0) {
+    if (itemCount === 0 && totalExpenses === 0) {
         profitValue.textContent = '₹0.00';
-        profitLabel.textContent = 'Add items to see profit';
+        profitLabel.textContent = 'Click "Calculate" to see profit';
         profitValue.style.color = '#888';
         profitBox.style.background = '#f8f9fa';
         marginPct.textContent = '—';
@@ -575,26 +528,30 @@ function resetAll() {
     tbody.innerHTML = '';
     rowCounter = 0;
     addRow();
-
     var expContainer = document.getElementById('expense-rows');
     expContainer.innerHTML = '';
     expCounter = 1;
     addExpense();
-
-    calculate();
+    // Reset summary
+    document.getElementById('total-sale').textContent = '₹0.00';
+    document.getElementById('total-purchase').textContent = '₹0.00';
+    document.getElementById('total-expenses').textContent = '₹0.00';
+    document.getElementById('net-profit').textContent = '₹0.00';
+    document.getElementById('item-count').textContent = '0';
+    document.getElementById('product-count').textContent = '0';
+    document.getElementById('margin-pct').textContent = '—';
+    document.getElementById('margin-bar').style.width = '0%';
+    document.getElementById('avg-margin').textContent = '—';
+    document.getElementById('profit-value').textContent = '₹0.00';
+    document.getElementById('profit-value').style.color = '#888';
+    document.getElementById('profit-label').textContent = 'Click "Calculate" to see profit';
+    document.getElementById('profit-box').style.background = '#f8f9fa';
 }
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
-    // Ensure initial row uses product mode
-    var tbody = document.getElementById('items-body');
-    var firstRow = tbody.querySelector('.item-row');
-    if (firstRow) {
-        var productCell = firstRow.querySelector('.product-cell');
-        productCell.innerHTML = buildProductCellHtml('product', null);
-    }
+    addRow();
     addExpense();
-    calculate();
 });
 </script>
 @endsection
