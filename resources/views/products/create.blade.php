@@ -67,12 +67,15 @@
                 {{-- Service categories --}}
                 <div class="col-md-6 d-none" id="serviceCategoryGroup">
                     <label for="category_service" class="form-label">Service Type <span class="text-danger">*</span></label>
-                    <select class="form-select" id="category_service">
+                    <select class="form-select @error('category') is-invalid @enderror" id="category_service" name="category">
                         <option value="">Select Type</option>
                         @foreach(['Installation' => 'Installation', 'Repair' => 'Repair', 'Cabling' => 'Cabling', 'AMC' => 'AMC (Annual Maintenance)', 'Other_Service' => 'Other Service'] as $val => $label)
                             <option value="{{ $val }}" {{ old('category') == $val ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
                     </select>
+                    @error('category')
+                        <span class="text-danger small">{{ $message }}</span>
+                    @enderror
                 </div>
 
                 {{-- Product-only fields --}}
@@ -175,19 +178,17 @@ $(document).ready(function() {
     $('#category_product').on('change', function() {
         $('#category_service').val($(this).val());
     });
-
     function toggleType(type) {
         if (type === 'service') {
             $('#productCategoryGroup').addClass('d-none');
+            $('#category_product').prop('disabled', true);
             $('#serviceCategoryGroup').removeClass('d-none');
             $('#brandGroup, #modelGroup, #warrantyGroup, #trackSerialGroup, #unitGroup').addClass('d-none');
             $('#salePriceLabel').text('Standard Charge (₹)');
             $('#submitBtn').html('<i class="bi bi-check-lg me-1"></i> Save Service');
-            // Sync category value
-            var svcVal = $('#category_service').val();
-            $('#category_product').val(svcVal || '');
         } else {
             $('#productCategoryGroup').removeClass('d-none');
+            $('#category_product').prop('disabled', false);
             $('#serviceCategoryGroup').addClass('d-none');
             $('#brandGroup, #modelGroup, #warrantyGroup, #trackSerialGroup, #unitGroup').removeClass('d-none');
             $('#salePriceLabel').text('Sale Price');
