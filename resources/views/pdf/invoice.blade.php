@@ -107,9 +107,12 @@
         </div>
 
         <!-- Invoice Title -->
+        @php
+            $hasGst = $invoice->is_gst && $invoice->gst_amount > 0;
+        @endphp
         <div class="invoice-title">
-            <h2>{{ $invoice->is_gst ? 'TAX INVOICE' : 'BILL OF SUPPLY' }}</h2>
-            @if(!$invoice->is_gst)
+            <h2>{{ $hasGst ? 'TAX INVOICE' : 'BILL OF SUPPLY' }}</h2>
+            @if(!$hasGst)
                 <div class="gst-label">(Without GST)</div>
             @endif
         </div>
@@ -148,7 +151,7 @@
                     <th style="width: 60px;">HSN/SAC</th>
                     <th class="center" style="width: 40px;">Qty</th>
                     <th class="right" style="width: 80px;">Rate</th>
-                    @if($invoice->is_gst)
+                    @if($hasGst)
                         <th class="center" style="width: 50px;">GST%</th>
                         <th class="right" style="width: 80px;">GST Amt</th>
                     @endif
@@ -170,7 +173,7 @@
                     <td>{{ $item->product->hsn_sac ?? '-' }}</td>
                     <td class="center">{{ $item->qty }}</td>
                     <td class="right">{{ number_format($item->unit_price, 2) }}</td>
-                    @if($invoice->is_gst)
+                    @if($hasGst)
                         <td class="center">{{ $item->gst_percent }}%</td>
                         <td class="right">{{ number_format(($item->qty * $item->unit_price) * ($item->gst_percent / 100), 2) }}</td>
                     @endif
@@ -202,7 +205,7 @@
             <div class="summary-right">
                 <table class="summary-table">
                     <tr><td class="label">Subtotal:</td><td class="value">{{ number_format($invoice->subtotal, 2) }}</td></tr>
-                    @if($invoice->is_gst)
+                    @if($hasGst)
                         <tr><td class="label">CGST:</td><td class="value">{{ number_format($invoice->gst_amount / 2, 2) }}</td></tr>
                         <tr><td class="label">SGST:</td><td class="value">{{ number_format($invoice->gst_amount / 2, 2) }}</td></tr>
                     @endif

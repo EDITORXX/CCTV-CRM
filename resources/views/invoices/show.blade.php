@@ -5,7 +5,7 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="mb-1">{{ $invoice->is_gst ? 'Tax Invoice' : 'Bill of Supply' }} — {{ $invoice->invoice_number }}</h4>
+        <h4 class="mb-1">{{ ($invoice->is_gst && $invoice->gst_amount > 0) ? 'Tax Invoice' : 'Bill of Supply' }} — {{ $invoice->invoice_number }}</h4>
         <p class="text-muted mb-0">{{ $invoice->customer->name ?? 'Unknown' }} — {{ \Carbon\Carbon::parse($invoice->invoice_date)->format('d M Y') }}</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
@@ -137,7 +137,7 @@
                                 <th>Product</th>
                                 <th width="50">Qty</th>
                                 <th width="100">Rate</th>
-                                @if($invoice->is_gst)
+                                @if($invoice->is_gst && $invoice->gst_amount > 0)
                                 <th width="60">GST%</th>
                                 @endif
                                 <th width="90">Discount</th>
@@ -149,7 +149,7 @@
                             @forelse($invoice->items as $item)
                             @php
                                 $lineBase = $item->qty * $item->unit_price;
-                                $lineGst = $invoice->is_gst ? ($lineBase * ($item->gst_percent / 100)) : 0;
+                                $lineGst = ($invoice->is_gst && $invoice->gst_amount > 0) ? ($lineBase * ($item->gst_percent / 100)) : 0;
                                 $lineDiscount = $item->discount ?? 0;
                                 $lineTotal = $lineBase + $lineGst - $lineDiscount;
                                 $subtotal += $lineBase;
@@ -169,7 +169,7 @@
                                 </td>
                                 <td>{{ $item->qty }}</td>
                                 <td>₹{{ number_format($item->unit_price, 2) }}</td>
-                                @if($invoice->is_gst)
+                                @if($invoice->is_gst && $invoice->gst_amount > 0)
                                 <td>{{ $item->gst_percent }}%</td>
                                 @endif
                                 <td>₹{{ number_format($lineDiscount, 2) }}</td>
@@ -177,16 +177,16 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="{{ $invoice->is_gst ? 6 : 5 }}" class="text-center text-muted py-3">No items</td>
+                                <td colspan="{{ ($invoice->is_gst && $invoice->gst_amount > 0) ? 6 : 5 }}" class="text-center text-muted py-3">No items</td>
                             </tr>
                             @endforelse
                         </tbody>
                         <tfoot class="table-light">
                             <tr>
-                                <td colspan="{{ $invoice->is_gst ? 5 : 4 }}" class="text-end">Subtotal:</td>
+                                <td colspan="{{ ($invoice->is_gst && $invoice->gst_amount > 0) ? 5 : 4 }}" class="text-end">Subtotal:</td>
                                 <td class="fw-semibold">₹{{ number_format($subtotal, 2) }}</td>
                             </tr>
-                            @if($invoice->is_gst)
+                            @if($invoice->is_gst && $invoice->gst_amount > 0)
                             <tr>
                                 <td colspan="5" class="text-end">GST:</td>
                                 <td class="fw-semibold">₹{{ number_format($totalGst, 2) }}</td>
@@ -194,12 +194,12 @@
                             @endif
                             @if($invoice->discount > 0)
                             <tr>
-                                <td colspan="{{ $invoice->is_gst ? 5 : 4 }}" class="text-end">Discount:</td>
+                                <td colspan="{{ ($invoice->is_gst && $invoice->gst_amount > 0) ? 5 : 4 }}" class="text-end">Discount:</td>
                                 <td class="fw-semibold text-danger">-₹{{ number_format($invoice->discount, 2) }}</td>
                             </tr>
                             @endif
                             <tr>
-                                <td colspan="{{ $invoice->is_gst ? 5 : 4 }}" class="text-end fw-bold">Grand Total:</td>
+                                <td colspan="{{ ($invoice->is_gst && $invoice->gst_amount > 0) ? 5 : 4 }}" class="text-end fw-bold">Grand Total:</td>
                                 <td class="fw-bold text-success fs-5">₹{{ number_format($invoice->total, 2) }}</td>
                             </tr>
                         </tfoot>

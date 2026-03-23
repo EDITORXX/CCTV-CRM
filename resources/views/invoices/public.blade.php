@@ -37,8 +37,9 @@
 
     <div class="px-4 pb-4">
         {{-- Title --}}
-        <div class="bill-title">{{ $invoice->is_gst ? 'TAX INVOICE' : 'BILL OF SUPPLY' }}</div>
-        @if(!$invoice->is_gst)<div class="text-center text-muted small mb-2">(Without GST)</div>@endif
+        @php $hasGst = $invoice->is_gst && $invoice->gst_amount > 0; @endphp
+        <div class="bill-title">{{ $hasGst ? 'TAX INVOICE' : 'BILL OF SUPPLY' }}</div>
+        @if(!$hasGst)<div class="text-center text-muted small mb-2">(Without GST)</div>@endif
 
         {{-- Billing Info --}}
         <div class="row g-3 mt-1 mb-3">
@@ -78,7 +79,7 @@
                         <th>Product</th>
                         <th class="text-center" style="width:50px">Qty</th>
                         <th class="text-end" style="width:90px">Rate</th>
-                        @if($invoice->is_gst)
+                        @if($hasGst)
                             <th class="text-center" style="width:60px">GST%</th>
                             <th class="text-end" style="width:80px">GST</th>
                         @endif
@@ -99,7 +100,7 @@
                         </td>
                         <td class="text-center">{{ $item->qty }}</td>
                         <td class="text-end">₹{{ number_format($item->unit_price, 2) }}</td>
-                        @if($invoice->is_gst)
+                        @if($hasGst)
                             <td class="text-center">{{ $item->gst_percent }}%</td>
                             <td class="text-end">₹{{ number_format(($item->qty * $item->unit_price) * ($item->gst_percent / 100), 2) }}</td>
                         @endif
@@ -115,7 +116,7 @@
             <div class="col-sm-5">
                 <table class="table table-borderless table-sm mb-0" style="font-size:.88rem;">
                     <tr><td class="text-muted">Subtotal</td><td class="text-end">₹{{ number_format($invoice->subtotal, 2) }}</td></tr>
-                    @if($invoice->is_gst)
+                    @if($hasGst)
                         <tr><td class="text-muted">CGST</td><td class="text-end">₹{{ number_format($invoice->gst_amount/2, 2) }}</td></tr>
                         <tr><td class="text-muted">SGST</td><td class="text-end">₹{{ number_format($invoice->gst_amount/2, 2) }}</td></tr>
                     @endif
