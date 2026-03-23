@@ -50,10 +50,10 @@
                 <span><i class="bi bi-list-ul me-1"></i> Items</span>
                 <div class="d-flex align-items-center gap-2">
                     <span class="small text-muted">Product:</span>
-                    <div class="btn-group btn-group-sm" role="group">
-                        <input type="radio" class="btn-check" name="productMode" id="mode-product" value="product" checked onchange="setProductMode('product')">
+                    <div class="btn-group btn-group-sm" role="group" id="mode-toggle">
+                        <input type="radio" class="btn-check" name="productMode" id="mode-product" value="product" checked>
                         <label class="btn btn-outline-primary btn-sm" for="mode-product">Product List</label>
-                        <input type="radio" class="btn-check" name="productMode" id="mode-custom" value="custom" onchange="setProductMode('custom')">
+                        <input type="radio" class="btn-check" name="productMode" id="mode-custom" value="custom">
                         <label class="btn btn-outline-primary btn-sm" for="mode-custom">Custom</label>
                     </div>
                     <button type="button" class="btn btn-sm btn-success" onclick="addRow()">
@@ -75,7 +75,7 @@
                             </tr>
                         </thead>
                         <tbody id="items-body">
-                            {{-- Rows added by JS --}}
+                            {{-- All rows added by JavaScript --}}
                         </tbody>
                     </table>
                 </div>
@@ -302,37 +302,29 @@ function removeRow(btn) {
 
 function setProductMode(mode) {
     currentMode = mode;
-    // Update all existing rows (including the first one)
+    // Rebuild ALL rows with the new mode
     var rows = document.querySelectorAll('.item-row');
     rows.forEach(function(row) {
-        var productCell = row.querySelector('.product-cell');
-        var purchaseVal = row.querySelector('.purchase-input').value;
-        var saleVal = row.querySelector('.sale-input').value;
-        var qtyVal = row.querySelector('.qty-input').value;
+        var purchaseVal = row.querySelector('.purchase-input').value || 0;
+        var saleVal = row.querySelector('.sale-input').value || 0;
+        var qtyVal = row.querySelector('.qty-input').value || 1;
+        var totalCell = row.querySelector('.total-cell');
+        var totalText = totalCell ? totalCell.textContent : '₹0.00';
+        var totalClass = totalCell ? totalCell.className : 'text-end fw-semibold text-muted total-cell';
 
-        var selectedId = '';
-        if (mode === 'product') {
-            // Try to match current custom name to a product
-            var customInput = productCell.querySelector('.custom-name');
-            if (customInput && customInput.value.trim()) {
-                var searchText = customInput.value.toLowerCase();
-                PRODUCTS_OPTIONS.forEach(function(p) {
-                    if (selectedId === '' && (
-                        p.name.toLowerCase().indexOf(searchText) !== -1 ||
-                        searchText.indexOf(p.name.toLowerCase()) !== -1
-                    )) {
-                        selectedId = p.id;
-                        purchaseVal = p.purchase || purchaseVal;
-                        saleVal = p.sale || saleVal;
-                    }
-                });
-            }
-        }
+        var newCellHtml = buildProductCellHtml(mode, '');
 
-        productCell.innerHTML = buildProductCellHtml(mode, selectedId);
-        row.querySelector('.purchase-input').value = purchaseVal || 0;
-        row.querySelector('.sale-input').value = saleVal || 0;
-        row.querySelector('.qty-input').value = qtyVal || 1;
+        // Preserve the new row structure
+        var newHtml = '<td class="product-cell">' + newCellHtml + '</td>' +
+            '<td><input type="number" class="form-control form-control-sm text-center qty-input" min="1" value="' + qtyVal + '"></td>' +
+            '<td><input type="number" class="form-control form-control-sm text-end purchase-input" min="0" step="0.01" value="' + purchaseVal + '"></td>' +
+            '<td><input type="number" class="form-control form-control-sm text-end sale-input" min="0" step="0.01" value="' + saleVal + '"></td>' +
+            '<td class="' + totalClass + '">' + totalText + '</td>' +
+            '<td class="text-center">' +
+                '<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)"><i class="bi bi-x"></i></button>' +
+            '</td>';
+
+        row.innerHTML = newHtml;
     });
 }
 
@@ -550,6 +542,14 @@ function resetAll() {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
+    // Mode toggle event listeners
+    var modeToggles = document.querySelectorAll('input[name="productMode"]');
+    modeToggles.forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            setProductMode(this.value);
+        });
+    });
+
     addRow();
     addExpense();
 });
