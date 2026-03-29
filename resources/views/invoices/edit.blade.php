@@ -610,7 +610,7 @@
         }
 
         // ---- Item modal ----
-        $('#addItemModal').on('show.bs.modal', function() { resetModal(); });
+        $('#addItemBtn').on('click', function() { resetModal(); });
         populateModalProducts();
 
         $('#modalProductId').on('change', function() {
@@ -700,6 +700,7 @@
                         $('#modalProductId').append('<option value="' + productId + '">' + escAttr(productName) + '</option>');
                     }
                     $('#modalProductId').val(productId).trigger('change.select2');
+                    $('#modalPrice').val(price);
                 }
             }, 100);
             bootstrap.Modal.getOrCreateInstance(document.getElementById('addItemModal')).show();

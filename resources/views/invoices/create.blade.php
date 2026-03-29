@@ -547,7 +547,7 @@
         });
     }
 
-    $('#addItemModal').on('show.bs.modal', function() { resetModal(); });
+    $('#addItemBtn').on('click', function() { resetModal(); });
 
     populateModalProducts();
 
@@ -672,6 +672,7 @@
                     $('#modalProductId').append('<option value="' + productId + '">' + productName + '</option>');
                 }
                 $('#modalProductId').val(productId).trigger('change.select2');
+                $('#modalPrice').val(price);
             }
         }, 100);
 
